@@ -33,5 +33,12 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db 
-*.production
+
+# Environment variables
+.env
+.env.*
+.env.local
+.env.development
+.env.test
 .env.production
+*.env
