@@ -5,8 +5,8 @@ supabase==1.0.3
 uvicorn==0.23.2
 openai==1.16.1
 PyPDF2==3.0.1
-sentence-transformers==2.3.1
-numpy==1.26.3
 pdfrw==0.4
 tqdm==4.66.2
-gunicorn==21.2.0 
+gunicorn==21.2.0
+requests>=2.25.0 
+# minimal requirements for the project
