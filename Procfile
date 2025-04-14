@@ -1,0 +1,1 @@
+web: uvicorn api.process_documents:app --host=0.0.0.0 --port=$PORT 
