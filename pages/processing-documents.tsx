@@ -189,7 +189,11 @@ export default function ProcessingDocuments() {
         const documentsObject = JSON.parse(documents as string);
 
         // Make the API call
-        const response = await fetch('http://localhost:8000/api/validate-documents', {
+        const apiUrl = process.env.NODE_ENV === 'production'
+          ? 'https://prometheus-ai-backend-app-589cbe98fdc3.herokuapp.com/api/validate-documents'
+          : 'http://localhost:8000/api/validate-documents';
+          
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

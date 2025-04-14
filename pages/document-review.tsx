@@ -525,7 +525,11 @@ export default function DocumentReview() {
         }
       });
 
-      const response = await fetch('http://localhost:8000/api/match-lawyer', {
+      const apiUrl = process.env.NODE_ENV === 'production'
+        ? 'https://prometheus-ai-backend-app-589cbe98fdc3.herokuapp.com/api/match-lawyer'
+        : 'http://localhost:8000/api/match-lawyer';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
