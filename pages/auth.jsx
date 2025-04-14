@@ -13,7 +13,9 @@ export default function AuthPage() {
   // This needs to be the absolute URL of your app's homepage, not the Supabase callback
   const redirectUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/document-collection`
-    : 'http://localhost:3000/document-collection';
+    : process.env.NODE_ENV === 'production' 
+      ? 'https://demo-6ycjg6jqh-aditya-guptas-projects-1c7bb58d.vercel.app/document-collection'
+      : 'http://localhost:3000/document-collection';
 
   useEffect(() => {
     // Check if user is already signed in when the page loads
@@ -59,7 +61,9 @@ export default function AuthPage() {
         options: {
           redirectTo: typeof window !== 'undefined' 
             ? `${window.location.origin}/document-collection`
-            : 'http://localhost:3000/document-collection',
+            : process.env.NODE_ENV === 'production' 
+              ? 'https://demo-6ycjg6jqh-aditya-guptas-projects-1c7bb58d.vercel.app/document-collection'
+              : 'http://localhost:3000/document-collection',
           queryParams: {
             prompt: 'select_account'
           }
