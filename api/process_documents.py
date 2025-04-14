@@ -29,6 +29,8 @@ app.add_middleware(
                   "https://prometheus-v2.vercel.app",
                   "https://prometheus-v2-*-eulerpascal404.vercel.app",
                   "https://*.vercel.app",
+                  "https://getprometheus.ai",
+                  "https://www.getprometheus.ai",
                   "https://demo-ayqbc45qa-aditya-guptas-projects-1c7bb58d.vercel.app",
                   "https://demo-cylzh6hbe-aditya-guptas-projects-1c7bb58d.vercel.app",
                   "https://demo-gknna7xjs-aditya-guptas-projects-1c7bb58d.vercel.app",

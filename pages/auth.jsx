@@ -14,7 +14,7 @@ export default function AuthPage() {
   const redirectUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/document-collection`
     : process.env.NODE_ENV === 'production' 
-      ? 'https://demo-6ycjg6jqh-aditya-guptas-projects-1c7bb58d.vercel.app/document-collection'
+      ? 'https://getprometheus.ai/document-collection'
       : 'http://localhost:3000/document-collection';
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function AuthPage() {
           redirectTo: typeof window !== 'undefined' 
             ? `${window.location.origin}/document-collection`
             : process.env.NODE_ENV === 'production' 
-              ? 'https://demo-6ycjg6jqh-aditya-guptas-projects-1c7bb58d.vercel.app/document-collection'
+              ? 'https://getprometheus.ai/document-collection'
               : 'http://localhost:3000/document-collection',
           queryParams: {
             prompt: 'select_account'
