@@ -12,10 +12,10 @@ export default function AuthPage() {
   
   // This needs to be the absolute URL of your app's homepage, not the Supabase callback
   const redirectUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/document-collection`
-    : process.env.NODE_ENV === 'production' 
-      ? 'https://getprometheus.ai/document-collection'
-      : 'http://localhost:3000/document-collection';
+    ? window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? `${window.location.origin}/document-collection`
+      : 'https://getprometheus.ai/document-collection'
+    : 'https://getprometheus.ai/document-collection';
 
   useEffect(() => {
     // Check if user is already signed in when the page loads
@@ -59,11 +59,11 @@ export default function AuthPage() {
       const { error, data } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: typeof window !== 'undefined' 
-            ? `${window.location.origin}/document-collection`
-            : process.env.NODE_ENV === 'production' 
-              ? 'https://getprometheus.ai/document-collection'
-              : 'http://localhost:3000/document-collection',
+          redirectTo: typeof window !== 'undefined'
+            ? window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+              ? `${window.location.origin}/document-collection`
+              : 'https://getprometheus.ai/document-collection'
+            : 'https://getprometheus.ai/document-collection',
           queryParams: {
             prompt: 'select_account'
           }
