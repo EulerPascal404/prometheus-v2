@@ -24,9 +24,14 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://prometheus-ai.vercel.app"],  # Add your Vercel URL
+    allow_origins=["http://localhost:3000", 
+                  "https://prometheus-ai.vercel.app",
+                  "https://demo-ayqbc45qa-aditya-guptas-projects-1c7bb58d.vercel.app",
+                  "https://demo-cylzh6hbe-aditya-guptas-projects-1c7bb58d.vercel.app",
+                  "https://demo-gknna7xjs-aditya-guptas-projects-1c7bb58d.vercel.app",
+                  "https://demo-38j8p53ms-aditya-guptas-projects-1c7bb58d.vercel.app"],  # Add your Vercel URLs
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly list allowed methods
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
