@@ -10,11 +10,13 @@ export default function AuthPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   
-  // This needs to be the absolute URL of your app's homepage, not the Supabase callback
+  // Define the redirect URL based on environment
   const redirectUrl = typeof window !== 'undefined' 
-    ? window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? `${window.location.origin}/document-collection`
-      : 'https://getprometheus.ai/document-collection'
+    ? process.env.NEXT_PUBLIC_SITE_URL 
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/document-collection`
+      : window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? `${window.location.origin}/document-collection`
+        : 'https://getprometheus.ai/document-collection'
     : 'https://getprometheus.ai/document-collection';
 
   useEffect(() => {
@@ -59,11 +61,7 @@ export default function AuthPage() {
       const { error, data } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: typeof window !== 'undefined'
-            ? window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-              ? `${window.location.origin}/document-collection`
-              : 'https://getprometheus.ai/document-collection'
-            : 'https://getprometheus.ai/document-collection',
+          redirectTo: redirectUrl,
           queryParams: {
             prompt: 'select_account'
           }
