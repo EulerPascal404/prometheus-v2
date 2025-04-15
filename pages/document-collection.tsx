@@ -47,13 +47,13 @@ export default function DocumentCollection() {
     {
       id: 'awards',
       name: 'Awards & Recognitions',
-      required: true,
+      required: false,
       description: 'Provide documentation of significant awards, honors, or industry recognition you have received.'
     },
     {
       id: 'recommendation',
       name: 'Recommendation Letters',
-      required: true,
+      required: false,
       description: 'Letters from experts in your field attesting to your extraordinary ability and achievements.'
     },
     {
@@ -97,6 +97,7 @@ export default function DocumentCollection() {
         console.error('No authenticated user found:', error);
         router.push('/auth');
       }
+      setIsLoading(false);
     };
 
     checkUser();
