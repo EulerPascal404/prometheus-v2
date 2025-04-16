@@ -44,28 +44,10 @@ function SummarySection({ title, items, colorClass }: {
   );
 }
 
-// Add Google Places API type declarations
+// Remove the custom Google Places API type declarations since we're using @types/google.maps
 declare global {
-  namespace google {
-    namespace maps {
-      namespace places {
-        class Autocomplete {
-          constructor(
-            input: HTMLInputElement,
-            options?: {
-              types?: string[];
-              componentRestrictions?: { country: string };
-              fields?: string[];
-            }
-          );
-          addListener(event: string, callback: () => void): void;
-          getPlace(): any;
-        }
-      }
-    }
-  }
   interface Window {
-    google: typeof google;
+    google: any; // Using any to avoid type conflicts
     initializeGooglePlaces: () => void;
   }
 }
@@ -281,14 +263,16 @@ export default function DocumentReview() {
         fields: ['address_components', 'formatted_address'],
       });
 
-      autocompleteRef.current.addListener('place_changed', () => {
-        if (autocompleteRef.current) {
-          const place = autocompleteRef.current.getPlace();
-          if (place.formatted_address) {
-            setAddress(place.formatted_address);
+      if (autocompleteRef.current) {
+        autocompleteRef.current.addListener('place_changed', () => {
+          if (autocompleteRef.current) {
+            const place = autocompleteRef.current.getPlace();
+            if (place.formatted_address) {
+              setAddress(place.formatted_address);
+            }
           }
-        }
-      });
+        });
+      }
     }
   };
 
