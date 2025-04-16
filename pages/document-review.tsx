@@ -372,7 +372,7 @@ export default function DocumentReview() {
         }
         
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching data:',error);
         alert('Error loading your documents. Please try again.');
       } finally {
         setIsLoading(false);
