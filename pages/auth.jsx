@@ -6,7 +6,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { SharedStyles, BackgroundEffects } from '../components/SharedStyles'
 
-export default function AuthPage() {
+export default function AuthPage(){
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   
