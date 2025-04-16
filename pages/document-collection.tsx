@@ -4,11 +4,158 @@ import { supabase } from '../config/supabase';
 import Head from 'next/head';
 import { SharedStyles, BackgroundEffects } from '../components/SharedStyles';
 
+// Only import PDF.js on the client side
+let pdfjsLib: any = null;
+if (typeof window !== 'undefined') {
+  import('pdfjs-dist').then(module => {
+    pdfjsLib = module;
+    // Set the worker source for PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+  });
+}
+
 interface DocumentType {
   id: string;
   name: string;
   required: boolean;
   description: string;
+}
+
+// Function to extract text from PDF
+async function extractTextFromPdf(file: File): Promise<string> {
+  // Ensure we're in the browser environment
+  if (typeof window === 'undefined') {
+    throw new Error('PDF processing can only be done in the browser');
+  }
+  
+  // Make sure PDF.js is loaded
+  if (!pdfjsLib) {
+    await new Promise(resolve => {
+      const checkPdfJs = setInterval(() => {
+        if (pdfjsLib) {
+          clearInterval(checkPdfJs);
+          resolve(true);
+        }
+      }, 100);
+    });
+  }
+  
+  console.log(`Extracting text from PDF: ${file.name}`);
+  console.log(`File size: ${file.size} bytes`);
+  console.log(`File type: ${file.type}`);
+  
+  try {
+    // Convert File to ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    console.log(`ArrayBuffer size: ${arrayBuffer.byteLength} bytes`);
+    
+    // Load the PDF document
+    console.log('Loading PDF document...');
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdfDocument = await loadingTask.promise;
+    console.log(`PDF loaded successfully. Pages: ${pdfDocument.numPages}`);
+    
+    // Extract text from all pages
+    let extractedText = '';
+    for (let i = 1; i <= pdfDocument.numPages; i++) {
+      console.log(`Extracting text from page ${i} of ${pdfDocument.numPages}...`);
+      const page = await pdfDocument.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      extractedText += pageText + '\n\n';
+    }
+    
+    console.log(`Text extraction complete. Total length: ${extractedText.length} characters`);
+    
+    // Log a preview of the extracted text
+    const textPreview = extractedText.substring(0, 500);
+    console.log(`Text preview: ${textPreview}...`);
+    
+    return extractedText;
+  } catch (error) {
+    console.error('Error extracting text from PDF:', error);
+    throw error;
+  }
+}
+
+// Function to generate summary using OpenAI
+async function generateSummary(text: string, docType: string): Promise<{
+  analysis: string;
+  sections: {
+    strengths: string[];
+    weaknesses: string[];
+    recommendations: string[];
+  };
+}> {
+  try {
+    // Construct the prompt based on document type
+    let prompt = '';
+    switch (docType) {
+      case 'resume':
+        prompt = `Analyze the following CV/resume and provide a structured analysis with strengths, weaknesses, and recommendations for improvement. Format the response with clear sections for Strengths, Weaknesses, and Recommendations. Each section should contain bullet points with specific observations.`;
+        break;
+      case 'cover_letter':
+        prompt = `Analyze the following cover letter and provide a structured analysis with strengths, weaknesses, and recommendations for improvement. Format the response with clear sections for Strengths, Weaknesses, and Recommendations. Each section should contain bullet points with specific observations.`;
+        break;
+      case 'research_paper':
+        prompt = `Analyze the following research paper and provide a structured analysis with strengths, weaknesses, and recommendations for improvement. Format the response with clear sections for Strengths, Weaknesses, and Recommendations. Each section should contain bullet points with specific observations.`;
+        break;
+      default:
+        prompt = `Analyze the following document and provide a structured analysis with strengths, weaknesses, and recommendations for improvement. Format the response with clear sections for Strengths, Weaknesses, and Recommendations. Each section should contain bullet points with specific observations.`;
+    }
+
+    prompt += `\n\nDocument content:\n${text}`;
+
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert document reviewer specializing in academic and professional documents. Provide detailed, constructive feedback with specific examples and actionable recommendations."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
+
+    if (!completion.choices || completion.choices.length === 0 || !completion.choices[0].message.content) {
+      throw new Error('No content returned from OpenAI API');
+    }
+
+    const analysis = completion.choices[0].message.content;
+
+    // Parse the analysis into structured sections
+    const sections = {
+      strengths: extractSection(analysis, 'Strengths:'),
+      weaknesses: extractSection(analysis, 'Weaknesses:'),
+      recommendations: extractSection(analysis, 'Recommendations:')
+    };
+
+    return { analysis, sections };
+  } catch (error) {
+    console.error('Error generating summary:', error);
+    throw error;
+  }
+}
+
+// Helper function to extract a section from the analysis
+function extractSection(analysis: string, sectionName: string): string[] {
+  const sectionRegex = new RegExp(`${sectionName}\\s*([\\s\\S]*?)(?=\\n\\n|$)`, 'i');
+  const match = analysis.match(sectionRegex);
+  
+  if (!match) return [];
+  
+  const sectionContent = match[1].trim();
+  return sectionContent
+    .split('\n')
+    .map(item => item.trim())
+    .filter(item => item.length > 0 && (item.startsWith('-') || item.startsWith('•')))
+    .map(item => item.substring(1).trim());
 }
 
 function LoadingScreen() {
@@ -30,6 +177,7 @@ export default function DocumentCollection() {
   const [uploadedDocs, setUploadedDocs] = useState(new Set<string>());
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [documentSummaries, setDocumentSummaries] = useState<Record<string, any>>({});
   
   const documentTypes: DocumentType[] = [
     {
