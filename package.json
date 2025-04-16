@@ -6,7 +6,7 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "postinstall": "copy node_modules\\pdfjs-dist\\build\\pdf.worker.min.mjs public\\pdf.worker.min.js"
+        "postinstall": "node -e \"const fs=require('fs');const path=require('path');fs.copyFileSync(path.join('node_modules','pdfjs-dist','build','pdf.worker.min.mjs'),path.join('public','pdf.worker.min.js'));\""
     },
     "dependencies": {
         "@supabase/auth-ui-react": "^0.4.7",
