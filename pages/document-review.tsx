@@ -53,25 +53,85 @@ declare global {
 }
 
 // Modified StatsSection component to focus on O-1 criteria
-function StatsSection({ stats, filledPdfUrl }: { stats: FieldStats, filledPdfUrl: string | null }) {
+function StatsSection({ stats, filledPdfUrl, apiResponseData }: { 
+  stats: FieldStats, 
+  filledPdfUrl: string | null,
+  apiResponseData?: any 
+}) {
   // Helper function to determine priority areas based on field stats
   const getPriorityAreas = () => {
+    // Use API response data if available, otherwise use stats
+    const fieldStats = apiResponseData?.field_stats || stats;
+    
     const areas = [
-      { key: 'na_extraordinary', label: 'Extraordinary Ability Evidence', value: stats.na_extraordinary },
-      { key: 'na_recognition', label: 'Awards & Recognition', value: stats.na_recognition },
-      { key: 'na_publications', label: 'Published Materials', value: stats.na_publications },
-      { key: 'na_leadership', label: 'Leadership/Judging Roles', value: stats.na_leadership },
-      { key: 'na_contributions', label: 'Original Contributions', value: stats.na_contributions },
-      { key: 'na_salary', label: 'High Salary', value: stats.na_salary },
-      { key: 'na_success', label: 'Commercial Success', value: stats.na_success }
+      { key: 'na_extraordinary', label: 'Extraordinary Ability Evidence', value: fieldStats.na_extraordinary },
+      { key: 'na_recognition', label: 'Awards & Recognition', value: fieldStats.na_recognition },
+      { key: 'na_publications', label: 'Published Materials', value: fieldStats.na_publications },
+      { key: 'na_leadership', label: 'Leadership/Judging Roles', value: fieldStats.na_leadership },
+      { key: 'na_contributions', label: 'Original Contributions', value: fieldStats.na_contributions },
+      { key: 'na_salary', label: 'High Salary', value: fieldStats.na_salary },
+      { key: 'na_success', label: 'Commercial Success', value: fieldStats.na_success }
     ];
     
     // Sort by highest number of missing fields
     return areas.sort((a, b) => b.value - a.value).slice(0, 3);
   };
 
+  // Get form field data from API response if available
+  const getFormFieldData = () => {
+    if (apiResponseData?.document_summaries?.resume?.pdf_filled_pages?.[1]) {
+      const formData = apiResponseData.document_summaries.resume.pdf_filled_pages[1];
+      return [
+        { label: 'Awards & Recognition', value: formData['N/A_ar'] },
+        { label: 'Publications', value: formData['N/A_p'] },
+        { label: 'Original Contributions', value: formData['N/A_per'] },
+        { label: 'Professional Memberships', value: formData['N/A_pm'] },
+        { label: 'Recognition', value: formData['N/A_r'] },
+        { label: 'Leadership/Judging', value: formData['N/A_rl'] },
+        { label: 'Commercial Success', value: formData['N/A_ss'] }
+      ];
+    }
+    
+    // Fallback to original stats if API data not available
+    const fieldStats = apiResponseData?.field_stats || stats;
+    return [
+      { label: 'Extraordinary Ability', value: fieldStats.na_extraordinary },
+      { label: 'Awards & Recognition', value: fieldStats.na_recognition },
+      { label: 'Publications', value: fieldStats.na_publications },
+      { label: 'Leadership/Judging', value: fieldStats.na_leadership },
+      { label: 'Original Contributions', value: fieldStats.na_contributions },
+      { label: 'High Salary', value: fieldStats.na_salary },
+      { label: 'Commercial Success', value: fieldStats.na_success }
+    ];
+  };
+  
+  // Get petition completeness data from API response if available
+  const getPetitionCompletenessData = () => {
+    if (apiResponseData?.document_summaries?.resume?.pdf_filled_pages?.[1]) {
+      const formData = apiResponseData.document_summaries.resume.pdf_filled_pages[1];
+      return {
+        totalFields: formData.total_fields,
+        fieldsFilled: formData.user_info_filled,
+        percentFilled: formData.percent_filled / 10 // Divide by 10 as requested
+      };
+    }
+    
+    // Fallback to original stats if API data not available
+    const fieldStats = apiResponseData?.field_stats || stats;
+    return {
+      totalFields: fieldStats.total_fields,
+      fieldsFilled: fieldStats.user_info_filled,
+      percentFilled: fieldStats.percent_filled / 10 // Divide by 10 as requested
+    };
+  };
+
+  // Calculate all derived data
   const priorityAreas = getPriorityAreas();
-  const applicationScore = Math.round((stats.percent_filled / 10) * 10) / 10;
+  const fieldStats = apiResponseData?.field_stats || stats;
+  const canProceed = apiResponseData?.can_proceed ?? true;
+  const formFieldData = getFormFieldData();
+  const petitionData = getPetitionCompletenessData();
+  const applicationScore = apiResponseData?.completion_score || Math.round(petitionData.percentFilled * 10) / 10;
 
   return (
     <div className="stats-container">
@@ -107,7 +167,7 @@ function StatsSection({ stats, filledPdfUrl }: { stats: FieldStats, filledPdfUrl
                 <span className="action-label">Initial Qualification Analysis</span>
               </div>
               <div className="action-step">
-                <div className="action-indicator active">
+                <div className={`action-indicator ${canProceed ? 'active' : ''}`}>
                   <span>2</span>
                 </div>
                 <span className="action-label">Strengthen Evidence</span>
@@ -135,15 +195,15 @@ function StatsSection({ stats, filledPdfUrl }: { stats: FieldStats, filledPdfUrl
           <div className="space-y-3">
             <div className="stats-item">
               <span className="stats-label">Total Evidence Fields</span>
-              <span className="stats-value stats-value-total">{stats.total_fields}</span>
+              <span className="stats-value stats-value-total">{petitionData.totalFields}</span>
             </div>
             <div className="stats-item">
               <span className="stats-label">Fields Provided</span>
-              <span className="stats-value stats-value-filled">{stats.user_info_filled}</span>
+              <span className="stats-value stats-value-filled">{petitionData.fieldsFilled}</span>
             </div>
             <div className="stats-item">
               <span className="stats-label">Completion Rate</span>
-              <span className="stats-value stats-value-completion">{stats.percent_filled}%</span>
+              <span className="stats-value stats-value-completion">{petitionData.percentFilled}%</span>
             </div>
           </div>
         </div>
@@ -153,15 +213,7 @@ function StatsSection({ stats, filledPdfUrl }: { stats: FieldStats, filledPdfUrl
         <div className="stats-section">
           <h4 className="stats-section-title">O-1 Criteria Coverage</h4>
           <div className="space-y-2">
-            {[
-              { label: 'Extraordinary Ability', value: stats.na_extraordinary },
-              { label: 'Awards & Recognition', value: stats.na_recognition },
-              { label: 'Publications', value: stats.na_publications },
-              { label: 'Leadership/Judging', value: stats.na_leadership },
-              { label: 'Original Contributions', value: stats.na_contributions },
-              { label: 'High Salary', value: stats.na_salary },
-              { label: 'Commercial Success', value: stats.na_success }
-            ].map(({ label, value }) => (
+            {formFieldData.map(({ label, value }) => (
               <div key={label} className="stats-item">
                 <span className="stats-label">{label}</span>
                 <div className="stats-value stats-value-missing">
@@ -240,7 +292,7 @@ function StatsSection({ stats, filledPdfUrl }: { stats: FieldStats, filledPdfUrl
 
 export default function DocumentReview() {
   const router = useRouter();
-  const { userId, processed } = router.query;
+  const { userId, processed, apiResponse } = router.query;
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [parsedSummary, setParsedSummary] = useState<ParsedSummary>({ strengths: [], weaknesses: [], recommendations: [] });
@@ -252,8 +304,22 @@ export default function DocumentReview() {
   const [matchedLawyer, setMatchedLawyer] = useState<any>(null);
   const [isMatchingLawyer, setIsMatchingLawyer] = useState(false);
   const [filledPdfUrl, setFilledPdfUrl] = useState<string | null>(null);
+  const [apiResponseData, setApiResponseData] = useState<any>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
+  
+  // Parse API response data from URL query
+  useEffect(() => {
+    if (apiResponse && typeof apiResponse === 'string') {
+      try {
+        const parsedData = JSON.parse(apiResponse);
+        setApiResponseData(parsedData);
+        console.log("API Response Data:", parsedData);
+      } catch (error) {
+        console.error("Error parsing API response:", error);
+      }
+    }
+  }, [apiResponse]);
   
   // Initialize Google Places Autocomplete
   const initializeAutocomplete = () => {
@@ -409,21 +475,64 @@ export default function DocumentReview() {
       const storedSummaries = localStorage.getItem('documentSummaries');
       const documentSummaries: DocumentSummaries = storedSummaries ? JSON.parse(storedSummaries) : {};
       
-      // Mock lawyer matching - in a real app, this would call an API
-      // For now, we'll just simulate a delay and return a mock lawyer
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
       
-      const mockLawyer = {
-        name: "Robert K. D'Andrea",
-        firm: "D'Andrea Law Corporation",
-        law_school: "Oklahoma City University, School of Law",
-        bar_admissions: "District of Columbia",
-        description: "D'Andrea Law Corporation is a Southern California immigration law firm with offices located in Pasadena and Glendora. We are committed to providing superior legal services with the experience and effectiveness of a large firm, while retaining the thoroughness and personal interaction of a boutique. Our clientele includes businesses, investors, families and individuals from all over the world.",
-        address: "510 S. Grand Ave Suite 203 Glendora, CA 91741 USA",
-        match_score: 0.87
+      // Always use the Flask server directly
+      const apiUrl = 'http://localhost:8000/api/match-lawyer';
+      
+      // Get uploaded documents from Supabase
+      const { data: userDocs, error: userDocsError } = await supabase
+        .from('user_documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (userDocsError) {
+        throw new Error('Error fetching user documents: ' + userDocsError.message);
+      }
+      
+      // Create uploaded_documents object
+      const uploaded_documents = {
+        resume: userDocs?.resume || false,
+        publications: userDocs?.publications || false,
+        awards: userDocs?.awards || false,
+        recommendation: userDocs?.recommendation || false,
+        press: userDocs?.press || false,
+        salary: userDocs?.salary || false,
+        judging: userDocs?.judging || false,
+        membership: userDocs?.membership || false,
+        contributions: userDocs?.contributions || false
       };
       
-      setMatchedLawyer(mockLawyer);
+      // Make API call to Flask backend for lawyer matching
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          uploaded_documents: uploaded_documents,
+          document_summaries: documentSummaries,
+          additional_info: {
+            address: address,
+            additional_comments: additionalComments
+          }
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.detail || 'Failed to match lawyer');
+      }
+      
+      const matchedLawyerData = await response.json();
+      setMatchedLawyer(matchedLawyerData);
       setShowLawyerForm(false);
       
     } catch (error) {
@@ -553,10 +662,21 @@ export default function DocumentReview() {
             </div>
           ) : (
             <>
-              {fieldStats && <StatsSection stats={fieldStats} filledPdfUrl={filledPdfUrl} />}
+              {fieldStats && <StatsSection stats={fieldStats} filledPdfUrl={filledPdfUrl} apiResponseData={apiResponseData} />}
               
               <div className="card p-6 w-full border-primary-500/30 mt-8">
                 <h3 className="text-xl font-semibold text-white mb-4">Document Analysis</h3>
+                
+                {apiResponseData && (
+                  <div className="mb-6 p-4 bg-slate-800 rounded-lg border border-primary-500/30">
+                    <h4 className="text-lg font-medium text-primary-300 mb-2">API Response Data</h4>
+                    <div className="overflow-auto max-h-60">
+                      <pre className="text-sm text-slate-300 whitespace-pre-wrap">
+                        {JSON.stringify(apiResponseData, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                )}
                 
                 {documents.length === 0 ? (
                   <div className="text-center py-8">

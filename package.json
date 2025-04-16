@@ -13,6 +13,7 @@
         "@supabase/auth-ui-shared": "^0.1.8",
         "@supabase/supabase-js": "^2.49.4",
         "@types/pdfjs-dist": "^2.10.378",
+        "@types/react-pdf": "^7.0.0",
         "next": "^14.1.0",
         "openai": "^4.94.0",
         "pdf-lib": "^1.17.1",
@@ -20,6 +21,7 @@
         "pdfjs-dist": "^5.1.91",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
+        "react-pdf": "^9.2.1",
         "recharts": "^2.15.2",
         "vercel": "^41.6.0"
     },

@@ -4,7 +4,6 @@ import { supabase } from '../config/supabase';
 import Head from 'next/head';
 import { SharedStyles } from '../components/SharedStyles';
 import { BackgroundEffects } from '../components/BackgroundEffects';
-import { processDocuments } from '../utils/documentProcessor';
 
 export default function ProcessingDocuments() {
   const router = useRouter();
@@ -12,7 +11,7 @@ export default function ProcessingDocuments() {
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState("Initializing...");
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-  const hasCalledApi = useRef<boolean>(false);
+  const hasCalledApi = useRef(false);
   const pollInterval = useRef<NodeJS.Timeout | null>(null);
   const userId = useRef<string | null>(null);
 
@@ -32,14 +31,148 @@ export default function ProcessingDocuments() {
     return () => clearInterval(messageInterval);
   }, []);
 
-  // Function to update progress and status
-  const updateProgress = (status: string, calculatedProgress: number) => {
-    setProgress(calculatedProgress);
-    setCurrentStage(status);
+  // Function to check processing status
+  const checkStatus = async () => {
+    try {
+      if (!userId.current) return;
+      
+      const { data, error } = await supabase
+        .from('user_documents')
+        .select('processing_status')
+        .eq('user_id', userId.current)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        // Format the status for display
+        let displayStatus = data.processing_status;
+        let calculatedProgress = 0;
+        
+        console.log("Current status:", displayStatus);
+        
+        // Handle RAG page generation progress
+        if (displayStatus && displayStatus.match(/generating_rag_page_\d+_of_\d+/)) {
+          const matches = displayStatus.match(/generating_rag_page_(\d+)_of_(\d+)/);
+          if (matches && matches.length === 3) {
+            const currentPage = parseInt(matches[1], 10);
+            const totalPages = parseInt(matches[2], 10);
+            
+            displayStatus = `Building O-1 Analysis (Step ${currentPage}/${totalPages})`;
+            // Calculate progress as currentPage out of totalPages
+            calculatedProgress = Math.floor((currentPage / totalPages) * 100);
+          }
+        }
+        // Handle PDF filling progress
+        else if (displayStatus && displayStatus.match(/filling_pdf_page_\d+_of_\d+/)) {
+          const matches = displayStatus.match(/filling_pdf_page_(\d+)_of_(\d+)/);
+          if (matches && matches.length === 3) {
+            const currentPage = parseInt(matches[1], 10);
+            const totalPages = parseInt(matches[2], 10);
+            
+            displayStatus = `Preparing O-1 Petition (Page ${currentPage}/${totalPages})`;
+            // Calculate progress as currentPage out of totalPages
+            calculatedProgress = Math.floor((currentPage / totalPages) * 100);
+          }
+        }
+        // Handle completed PDF fill
+        else if (displayStatus && displayStatus.match(/completed_pdf_fill_\d+_pages/)) {
+          const matches = displayStatus.match(/completed_pdf_fill_(\d+)_pages/);
+          if (matches && matches.length === 2) {
+            displayStatus = `Finalizing your O-1 qualification analysis...`;
+            calculatedProgress = 95; // Almost done
+          }
+        }
+        // Handle RAG generation initial stage
+        else if (displayStatus === 'generating_rag_responses') {
+          displayStatus = 'Evaluating your qualifications for O-1 visa...';
+          calculatedProgress = 10; // Starting the process
+        }
+        // Handle PDF preparation
+        else if (displayStatus === 'preparing_pdf_fill') {
+          displayStatus = 'Preparing O-1 petition documentation...';
+          calculatedProgress = 30; // Preparing PDF
+        }
+        // Parse detailed page progress if available
+        else if (displayStatus && displayStatus.match(/processing_\w+_page_\d+_of_\d+/)) {
+          const matches = displayStatus.match(/processing_(\w+)_page_(\d+)_of_(\d+)/);
+          if (matches && matches.length === 4) {
+            const docType = matches[1];
+            const currentPage = parseInt(matches[2], 10);
+            const totalPages = parseInt(matches[3], 10);
+            
+            displayStatus = `Analyzing ${docType.charAt(0).toUpperCase() + docType.slice(1)} for O-1 Criteria (${currentPage}/${totalPages})`;
+            // Calculate progress as currentPage out of totalPages
+            calculatedProgress = Math.floor((currentPage / totalPages) * 100);
+          }
+        } 
+        // Handle analysis phase after page processing
+        else if (displayStatus && displayStatus.match(/processing_\w+_analysis/)) {
+          const matches = displayStatus.match(/processing_(\w+)_analysis/);
+          if (matches && matches.length === 2) {
+            const docType = matches[1];
+            displayStatus = `Evaluating ${docType.charAt(0).toUpperCase() + docType.slice(1)} Against O-1 Standards...`;
+            calculatedProgress = 50; // Analysis phase
+          }
+        } 
+        // Standard document processing
+        else if (displayStatus && displayStatus.startsWith('processing_')) {
+          const docType = displayStatus.replace('processing_', '');
+          displayStatus = `Analyzing ${docType.charAt(0).toUpperCase() + docType.slice(1)} for Extraordinary Ability Evidence...`;
+          calculatedProgress = 25; // Initial processing
+        } 
+        else if (displayStatus === 'completed') {
+          displayStatus = 'Completing your O-1 qualification assessment...';
+          calculatedProgress = 100;
+        } 
+        else if (displayStatus === 'pending') {
+          displayStatus = 'Preparing to assess your O-1 visa eligibility...';
+          calculatedProgress = 5;
+        }
+        
+        console.log("Calculated progress:", calculatedProgress);
+        
+        // Direct update of progress and status
+        setProgress(calculatedProgress);
+        setCurrentStage(displayStatus);
+        
+        if (data.processing_status === 'completed' && pollInterval.current) {
+          clearInterval(pollInterval.current);
+          console.log("Process completed, clearing interval");
+        }
+      }
+    } catch (error) {
+      console.error('Error checking status:', error);
+    }
   };
 
   useEffect(() => {
-    const processDocumentsLocally = async () => {
+    // Initialize polling for status updates
+    const startStatusPolling = async () => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userId.current = user.id;
+        
+        // Initial check
+        await checkStatus();
+        
+        // Start polling
+        pollInterval.current = setInterval(checkStatus, 2000); // Poll every 2 seconds
+      }
+    };
+    
+    startStatusPolling();
+    
+    return () => {
+      if (pollInterval.current) {
+        clearInterval(pollInterval.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const processDocuments = async () => {
       if (hasCalledApi.current) {
         return;
       }
@@ -55,169 +188,48 @@ export default function ProcessingDocuments() {
         userId.current = user.id;
         const documentsObject = JSON.parse(documents as string);
 
-        // Process documents locally
-        const result = await processDocuments(
-          user.id,
-          documentsObject,
-          (status, progress) => {
-            // Format the status for display
-            let displayStatus = status;
-            let calculatedProgress = progress;
+        // Always use the Flask server directly
+        const apiUrl = 'http://localhost:8000/api/validate-documents';
         
-            console.log("Current status:", status);
-        
-            // Handle RAG page generation progress
-            if (status && status.match(/generating_rag_page_\d+_of_\d+/)) {
-              const matches = status.match(/generating_rag_page_(\d+)_of_(\d+)/);
-              if (matches && matches.length === 3) {
-                const currentPage = parseInt(matches[1], 10);
-                const totalPages = parseInt(matches[2], 10);
-                
-                displayStatus = `Building O-1 Analysis (Step ${currentPage}/${totalPages})`;
-                // Calculate progress as currentPage out of totalPages
-                calculatedProgress = Math.floor((currentPage / totalPages) * 100);
-              }
-            }
-            // Handle PDF filling progress
-            else if (status && status.match(/filling_pdf_page_\d+_of_\d+/)) {
-              const matches = status.match(/filling_pdf_page_(\d+)_of_(\d+)/);
-              if (matches && matches.length === 3) {
-                const currentPage = parseInt(matches[1], 10);
-                const totalPages = parseInt(matches[2], 10);
-                
-                displayStatus = `Preparing O-1 Petition (Page ${currentPage}/${totalPages})`;
-                // Calculate progress as currentPage out of totalPages
-                calculatedProgress = Math.floor((currentPage / totalPages) * 100);
-              }
-            }
-            // Handle completed PDF fill
-            else if (status && status.match(/completed_pdf_fill_\d+_pages/)) {
-              const matches = status.match(/completed_pdf_fill_(\d+)_pages/);
-              if (matches && matches.length === 2) {
-                displayStatus = `Finalizing your O-1 qualification analysis...`;
-                calculatedProgress = 95; // Almost done
-              }
-            }
-            // Handle RAG generation initial stage
-            else if (status === 'generating_rag_responses') {
-              displayStatus = 'Evaluating your qualifications for O-1 visa...';
-              calculatedProgress = 10; // Starting the process
-            }
-            // Handle PDF preparation
-            else if (status === 'preparing_pdf_fill') {
-              displayStatus = 'Preparing O-1 petition documentation...';
-              calculatedProgress = 30; // Preparing PDF
-            }
-            // Parse detailed page progress if available
-            else if (status && status.match(/processing_\w+_page_\d+_of_\d+/)) {
-              const matches = status.match(/processing_(\w+)_page_(\d+)_of_(\d+)/);
-              if (matches && matches.length === 4) {
-                const docType = matches[1];
-                const currentPage = parseInt(matches[2], 10);
-                const totalPages = parseInt(matches[3], 10);
-                
-                displayStatus = `Analyzing ${docType.charAt(0).toUpperCase() + docType.slice(1)} for O-1 Criteria (${currentPage}/${totalPages})`;
-                // Calculate progress as currentPage out of totalPages
-                calculatedProgress = Math.floor((currentPage / totalPages) * 100);
-              }
-            } 
-            // Handle analysis phase after page processing
-            else if (status && status.match(/processing_\w+_analysis/)) {
-              const matches = status.match(/processing_(\w+)_analysis/);
-              if (matches && matches.length === 2) {
-                const docType = matches[1];
-                displayStatus = `Evaluating ${docType.charAt(0).toUpperCase() + docType.slice(1)} Against O-1 Standards...`;
-                calculatedProgress = 50; // Analysis phase
-              }
-            } 
-            // Standard document processing
-            else if (status && status.startsWith('processing_')) {
-              const docType = status.replace('processing_', '');
-              displayStatus = `Analyzing ${docType.charAt(0).toUpperCase() + docType.slice(1)} for Extraordinary Ability Evidence...`;
-              calculatedProgress = 25; // Initial processing
-            } 
-            else if (status === 'completed') {
-              displayStatus = 'Completing your O-1 qualification assessment...';
-              calculatedProgress = 100;
-            } 
-            else if (status === 'pending') {
-              displayStatus = 'Preparing to assess your O-1 visa eligibility...';
-              calculatedProgress = 5;
-            }
-        
-            console.log("Calculated progress:", calculatedProgress);
-        
-            // Update progress and status
-            updateProgress(displayStatus, calculatedProgress);
-          }
-        );
+        console.log("Making API request to Flask server:", apiUrl);
+        console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');
+
+        // Make the API call to the Flask backend
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            uploaded_documents: documentsObject
+          }),
+        });
+
+        console.log("Response status:", response.status);
+        console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || result.detail || 'Failed to validate documents');
+        }
 
         if (result.can_proceed) {
-          // Store the summaries and field stats
+          // Store the new summaries
           localStorage.setItem('documentSummaries', JSON.stringify(result.document_summaries));
-          localStorage.setItem('fieldStats', JSON.stringify(result.field_stats));
           
-          // Call fill-o1-form API
-          try {
-            updateProgress('Preparing O-1 form...', 80);
-            
-            // Ensure documentSummaries is properly formatted
-            const formattedSummaries = {
-              resume: result.document_summaries.resume || {},
-              recommendation_letters: result.document_summaries.recommendation_letters || {},
-              publications: result.document_summaries.publications || {},
-              awards: result.document_summaries.awards || {},
-              personal_info: result.document_summaries.personal_info || {}
-            };
-
-            const response = await fetch(`${window.location.origin}/api/fill-o1-form`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                userId: user.id,
-                documentSummaries: formattedSummaries
-              }),
-            });
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
-              throw new Error(`Failed to fill O-1 form: ${errorData.message || response.statusText}`);
+          router.push({
+            pathname: '/document-review',
+            query: { 
+              userId: user.id,
+              processed: 'true',
+              apiResponse: JSON.stringify(result)
             }
-
-            const fillResult = await response.json();
-
-            if (fillResult.filledPdfUrl) {
-              localStorage.setItem('filledPdfUrl', fillResult.filledPdfUrl);
-            }
-            if (fillResult.fieldStats) {
-              localStorage.setItem('fieldStats', JSON.stringify(fillResult.fieldStats));
-            }
-            
-            updateProgress('Completed', 100);
-            
-            // Redirect to document review page
-            router.push({
-              pathname: '/document-review',
-              query: { 
-                userId: user.id,
-                processed: 'true'
-              }
-            });
-          } catch (error) {
-            console.error('Error filling O-1 form:', error);
-            // Even if filling fails, we can still proceed to document review
-            router.push({
-              pathname: '/document-review',
-              query: { 
-                userId: user.id,
-                processed: 'true'
-              }
-            });
-          }
+          });
         } else {
-          throw new Error('Please ensure you have uploaded all required documents.');
+          throw new Error(result.message || 'Please ensure you have uploaded all required documents.');
         }
       } catch (error) {
         console.error('Error:', error);
@@ -227,7 +239,7 @@ export default function ProcessingDocuments() {
     };
 
     if (documents) {
-      processDocumentsLocally();
+      processDocuments();
     }
   }, [documents, router]);
 

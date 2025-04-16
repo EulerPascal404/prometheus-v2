@@ -1,0 +1,16 @@
+{
+"(PDF417BarCode1/1330/135)": "N/A_per",
+"(Line4/137AdditionalInfo/1330/135)": "Ryan Barretto has had diverse experiences in the field of AI and Machine Learning as an intern at Bizzflo Business Management Software and The Learning Agency Lab where he utilized state of the art techniques. He's achieved commendable success as a Private Contributor to Kaggle with numerous awards and medals to his name.",
+"(Line3/137AdditionalInfo/1330/135)": "Additionally, his independent projects, particularly 'AI Based Market Forecaster and Trader' and 'AutoKeystroke Library', demonstrate an innovative application of AI in the market space and data modeling. He has considerable talent as evidenced by his broad range of awards in his field.",
+"(Line10/137AlienNumber/1330/135)": "N/A_per",
+"(Line2a/137PageNumber/1330/135)": "1",
+"(Line2b/137PartNumber/1330/135)": "9",
+"(Line2c/137ItemNumber/1330/135)": "1",
+"(Line4c/137ItemNumber/1330/135)": "N/A_per",
+"(Line4b/137PartNumber/1330/135)": "N/A_per",
+"(Line4a/137PageNumber/1330/135)": "N/A_per",
+"(Line4a/137PageNumber/1331/135)": "N/A_per",
+"(Line4b/137PartNumber/1331/135)": "N/A_per",
+"(Line4c/137ItemNumber/1331/135)": "N/A_per",
+"(Line2/137AdditionalInfo/1330/135)": "Ryan Barretto has been a dedicated high school student with an unweighted GPA of 4.0 and weighted GPA of 5.37, taking 14 AP Classes. He has also demonstrated leadership skills as a co-founder of his high school's machine learning and artificial intelligence club, chess club executive board member, and led AI workshops for district hackathons."
+}

@@ -1,0 +1,13 @@
+{"(PDF417BarCode1/1330/135)": "N/A_per",
+ "(Part5Line12/137TypeofBusiness/1330/135)": "Self-employed",
+ "(P5Line13/137YearEstablished/1330/135)": "2025",
+ "(P5Line14/137NumberofEmployees/1330/135)": "1",
+ "(Line15/137GrossAnnualIncome/1330/135)": "N/A_ss",
+ "(Line16/137NetAnnualIncome/1330/135)": "N/A_ss",
+ "(P5Line15/137Yes/1330/135)": "/Y",
+ "(P5Line15/137No/1330/135)": "/Off",
+ "(NoDeemed/1330/135)": "/Off",
+ "(Deemed/1330/135)": "/1",
+ "(Line1a/137PetitionerLastName/1330/135)": "Barretto",
+ "(Line1a/137PetitionerLastName/1331/135)": "Barretto",
+ "(Line1b/137PetitionerFirstName/1330/135)": "Ryan"}
