@@ -1,0 +1,120 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line3/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line4/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line5/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line6/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line7/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line8/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line9/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line9/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line8/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line7/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line6/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line5/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line4/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line3/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (Cap/1330/135)
+Available Options: ['/A', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Cap/1331/135)
+Available Options: ['/B', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Cap/1332/135)
+Available Options: ['/C', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Cap/1333/135)
+Available Options: ['/D', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1bSec3Line2c/137TypeofDegree/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (H1bSec3Line2b/137DateDegreeAwarded/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (H1bSec3Line2a/137Name/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7LineB/137BEmp1City/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7LineB/137BEmp1State/1330/135)
+Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
+--------------------------------------------------
+Page: 1
+Original Key: (Part7LineB/137BEmp1ZipCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (H1bSec3Line2d/137StreetName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Sec3/137AptSteFlrNumber/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Lineb/137Unit/1330/135)
+Available Options: ['/ FLR ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Lineb/137Unit/1331/135)
+Available Options: ['/ STE ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Lineb/137Unit/1332/135)
+Available Options: ['/ APT ', '/Off']
+--------------------------------------------------

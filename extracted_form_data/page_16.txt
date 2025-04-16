@@ -1,0 +1,96 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine11/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine11/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine8c/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine8c/1331/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine8a1/137Types/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Sec2Line7c/137CityTown/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Sec2Line7c/137ZipCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Sec2Line7c/137State/1330/135)
+Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
+--------------------------------------------------
+Page: 1
+Original Key: (Sec2Line7c/137StreetNumberName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Sec2Line7c/137Unit/1330/135)
+Available Options: ['/ STE ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Sec2Line7c/137Unit/1331/135)
+Available Options: ['/ APT ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Sec2Line7c/137Unit/1332/135)
+Available Options: ['/ FLR ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Sec2Line7c/137AptSteFlrNumber/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine8a/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine8a/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine12/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine12/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine13/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine13/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line7/137RecruitOrganization/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line7/137MiddleName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line7/137GivenName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line7/137FamilyName/1330/135)
+Available Options: Text input
+--------------------------------------------------

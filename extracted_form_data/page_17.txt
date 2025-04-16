@@ -1,0 +1,60 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine14/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine14/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine15/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine15/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine16/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine16/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine17/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine17/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine18/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine18/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine19/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine19/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine20/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine20/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------

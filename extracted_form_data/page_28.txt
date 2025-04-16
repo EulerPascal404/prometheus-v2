@@ -1,0 +1,76 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line1/137FamilyName/1335/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (b/137O1B/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (a/137O1A/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (d/137P1/137majorleague/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (e/137P1/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (c/137O2/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (f/137P1S/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (g/137P2/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (h/137P2S/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (i/137P3/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (j/137P3S/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (HSupLine2/137FamilyName/1331/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line2/137TtlNumberofBeneficiaries/1331/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line3/137JobDescription/1336/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line3/137JobDescription/1337/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line3/137JobDescription/1338/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (OandPSuppLine7/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (OandPSuppLine7/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
