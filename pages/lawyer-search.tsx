@@ -23,11 +23,12 @@ interface GeocodingResult {
   lng: number;
 }
 
+// Properly declare the Google Maps types
 declare global {
   interface Window {
     googleMapsLoaded: boolean;
     initializeGoogleMaps: () => void;
-    google: any;
+    google: typeof google;
   }
 }
 
