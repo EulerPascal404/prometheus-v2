@@ -6,7 +6,7 @@ import OpenAI from 'openai';
 import { SharedStyles, BackgroundEffects } from '../components/SharedStyles';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
 });
 
 // Only import PDF.js on the client side
