@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../config/supabase';
 import Head from 'next/head';
+import OpenAI from 'openai';
 import { SharedStyles, BackgroundEffects } from '../components/SharedStyles';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Only import PDF.js on the client side
 let pdfjsLib: any = null;
