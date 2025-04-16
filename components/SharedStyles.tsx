@@ -9,7 +9,7 @@ export const SharedStyles = `
     font-weight: 400;
     letter-spacing: -0.015em;
     line-height: 1.6;
-    padding-top: 4rem; /* Reduced padding for more compact layout */
+    padding-top: 4rem;
   }
 
   h1, h2, h3, h4, h5, h6 {

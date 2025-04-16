@@ -75,14 +75,13 @@ module.exports = {
             '50%': { transform: 'scale(1.1)', opacity: '0.8' },
           },
           shimmer: {
-            '0%': { backgroundPosition: '0% 50%' },
-            '50%': { backgroundPosition: '100% 50%' },
-            '100%': { backgroundPosition: '0% 50%' },
+            '0%': { backgroundPosition: '-200% 0' },
+            '100%': { backgroundPosition: '200% 0' },
           }
         },
         boxShadow: {
-          'glow': '0 0 20px rgba(56, 189, 248, 0.2)',
-          'glow-lg': '0 0 30px rgba(56, 189, 248, 0.3)',
+          'glow': '0 0 15px rgba(168, 85, 247, 0.15)',
+          'glow-lg': '0 0 30px rgba(168, 85, 247, 0.25)',
         },
         fontSize: {
           'tiny': '0.625rem',      // 10px
@@ -122,9 +121,8 @@ module.exports = {
         },
         fontFamily: {
           'sans': ['Inter', 'system-ui', 'sans-serif'],
-          'mono': ['IBM Plex Mono', 'Fira Code', 'monospace'],
+          'mono': ['IBM Plex Mono', 'monospace'],
           'display': ['Space Grotesk', 'system-ui', 'sans-serif'],
-          'tech': ['Chakra Petch', 'system-ui', 'sans-serif'],
         },
         spacing: {
           '0.5': '0.125rem',      // 2px
@@ -1093,42 +1091,7 @@ module.exports = {
         },
       },
     },
-    plugins: [
-      function({ addUtilities }) {
-        const newUtilities = {
-          '.text-balance': {
-            'text-wrap': 'balance',
-          },
-          '.text-pretty': {
-            'text-wrap': 'pretty',
-          },
-          '.overflow-ellipsis': {
-            'text-overflow': 'ellipsis',
-            'white-space': 'nowrap',
-            'overflow': 'hidden',
-          },
-          '.line-clamp-2': {
-            'display': '-webkit-box',
-            '-webkit-line-clamp': '2',
-            '-webkit-box-orient': 'vertical',
-            'overflow': 'hidden',
-          },
-          '.line-clamp-3': {
-            'display': '-webkit-box',
-            '-webkit-line-clamp': '3',
-            '-webkit-box-orient': 'vertical',
-            'overflow': 'hidden',
-          },
-          '.line-clamp-4': {
-            'display': '-webkit-box',
-            '-webkit-line-clamp': '4',
-            '-webkit-box-orient': 'vertical',
-            'overflow': 'hidden',
-          },
-        };
-        addUtilities(newUtilities);
-      },
-    ],
+    plugins: [],
     safelist: [
       'from-primary-400',
       'to-primary-600',
