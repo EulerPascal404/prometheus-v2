@@ -170,7 +170,7 @@ export default function ProcessingDocuments() {
               personal_info: result.document_summaries.personal_info || {}
             };
 
-            const response = await fetch('/api/fill-o1-form', {
+            const response = await fetch(`${window.location.origin}/api/fill-o1-form`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -181,13 +181,13 @@ export default function ProcessingDocuments() {
               }),
             });
 
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+              throw new Error(`Failed to fill O-1 form: ${errorData.message || response.statusText}`);
+            }
+
             const fillResult = await response.json();
 
-            if (!response.ok) {
-              throw new Error(fillResult.message || 'Failed to fill O-1 form');
-            }
-            
-            // Store the filled PDF URL and updated field stats
             if (fillResult.filledPdfUrl) {
               localStorage.setItem('filledPdfUrl', fillResult.filledPdfUrl);
             }
