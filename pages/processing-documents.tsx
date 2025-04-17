@@ -32,7 +32,7 @@ export default function ProcessingDocuments() {
   }, []);
 
   // Function to check processing status
-  const checkStatus = async () => {
+  const checkStatus = async () =>{
     try {
       if (!userId.current) return;
       
