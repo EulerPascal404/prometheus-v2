@@ -481,10 +481,8 @@ export default function DocumentReview() {
         throw new Error('No authenticated user found');
       }
       
-      // Use environment variable for API URL
-      const apiUrl = process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:8000/api/match-lawyer'
-        : '/api/match-lawyer';
+      // Use the API endpoint from index.py
+      const apiUrl = '/api/match-lawyer';
       
       console.log("Making API request to server:", apiUrl);
       console.log("Environment:", process.env.NODE_ENV);

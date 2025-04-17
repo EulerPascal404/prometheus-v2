@@ -188,10 +188,8 @@ export default function ProcessingDocuments() {
         userId.current = user.id;
         const documentsObject = JSON.parse(documents as string);
 
-        // Use environment variable for API URL
-        const apiUrl = process.env.NODE_ENV === 'development' 
-          ? 'http://localhost:8000/api/validate-documents'
-          : '/api/validate-documents';
+        // Use the API endpoint from index.py
+        const apiUrl = '/api/validate-documents';
         
         console.log("Making API request to server:", apiUrl);
         console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');
@@ -199,7 +197,7 @@ export default function ProcessingDocuments() {
         console.log("API URL from env:", process.env.NEXT_PUBLIC_API_URL);
 
         try {
-          // Make the API call to the Flask backend
+          // Make the API call to the backend
           const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {

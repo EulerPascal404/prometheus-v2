@@ -4,6 +4,7 @@ const nextConfig = {
     swcMinify: true,
     images: {
         domains: [
+            'localhost',
             'prometheus-ai-backend.herokuapp.com',
             'prometheus-ai-backend-app-589cbe98fdc3.herokuapp.com'
         ],
@@ -17,15 +18,11 @@ const nextConfig = {
         return [
             {
                 source: '/api/validate-documents',
-                destination: process.env.NODE_ENV === 'development' 
-                    ? 'http://localhost:8000/api/validate-documents' 
-                    : `${process.env.NEXT_PUBLIC_API_URL || 'https://prometheus-ai-backend.herokuapp.com'}/api/validate-documents`,
+                destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://prometheus-ai-backend.herokuapp.com'}/api/validate-documents`,
             },
             {
                 source: '/api/match-lawyer',
-                destination: process.env.NODE_ENV === 'development' 
-                    ? 'http://localhost:8000/api/match-lawyer' 
-                    : `${process.env.NEXT_PUBLIC_API_URL || 'https://prometheus-ai-backend.herokuapp.com'}/api/match-lawyer`,
+                destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://prometheus-ai-backend.herokuapp.com'}/api/match-lawyer`,
             },
             {
                 source: '/api/:path*',
@@ -47,26 +44,7 @@ const nextConfig = {
         if (!dev && !isServer) {
             config.optimization = {
                 ...config.optimization,
-                splitChunks: {
-                    chunks: 'all',
-                    minSize: 20000,
-                    maxSize: 244000,
-                    minChunks: 1,
-                    maxAsyncRequests: 30,
-                    maxInitialRequests: 30,
-                    cacheGroups: {
-                        defaultVendors: {
-                            test: /[\\/]node_modules[\\/]/,
-                            priority: -10,
-                            reuseExistingChunk: true,
-                        },
-                        default: {
-                            minChunks: 2,
-                            priority: -20,
-                            reuseExistingChunk: true,
-                        },
-                    },
-                },
+                minimize: true,
             };
         }
         return config;
