@@ -486,6 +486,10 @@ export default function DocumentReview() {
         ? 'http://localhost:8000/api/match-lawyer'
         : '/api/match-lawyer';
       
+      console.log("Making API request to server:", apiUrl);
+      console.log("Environment:", process.env.NODE_ENV);
+      console.log("API URL from env:", process.env.NEXT_PUBLIC_API_URL);
+      
       // Get uploaded documents from Supabase
       const { data: userDocs, error: userDocsError } = await supabase
         .from('user_documents')
@@ -528,15 +532,20 @@ export default function DocumentReview() {
         }),
       });
       
+      console.log("Response status:", response.status);
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.detail || 'Failed to match lawyer');
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
       }
       
       const matchedLawyerData = await response.json();
+      console.log("API response:", matchedLawyerData);
+      
       setMatchedLawyer(matchedLawyerData);
       setShowLawyerForm(false);
-      
     } catch (error) {
       console.error('Error matching lawyer:', error);
       alert('Error finding a matching lawyer. Please try again.');
