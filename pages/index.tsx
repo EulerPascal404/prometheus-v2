@@ -82,7 +82,7 @@ const HomePage: FC = () => {
                   Start Your O-1 Application
                 </Link>
                 <Link href="/lawyer-search" className="gradient-button text-lg px-6 py-3 bg-opacity-20">
-                  Connect with Visa Experts
+                  Meet with Visa Experts
                 </Link>
               </div>
             </div>

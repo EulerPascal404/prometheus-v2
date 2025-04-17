@@ -23,11 +23,11 @@ interface GeocodingResult {
   lng: number;
 }
 
+// Properly declare the Google Maps types
 declare global {
   interface Window {
     googleMapsLoaded: boolean;
     initializeGoogleMaps: () => void;
-    google: any;
   }
 }
 
@@ -109,7 +109,9 @@ export default function LawyerSearch() {
     
     return () => {
       // Clean up the global function when component unmounts
-      delete window.initializeGoogleMaps;
+      if (window.initializeGoogleMaps) {
+        window.initializeGoogleMaps = undefined as any;
+      }
     };
   }, [handleGoogleMapsLoaded]);
 
@@ -154,7 +156,8 @@ export default function LawyerSearch() {
         return;
       }
 
-      const distanceService = new window.google.maps.DistanceMatrixService();
+      // Use type assertion to avoid TypeScript errors
+      const distanceService = new (window.google.maps as any).DistanceMatrixService();
       
       // Wait a moment to ensure Google Maps is fully initialized
       setTimeout(() => {
@@ -162,10 +165,10 @@ export default function LawyerSearch() {
           {
             origins: [userAddress],
             destinations: [matchedLawyer.address],
-            travelMode: window.google.maps.TravelMode.DRIVING,
-            unitSystem: window.google.maps.UnitSystem.IMPERIAL,
+            travelMode: (window.google.maps as any).TravelMode.DRIVING,
+            unitSystem: (window.google.maps as any).UnitSystem.IMPERIAL,
           },
-          (response, status) => {
+          (response: any, status: string) => {
             console.log("Distance Matrix response:", status, response);
             if (status === 'OK' && response) {
               const elementStatus = response.rows[0].elements[0].status;

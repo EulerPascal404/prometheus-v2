@@ -1,0 +1,116 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Sect3/137PartC/137DateSigned1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137CityTown/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137ZipCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137State/1330/135)
+Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137InCareofName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137StreetNumberName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137Unit/1330/135)
+Available Options: ['/ STE ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137Unit/1331/135)
+Available Options: ['/ APT ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137Unit/1332/135)
+Available Options: ['/ FLR ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137AptSteFlrNumber/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137PostalCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137Province/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137Country/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137EmailAddress/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137DaytimePhoneNumber1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line24/137MobilePhoneNumber1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line25/137EIN/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line25/137SSN/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line25/137TaxNumber/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line26/137TypeofBusiness/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line26/137YearEstablished/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line26/137NumberofEmployees/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line26/137GrossAnnualIncome/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line26/137NetAnnualIncome/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line27/137Title/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line27/137GivenName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line27/137FamilyName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Sect3/137PartC/137Signature1/1330/135)
+Available Options: Text input
+--------------------------------------------------

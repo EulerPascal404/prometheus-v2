@@ -12,8 +12,8 @@ export default function ProcessingDocuments() {
   const [currentStage, setCurrentStage] = useState("Initializing...");
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const hasCalledApi = useRef(false);
-  const pollInterval = useRef(null);
-  const userId = useRef(null);
+  const pollInterval = useRef<NodeJS.Timeout | null>(null);
+  const userId = useRef<string | null>(null);
 
   const processingMessages = [
     "Evaluating your extraordinary ability evidence against USCIS O-1 visa criteria...",
@@ -188,42 +188,59 @@ export default function ProcessingDocuments() {
         userId.current = user.id;
         const documentsObject = JSON.parse(documents as string);
 
-        // Make the API call
-        const apiUrl = process.env.NODE_ENV === 'production'
-          ? 'https://prometheus-ai-backend-app-589cbe98fdc3.herokuapp.com/api/validate-documents'
-          : 'http://localhost:8000/api/validate-documents';
-          
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-            uploaded_documents: documentsObject
-          }),
-        });
+        // Use local API route to avoid CORS issues
+        const apiUrl = '/api/validate-documents';
+        
+        console.log("Making API request to server:", apiUrl);
+        console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');
+        console.log("Environment:", process.env.NODE_ENV);
+        console.log("API URL from env:", process.env.NEXT_PUBLIC_API_URL);
 
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || result.detail || 'Failed to validate documents');
-        }
-
-        if (result.can_proceed) {
-          // Store the new summaries
-          localStorage.setItem('documentSummaries', JSON.stringify(result.document_summaries));
-          
-          router.push({
-            pathname: '/document-review',
-            query: { 
-              userId: user.id,
-              processed: 'true'
-            }
+        try {
+          // Make the API call to the backend
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+            },
+            body: JSON.stringify({
+              user_id: user.id,
+              uploaded_documents: documentsObject
+            }),
           });
-        } else {
-          throw new Error(result.message || 'Please ensure you have uploaded all required documents.');
+
+          console.log("Response status:", response.status);
+          console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Error response:", errorText);
+            throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+          }
+
+          const result = await response.json();
+          console.log("API response:", result);
+
+          if (result.can_proceed) {
+            // Store the new summaries
+            localStorage.setItem('documentSummaries', JSON.stringify(result.document_summaries));
+            
+            router.push({
+              pathname: '/document-review',
+              query: { 
+                userId: user.id,
+                processed: 'true',
+                apiResponse: JSON.stringify(result)
+              }
+            });
+          } else {
+            throw new Error(result.message || 'Please ensure you have uploaded all required documents.');
+          }
+        } catch (error) {
+          console.error('Error processing documents:', error);
+          alert(error instanceof Error ? error.message : 'An error occurred while processing your documents.');
+          router.push('/document-collection');
         }
       } catch (error) {
         console.error('Error:', error);

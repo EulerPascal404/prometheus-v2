@@ -1,0 +1,60 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (PartC/1373aCheckbox/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (PartC/1373cCheckbox/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (PartC/1373bCheckbox/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (PartC/1373eCheckbox/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (PartC/1373fCheckbox/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (PartC/1373dCheckbox/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (PartC/1373gCheckbox/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (PartC/1373hCheckbox/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec4Line1a/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec4Line1a/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec4Line1b/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec4Line1c/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec4Line1c/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec4Line1b/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------

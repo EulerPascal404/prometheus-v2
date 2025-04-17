@@ -1,10 +1,8 @@
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 from typing import Dict, Optional
 import os
 from supabase import create_client, Client
-import uvicorn
 from dotenv import load_dotenv
 from pathlib import Path
 from openai import OpenAI
@@ -15,30 +13,29 @@ from o1_pdf_filler import run
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
-# Load .env.local from the parent directory (demo directory)
-env_path = Path(__file__).parent.parent / '.env.local'
+# Load environment variables from .env file
+env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
 
-app = FastAPI()
+app = Flask(__name__)
 
 # Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", 
-                  "https://prometheus-ai.vercel.app",
-                  "https://prometheus-v2.vercel.app",
-                  "https://prometheus-v2-*-eulerpascal404.vercel.app",
-                  "https://*.vercel.app",
-                  "https://getprometheus.ai",
-                  "https://www.getprometheus.ai",
-                  "https://demo-ayqbc45qa-aditya-guptas-projects-1c7bb58d.vercel.app",
-                  "https://demo-cylzh6hbe-aditya-guptas-projects-1c7bb58d.vercel.app",
-                  "https://demo-gknna7xjs-aditya-guptas-projects-1c7bb58d.vercel.app",
-                  "https://demo-38j8p53ms-aditya-guptas-projects-1c7bb58d.vercel.app"],  # Add your Vercel URLs
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "http://localhost:3000",
+            "https://localhost:3000",
+            "https://prometheus-ai.vercel.app",
+            "https://prometheus-v2.vercel.app",
+            "https://prometheus-v2-*-eulerpascal404.vercel.app",
+            "https://*.vercel.app",
+            os.getenv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000")
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 # Supabase setup with better error handling
 supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
@@ -56,13 +53,10 @@ def get_supabase() -> Client:
         return create_client(supabase_url, supabase_key)
     except Exception as e:
         print(f"Error creating Supabase client: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail="Could not connect to database"
-        )
+        return None
 
 # Setup OpenAI
-async def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supabase: Client) -> dict:
+def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supabase: Client) -> dict:
     try:
         # Save the PDF content to a temporary file
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
@@ -135,21 +129,31 @@ async def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, 
             "processed": False
         }
 
-class DocumentValidationRequest(BaseModel):
-    user_id: str
-    uploaded_documents: Dict[str, bool]
-
-@app.post("/api/validate-documents")
-async def validate_documents(
-    request: DocumentValidationRequest,
-    supabase: Client = Depends(get_supabase)
-):
+@app.route("/api/validate-documents", methods=["POST"])
+def validate_documents():
     print("Starting document validation")
     try:
-        print(f"Processing documents for user: {request.user_id}")
+        request_data = request.get_json()
+        user_id = request_data.get("user_id")
+        uploaded_documents = request_data.get("uploaded_documents", {})
+        
+        if not user_id or not uploaded_documents:
+            return jsonify({
+                "status": "error",
+                "message": "Missing required fields: user_id and uploaded_documents"
+            }), 400
+
+        print(f"Processing documents for user: {user_id}")
         
         # Get documents from Supabase
-        response = supabase.table("user_documents").select("*").eq("user_id", request.user_id).execute()
+        supabase = get_supabase()
+        if not supabase:
+            return jsonify({
+                "status": "error",
+                "message": "Could not connect to database"
+            }), 500
+
+        response = supabase.table("user_documents").select("*").eq("user_id", user_id).execute()
         
         # Get the actual PDF files from storage
         document_summaries = {}
@@ -157,24 +161,24 @@ async def validate_documents(
         # First update to "pending" status
         supabase.table("user_documents").update({
             "processing_status": "pending"
-        }).eq("user_id", request.user_id).execute()
+        }).eq("user_id", user_id).execute()
         
-        for doc_type in request.uploaded_documents:
-            if request.uploaded_documents[doc_type]:
+        for doc_type in uploaded_documents:
+            if uploaded_documents[doc_type]:
                 try:
                     # Update processing status to current document
                     supabase.table("user_documents").update({
                         "processing_status": f"processing_{doc_type}"
-                    }).eq("user_id", request.user_id).execute()
+                    }).eq("user_id", user_id).execute()
                     
                     # Get the file from storage
                     file_response = supabase.storage.from_('documents').download(
-                        f"{request.user_id}/{doc_type}.pdf"
+                        f"{user_id}/{doc_type}.pdf"
                     )
                     
                     if file_response:
                         # Process the PDF content with page-by-page updates
-                        summary = await process_pdf_content(file_response, doc_type, request.user_id, supabase)
+                        summary = process_pdf_content(file_response, doc_type, user_id, supabase)
                         document_summaries[doc_type] = summary
                 
                 except Exception as e:
@@ -193,10 +197,10 @@ async def validate_documents(
         if not response.data:
             # Create new record
             insert_data = {
-                "user_id": request.user_id,
+                "user_id": user_id,
                 "processing_status": "pending",
                 "completion_score": 0,
-                **request.uploaded_documents,
+                **uploaded_documents,
                 "document_summaries": document_summaries
             }
             
@@ -205,7 +209,7 @@ async def validate_documents(
         else:
             user_docs = response.data[0]
             # Update existing record
-            supabase.table("user_documents").update(update_data).eq("user_id", request.user_id).execute()
+            supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
 
         # Calculate completion score
         optional_docs = ["recommendations", "awards", "publications", "salary", "memberships"]
@@ -216,63 +220,72 @@ async def validate_documents(
         supabase.table("user_documents").update({
             "completion_score": completion_score,
             "last_validated": "now()"
-        }).eq("user_id", request.user_id).execute()
+        }).eq("user_id", user_id).execute()
         
-        return {
+        return jsonify({
             "status": "success",
             "completion_score": completion_score,
             "message": f"Documents validated successfully. Your profile is {completion_score}% complete.",
             "can_proceed": True,
             "document_summaries": document_summaries
-        }
+        })
         
     except Exception as e:
         print(f"Error processing documents: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing documents: {str(e)}"
-        )
+        return jsonify({
+            "status": "error",
+            "message": f"Error processing documents: {str(e)}"
+        }), 500
 
-@app.get("/api/document-status/{user_id}")
-async def get_document_status(
-    user_id: str,
-    supabase: Client = Depends(get_supabase)
-):
+@app.route("/api/document-status/<user_id>", methods=["GET"])
+def get_document_status(user_id):
     try:
+        supabase = get_supabase()
+        if not supabase:
+            return jsonify({
+                "status": "error",
+                "message": "Could not connect to database"
+            }), 500
+
         response = supabase.table("user_documents").select("*").eq("user_id", user_id).single().execute()
         
         if not response.data:
-            return {
+            return jsonify({
                 "status": "not_found",
                 "completion_score": 0,
                 "can_proceed": False
-            }
+            })
             
-        return {
+        return jsonify({
             "status": response.data.get("processing_status", "pending"),
             "completion_score": response.data.get("completion_score", 0),
             "can_proceed": bool(response.data.get("resume"))
-        }
+        })
         
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error checking document status: {str(e)}"
-        )
+        return jsonify({
+            "status": "error",
+            "message": f"Error checking document status: {str(e)}"
+        }), 500
 
-@app.get("/api/validate-documents")
-async def get_validation_status(
-    user_id: str = None,
-    supabase: Client = Depends(get_supabase)
-):
+@app.route("/api/validate-documents", methods=["GET"])
+def get_validation_status():
+    user_id = request.args.get("user_id")
     if not user_id:
-        return {
+        return jsonify({
             "status": "error",
             "message": "user_id is required as a query parameter",
             "example": "/api/validate-documents?user_id=your-user-id-here"
-        }
+        }), 400
     
     try:
+        supabase = get_supabase()
+        if not supabase:
+            return jsonify({
+                "status": "error",
+                "message": "Could not connect to database"
+            }), 500
+
         # Try to get existing document
         response = supabase.table("user_documents").select("*").eq("user_id", user_id).execute()
         
@@ -291,28 +304,28 @@ async def get_validation_status(
                 "memberships": False
             }).execute()
             
-            return {
+            return jsonify({
                 "status": "initialized",
                 "completion_score": 0,
                 "can_proceed": False,
                 "message": "Document record created"
-            }
+            })
             
         user_docs = response.data[0]  # Get first record since we might have multiple now
-        return {
+        return jsonify({
             "status": "success",
             "completion_score": user_docs.get("completion_score", 0),
             "can_proceed": bool(user_docs.get("resume")),
             "documents": user_docs
-        }
+        })
         
     except Exception as e:
         print(f"Error processing documents: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error checking validation status: {str(e)}"
-        )
-    
+        return jsonify({
+            "status": "error",
+            "message": f"Error checking validation status: {str(e)}"
+        }), 500
+
 # Add the lawyer database
 LAWYER_DB = [
     {
@@ -443,36 +456,36 @@ for lawyer in LAWYER_DB:
     lawyer_embeddings.append(embedding)
 lawyer_embeddings = np.array(lawyer_embeddings)
 
-# Add this new model class near the top with the other models
-class AdditionalInfo(BaseModel):
-    address: str
-    additional_comments: str
-
-class LawyerMatchRequest(BaseModel):
-    user_id: str
-    uploaded_documents: Dict[str, bool]
-    document_summaries: Dict[str, Dict[str, str]]
-    additional_info: AdditionalInfo
-
-# Update the lawyer matching endpoint
-@app.post("/api/match-lawyer")
-async def match_lawyer(request: LawyerMatchRequest):
+@app.route("/api/match-lawyer", methods=["POST"])
+def match_lawyer():
     try:
+        request_data = request.get_json()
+        user_id = request_data.get("user_id")
+        uploaded_documents = request_data.get("uploaded_documents", {})
+        document_summaries = request_data.get("document_summaries", {})
+        additional_info = request_data.get("additional_info", {})
+
+        if not all([user_id, uploaded_documents, document_summaries, additional_info]):
+            return jsonify({
+                "status": "error",
+                "message": "Missing required fields"
+            }), 400
+
         # Get all summaries from the document summaries
         all_summaries = []
-        for doc_type, doc_info in request.document_summaries.items():
+        for doc_type, doc_info in document_summaries.items():
             if isinstance(doc_info, dict) and 'summary' in doc_info:
                 all_summaries.append(doc_info['summary'])
         
         # Add additional information to the text being analyzed
-        additional_text = f"\nClient Address: {request.additional_info.address}\nAdditional Comments: {request.additional_info.additional_comments}"
+        additional_text = f"\nClient Address: {additional_info.get('address', '')}\nAdditional Comments: {additional_info.get('additional_comments', '')}"
         all_summaries.append(additional_text)
         
         if not all_summaries:
-            raise HTTPException(
-                status_code=400,
-                detail="No document summaries provided"
-            )
+            return jsonify({
+                "status": "error",
+                "message": "No document summaries provided"
+            }), 400
 
         # Create embedding for the combined summaries
         user_text = " ".join(all_summaries)
@@ -488,23 +501,27 @@ async def match_lawyer(request: LawyerMatchRequest):
         best_match = LAWYER_DB[best_match_idx]
         match_score = float(similarities[best_match_idx])
 
-        return {
+        return jsonify({
             "name": best_match["Name"],
             "firm": best_match["Firm"],
             "law_school": best_match["Law School"],
             "bar_admissions": best_match["Bar Admissions"],
             "description": best_match["Description"],
-            "address": best_match["Address"],  # Include the address in the response
+            "address": best_match["Address"],
             "match_score": match_score
-        }
+        })
 
     except Exception as e:
-        print(f"Error in lawyer matching: {str(e)}")  # Add debug logging
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error matching lawyer: {str(e)}"
-        )
+        print(f"Error in lawyer matching: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Error matching lawyer: {str(e)}"
+        }), 500
 
-# Add this at the end of the file
+# Run the Flask app if this file is executed directly (development mode)
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8000)
+    
+    print("Running Flask server in development mode on http://localhost:8000")
+    app.run(host="0.0.0.0", port=8000, debug=True)
+
+    
