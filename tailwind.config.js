@@ -75,56 +75,19 @@ module.exports = {
             '50%': { transform: 'scale(1.1)', opacity: '0.8' },
           },
           shimmer: {
-            '0%': { backgroundPosition: '0% 50%' },
-            '50%': { backgroundPosition: '100% 50%' },
-            '100%': { backgroundPosition: '0% 50%' },
+            '0%': { backgroundPosition: '-200% 0' },
+            '100%': { backgroundPosition: '200% 0' },
           }
         },
         boxShadow: {
-          'glow': '0 0 20px rgba(56, 189, 248, 0.2)',
-          'glow-lg': '0 0 30px rgba(56, 189, 248, 0.3)',
-        },
-        fontSize: {
-          'tiny': '0.625rem',      // 10px
-          'xs': '0.75rem',         // 12px
-          'sm': '0.875rem',        // 14px
-          'base': '1rem',          // 16px
-          'lg': '1.125rem',        // 18px
-          'xl': '1.25rem',         // 20px
-          '2xl': '1.5rem',         // 24px
-          '3xl': '1.875rem',       // 30px
-          '4xl': '2.25rem',        // 36px
-          '5xl': '3rem',           // 48px
-          '6xl': '3.75rem',        // 60px
-          'hero': '4.5rem',        // 72px
-          'icon-tiny': '0.5rem',   // 8px
-          'icon-sm': '1rem',       // 16px
-          'icon-base': '1.25rem',  // 20px
-          'icon-lg': '1.5rem',     // 24px
-        },
-        letterSpacing: {
-          'tighter': '-0.05em',
-          'tight': '-0.025em',
-          'normal': '0',
-          'wide': '0.025em',
-          'wider': '0.05em',
-          'widest': '0.1em',
-          'tech': '0.15em',
-        },
-        lineHeight: {
-          'tighter': '1.1',
-          'tight': '1.25',
-          'snug': '1.375',
-          'normal': '1.5',
-          'relaxed': '1.75',
-          'loose': '2',
-          'hero': '1.15',
+          'glow': '0 0 15px rgba(168, 85, 247, 0.15)',
+          'glow-lg': '0 0 30px rgba(168, 85, 247, 0.25)',
         },
         fontFamily: {
-          'sans': ['Inter', 'system-ui', 'sans-serif'],
-          'mono': ['IBM Plex Mono', 'Fira Code', 'monospace'],
-          'display': ['Space Grotesk', 'system-ui', 'sans-serif'],
-          'tech': ['Chakra Petch', 'system-ui', 'sans-serif'],
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          mono: ['IBM Plex Mono', 'monospace'],
+          display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+          tech: ['Chakra Petch', 'system-ui', 'sans-serif'],
         },
         spacing: {
           '0.5': '0.125rem',      // 2px
@@ -1093,42 +1056,7 @@ module.exports = {
         },
       },
     },
-    plugins: [
-      function({ addUtilities }) {
-        const newUtilities = {
-          '.text-balance': {
-            'text-wrap': 'balance',
-          },
-          '.text-pretty': {
-            'text-wrap': 'pretty',
-          },
-          '.overflow-ellipsis': {
-            'text-overflow': 'ellipsis',
-            'white-space': 'nowrap',
-            'overflow': 'hidden',
-          },
-          '.line-clamp-2': {
-            'display': '-webkit-box',
-            '-webkit-line-clamp': '2',
-            '-webkit-box-orient': 'vertical',
-            'overflow': 'hidden',
-          },
-          '.line-clamp-3': {
-            'display': '-webkit-box',
-            '-webkit-line-clamp': '3',
-            '-webkit-box-orient': 'vertical',
-            'overflow': 'hidden',
-          },
-          '.line-clamp-4': {
-            'display': '-webkit-box',
-            '-webkit-line-clamp': '4',
-            '-webkit-box-orient': 'vertical',
-            'overflow': 'hidden',
-          },
-        };
-        addUtilities(newUtilities);
-      },
-    ],
+    plugins: [],
     safelist: [
       'from-primary-400',
       'to-primary-600',
