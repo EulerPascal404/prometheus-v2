@@ -5,8 +5,6 @@ const nextConfig = {
     images: {
         domains: [
             'localhost',
-            'prometheus-ai-backend.herokuapp.com',
-            'prometheus-ai-backend-app-589cbe98fdc3.herokuapp.com',
             'getprometheus.ai'
         ],
     },
@@ -19,15 +17,15 @@ const nextConfig = {
         return [
             {
                 source: '/api/validate-documents',
-                destination: 'https://prometheus-ai-backend.herokuapp.com/api/validate-documents',
+                destination: 'https://getprometheus.ai/api/validate-documents',
             },
             {
                 source: '/api/match-lawyer',
-                destination: 'https://prometheus-ai-backend.herokuapp.com/api/match-lawyer',
+                destination: 'https://getprometheus.ai/api/match-lawyer',
             },
             {
                 source: '/api/:path*',
-                destination: 'https://prometheus-ai-backend.herokuapp.com/api/:path*',
+                destination: 'https://getprometheus.ai/api/:path*',
             },
         ];
     },
