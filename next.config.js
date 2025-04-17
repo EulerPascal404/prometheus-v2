@@ -14,20 +14,26 @@ const nextConfig = {
     },
     // Use async rewrites to handle API requests
     async rewrites() {
-        return [
-            {
-                source: '/api/validate-documents',
-                destination: 'https://getprometheus.ai/api/validate-documents',
-            },
-            {
-                source: '/api/match-lawyer',
-                destination: 'https://getprometheus.ai/api/match-lawyer',
-            },
-            {
-                source: '/api/:path*',
-                destination: 'https://getprometheus.ai/api/:path*',
-            },
-        ];
+        // Only apply rewrites in production
+        if (process.env.NODE_ENV === 'production') {
+            return [
+                {
+                    source: '/api/validate-documents',
+                    destination: 'https://getprometheus.ai/api/validate-documents',
+                },
+                {
+                    source: '/api/match-lawyer',
+                    destination: 'https://getprometheus.ai/api/match-lawyer',
+                },
+                // Add specific API routes here instead of a catch-all
+                {
+                    source: '/api/document-status/:userId',
+                    destination: 'https://getprometheus.ai/api/document-status/:userId',
+                }
+            ];
+        }
+        // In development, don't rewrite API routes
+        return [];
     },
     // Performance optimizations
     compiler: {
