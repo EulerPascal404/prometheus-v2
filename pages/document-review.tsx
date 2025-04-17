@@ -460,95 +460,81 @@ export default function DocumentReview() {
     }
   }, [selectedDoc, documents]);
 
-  const handleLawyerMatch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!address) {
-      alert('Please enter your address');
-      return;
-    }
-    
+  const handleLawyerMatch = async () => {
     try {
-      setIsMatchingLawyer(true);
-      
-      // Get document summaries from localStorage
-      const storedSummaries = localStorage.getItem('documentSummaries');
-      const documentSummaries: DocumentSummaries = storedSummaries ? JSON.parse(storedSummaries) : {};
-      
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('No authenticated user found');
       }
-      
-      // Use local API route to avoid CORS issues
+
+      // Get user documents from Supabase
+      const { data: userDocuments, error: fetchError } = await supabase
+        .from('user_documents')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Create uploaded_documents object
+      const uploaded_documents = userDocuments.reduce((acc, doc) => {
+        acc[doc.document_type] = {
+          file_name: doc.file_name,
+          file_path: doc.file_path,
+          file_type: doc.file_type,
+          file_size: doc.file_size,
+          upload_date: doc.upload_date,
+          document_type: doc.document_type,
+          summary: doc.summary || ''
+        };
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Use the API route that will be handled by the rewrite rule
       const apiUrl = '/api/match-lawyer';
       
       console.log("Making API request to server:", apiUrl);
+      console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');
       console.log("Environment:", process.env.NODE_ENV);
       console.log("API URL from env:", process.env.NEXT_PUBLIC_API_URL);
-      
-      // Get uploaded documents from Supabase
-      const { data: userDocs, error: userDocsError } = await supabase
-        .from('user_documents')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-        
-      if (userDocsError) {
-        throw new Error('Error fetching user documents: ' + userDocsError.message);
+
+      try {
+        // Make the API call to the backend
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            uploaded_documents
+          }),
+        });
+
+        console.log("Response status:", response.status);
+        console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Error response:", errorText);
+          throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log("API response:", result);
+
+        // Handle successful response
+        setMatchedLawyer(result);
+        setShowLawyerForm(true);
+      } catch (error) {
+        console.error('Error matching lawyer:', error);
+        alert(error instanceof Error ? error.message : 'An error occurred while matching you with a lawyer.');
       }
-      
-      // Create uploaded_documents object
-      const uploaded_documents = {
-        resume: userDocs?.resume || false,
-        publications: userDocs?.publications || false,
-        awards: userDocs?.awards || false,
-        recommendation: userDocs?.recommendation || false,
-        press: userDocs?.press || false,
-        salary: userDocs?.salary || false,
-        judging: userDocs?.judging || false,
-        membership: userDocs?.membership || false,
-        contributions: userDocs?.contributions || false
-      };
-      
-      // Make API call to Flask backend for lawyer matching
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          uploaded_documents: uploaded_documents,
-          document_summaries: documentSummaries,
-          additional_info: {
-            address: address,
-            additional_comments: additionalComments
-          }
-        }),
-      });
-      
-      console.log("Response status:", response.status);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
-        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
-      }
-      
-      const matchedLawyerData = await response.json();
-      console.log("API response:", matchedLawyerData);
-      
-      setMatchedLawyer(matchedLawyerData);
-      setShowLawyerForm(false);
     } catch (error) {
-      console.error('Error matching lawyer:', error);
-      alert('Error finding a matching lawyer. Please try again.');
-    } finally {
-      setIsMatchingLawyer(false);
+      console.error('Error:', error);
+      alert(error instanceof Error ? error.message : 'An error occurred while matching you with a lawyer.');
     }
   };
 
