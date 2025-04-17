@@ -481,8 +481,8 @@ export default function DocumentReview() {
         throw new Error('No authenticated user found');
       }
       
-      // Use direct API URL to avoid routing loops
-      const apiUrl = 'https://getprometheus.ai/backend/match-lawyer';
+      // Use local API route to avoid CORS issues
+      const apiUrl = '/api/match-lawyer';
       
       console.log("Making API request to server:", apiUrl);
       console.log("Environment:", process.env.NODE_ENV);
