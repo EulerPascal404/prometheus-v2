@@ -164,12 +164,42 @@ def validate_documents():
 
         # Check if documents are already being processed
         try:
-            response = supabase.table("user_documents").select("processing_status").eq("user_id", user_id).single().execute()
+            response = supabase.table("user_documents").select("processing_status, last_validated").eq("user_id", user_id).single().execute()
+            
+            # Check if documents are already being processed
             if response.data and response.data.get("processing_status") in ["pending", "processing_resume", "processing_publications", "processing_awards"]:
+                # Check if the processing has been running for too long (more than 10 minutes)
+                last_validated = response.data.get("last_validated")
+                if last_validated:
+                    try:
+                        from datetime import datetime, timedelta
+                        last_validated_time = datetime.fromisoformat(last_validated.replace('Z', '+00:00'))
+                        time_diff = datetime.now(last_validated_time.tzinfo) - last_validated_time
+                        
+                        # If processing has been running for more than 10 minutes, reset it
+                        if time_diff > timedelta(minutes=10):
+                            print(f"Processing timeout detected for user {user_id}, resetting status")
+                            supabase.table("user_documents").update({
+                                "processing_status": "pending",
+                                "last_validated": "now()"
+                            }).eq("user_id", user_id).execute()
+                        else:
+                            return jsonify({
+                                "status": "error",
+                                "message": "Documents are already being processed. Please wait."
+                            }), 409
+                    except Exception as time_error:
+                        print(f"Error checking processing time: {str(time_error)}")
+                        # Continue with processing if we can't check time
+            elif response.data and response.data.get("processing_status") == "completed":
+                # If processing is already completed, return the existing results
                 return jsonify({
-                    "status": "error",
-                    "message": "Documents are already being processed. Please wait."
-                }), 409
+                    "status": "success",
+                    "completion_score": response.data.get("completion_score", 0),
+                    "message": "Documents were already processed.",
+                    "can_proceed": True,
+                    "document_summaries": response.data.get("document_summaries", {})
+                })
         except Exception as e:
             print(f"Error checking processing status: {str(e)}")
             # Continue with processing if we can't check status
@@ -177,7 +207,8 @@ def validate_documents():
         # First update to "pending" status
         try:
             supabase.table("user_documents").update({
-                "processing_status": "pending"
+                "processing_status": "pending",
+                "last_validated": "now()"
             }).eq("user_id", user_id).execute()
         except Exception as e:
             print(f"Error updating status to pending: {str(e)}")

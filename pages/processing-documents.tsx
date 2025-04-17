@@ -298,7 +298,14 @@ export default function ProcessingDocuments() {
             // Store the new summaries
             localStorage.setItem('documentSummaries', JSON.stringify(result.document_summaries));
             
-            router.push({
+            // Clear any existing intervals before navigation
+            if (pollInterval.current) {
+              clearInterval(pollInterval.current);
+              pollInterval.current = null;
+            }
+            
+            // Use replace instead of push to prevent back button from returning to processing page
+            router.replace({
               pathname: '/document-review',
               query: { 
                 userId: user.id,
@@ -322,7 +329,15 @@ export default function ProcessingDocuments() {
         console.error('Error:', error);
         hasCalledApi.current = false; // Reset the flag on error
         alert(error instanceof Error ? error.message : 'An error occurred while processing your documents.');
-        router.push('/document-collection');
+        
+        // Clear any existing intervals before navigation
+        if (pollInterval.current) {
+          clearInterval(pollInterval.current);
+          pollInterval.current = null;
+        }
+        
+        // Use replace instead of push to prevent back button from returning to processing page
+        router.replace('/document-collection');
       }
     };
 
@@ -333,6 +348,7 @@ export default function ProcessingDocuments() {
     return () => {
       if (pollInterval.current) {
         clearInterval(pollInterval.current);
+        pollInterval.current = null;
       }
     };
   }, [documents]);

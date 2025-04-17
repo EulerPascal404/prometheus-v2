@@ -311,6 +311,11 @@ export default function DocumentCollection() {
 
   const handleContinueToDashboard = async () => {
     try {
+      // Prevent multiple submissions
+      if (isProcessing) {
+        return;
+      }
+      
       setError(null);
       setIsProcessing(true);
       
@@ -340,8 +345,8 @@ export default function DocumentCollection() {
 
       console.log('Submitting documents for processing:', documentsObject);
 
-      // Navigate to processing page
-      router.push({
+      // Use replace instead of push to prevent back button from returning to this page
+      router.replace({
         pathname: '/processing-documents',
         query: { documents: JSON.stringify(documentsObject) }
       });
