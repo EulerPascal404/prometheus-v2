@@ -149,16 +149,46 @@ export default function ProcessingDocuments() {
   useEffect(() => {
     // Initialize polling for status updates
     const startStatusPolling = async () => {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('No authenticated user found');
+          return;
+        }
+        
         userId.current = user.id;
         
         // Initial check
         await checkStatus();
         
-        // Start polling
-        pollInterval.current = setInterval(checkStatus, 2000); // Poll every 2 seconds
+        // Start polling with a maximum duration
+        const maxPollingDuration = 5 * 60 * 1000; // 5 minutes
+        const startTime = Date.now();
+        
+        pollInterval.current = setInterval(async () => {
+          // Check if we've exceeded the maximum polling duration
+          if (Date.now() - startTime > maxPollingDuration) {
+            if (pollInterval.current) {
+              clearInterval(pollInterval.current);
+              pollInterval.current = null;
+            }
+            console.error('Polling timeout reached');
+            return;
+          }
+          
+          try {
+            await checkStatus();
+          } catch (error) {
+            console.error('Error during status check:', error);
+            if (pollInterval.current) {
+              clearInterval(pollInterval.current);
+              pollInterval.current = null;
+            }
+          }
+        }, 2000);
+      } catch (error) {
+        console.error('Error starting status polling:', error);
       }
     };
     
@@ -167,6 +197,7 @@ export default function ProcessingDocuments() {
     return () => {
       if (pollInterval.current) {
         clearInterval(pollInterval.current);
+        pollInterval.current = null;
       }
     };
   }, []);
