@@ -5,5 +5,18 @@
   "framework": "nextjs",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" }
-  ]
+  ],
+  "regions": ["iad1"],
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "crons": [],
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  }
 } 
