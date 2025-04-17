@@ -100,14 +100,16 @@ export function parseSummary(analysis: string): ParsedSummary {
     return {
       strengths: sections.strengths,
       weaknesses: sections.weaknesses,
-      recommendations: sections.recommendations
+      recommendations: sections.recommendations,
+      hasAttemptedReparse: false
     };
   } catch (error) {
     console.error('Error parsing summary:', error);
     return {
       strengths: [],
       weaknesses: [],
-      recommendations: []
+      recommendations: [],
+      hasAttemptedReparse: false
     };
   }
 }
@@ -124,37 +126,41 @@ interface ParsedSummary {
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
+  hasAttemptedReparse: boolean;
 }
 
 // Helper function to safely extract document summary from API response
-function getDocumentSummaryFromApi(apiResponseData: any, docType: string): ParsedSummary | null {
-  if (!apiResponseData?.document_summaries?.[docType]) {
-    console.log(`No API summary found for document type: ${docType}`);
+function getDocumentSummaryFromApi(data: any, documentType: string): ParsedSummary | null {
+  console.log('Getting document summary from API for type:', documentType);
+  console.log('API data:', data);
+
+  if (!data?.document_summaries?.[documentType]) {
+    console.log('No summary found for document type:', documentType);
     return null;
   }
-  
-  const docSummary = apiResponseData.document_summaries[docType];
-  console.log(`API summary for ${docType}:`, docSummary);
-  
-  // Ensure the arrays exist and are actually arrays
-  const strengths = Array.isArray(docSummary.strengths) ? docSummary.strengths : [];
-  const weaknesses = Array.isArray(docSummary.weaknesses) ? docSummary.weaknesses : [];
-  const recommendations = Array.isArray(docSummary.recommendations) ? docSummary.recommendations : [];
-  
-  // If all arrays are empty, return null to fall back to parseSummary
+
+  const summary = data.document_summaries[documentType];
+  console.log('Found summary:', summary);
+
+  // Ensure strengths, weaknesses, and recommendations are arrays
+  const strengths = Array.isArray(summary.strengths) ? summary.strengths : [];
+  const weaknesses = Array.isArray(summary.weaknesses) ? summary.weaknesses : [];
+  const recommendations = Array.isArray(summary.recommendations) ? summary.recommendations : [];
+
+  // If all arrays are empty, return null to fall back to other summary parsing
   if (strengths.length === 0 && weaknesses.length === 0 && recommendations.length === 0) {
-    console.log(`All arrays are empty for ${docType}, falling back to parseSummary`);
+    console.log('All arrays are empty, falling back to other summary parsing');
     return null;
   }
-  
-  const result = {
+
+  console.log('Extracted summary:', { strengths, weaknesses, recommendations });
+
+  return {
     strengths,
     weaknesses,
-    recommendations
+    recommendations,
+    hasAttemptedReparse: false
   };
-  
-  console.log(`Extracted summary for ${docType}:`, result);
-  return result;
 }
 
 function SummarySection({ title, items, colorClass }: { 
@@ -491,7 +497,7 @@ export default function DocumentReview() {
   const { userId, processed, apiResponse } = router.query;
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
-  const [parsedSummary, setParsedSummary] = useState<ParsedSummary>({ strengths: [], weaknesses: [], recommendations: [] });
+  const [parsedSummary, setParsedSummary] = useState<ParsedSummary>({ strengths: [], weaknesses: [], recommendations: [], hasAttemptedReparse: false });
   const [isLoading, setIsLoading] = useState(true);
   const [fieldStats, setFieldStats] = useState<FieldStats | null>(null);
   const [showLawyerForm, setShowLawyerForm] = useState(false);
@@ -727,13 +733,18 @@ export default function DocumentReview() {
     console.log("parsedSummary has items:", hasItems);
     
     // If no items and we have a selected document, try to parse the summary again
-    if (!hasItems && selectedDoc) {
+    // But only if we haven't already tried to parse it (to prevent infinite loops)
+    if (!hasItems && selectedDoc && !parsedSummary.hasAttemptedReparse) {
       const doc = documents.find(d => d.fileType === selectedDoc);
       if (doc?.summary) {
         console.log("No items found in parsedSummary, trying to parse the summary again");
         const parsed = parseSummary(doc.summary);
         console.log("Parsed summary from text:", parsed);
-        setParsedSummary(parsed);
+        // Add a flag to indicate we've attempted to reparse
+        setParsedSummary({
+          ...parsed,
+          hasAttemptedReparse: true
+        });
       }
     }
   }, [parsedSummary, selectedDoc, documents]);
