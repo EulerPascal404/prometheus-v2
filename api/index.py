@@ -144,6 +144,7 @@ def validate_documents():
             }), 400
 
         print(f"Processing documents for user: {user_id}")
+        print(f"Uploaded documents: {uploaded_documents}")
         
         # Get documents from Supabase
         supabase = get_supabase()
@@ -153,28 +154,52 @@ def validate_documents():
                 "message": "Could not connect to database"
             }), 500
 
-        response = supabase.table("user_documents").select("*").eq("user_id", user_id).execute()
-        
-        # Get the actual PDF files from storage
-        document_summaries = {}
-        
+        # Check if documents are already being processed
+        try:
+            response = supabase.table("user_documents").select("processing_status").eq("user_id", user_id).single().execute()
+            if response.data and response.data.get("processing_status") in ["pending", "processing_resume", "processing_publications", "processing_awards"]:
+                return jsonify({
+                    "status": "error",
+                    "message": "Documents are already being processed. Please wait."
+                }), 409
+        except Exception as e:
+            print(f"Error checking processing status: {str(e)}")
+            # Continue with processing if we can't check status
+
         # First update to "pending" status
-        supabase.table("user_documents").update({
-            "processing_status": "pending"
-        }).eq("user_id", user_id).execute()
+        try:
+            supabase.table("user_documents").update({
+                "processing_status": "pending"
+            }).eq("user_id", user_id).execute()
+        except Exception as e:
+            print(f"Error updating status to pending: {str(e)}")
+            # Continue with processing even if status update fails
+        
+        document_summaries = {}
         
         for doc_type in uploaded_documents:
             if uploaded_documents[doc_type]:
                 try:
                     # Update processing status to current document
-                    supabase.table("user_documents").update({
-                        "processing_status": f"processing_{doc_type}"
-                    }).eq("user_id", user_id).execute()
+                    try:
+                        supabase.table("user_documents").update({
+                            "processing_status": f"processing_{doc_type}"
+                        }).eq("user_id", user_id).execute()
+                    except Exception as e:
+                        print(f"Error updating status for {doc_type}: {str(e)}")
                     
                     # Get the file from storage
-                    file_response = supabase.storage.from_('documents').download(
-                        f"{user_id}/{doc_type}.pdf"
-                    )
+                    try:
+                        file_response = supabase.storage.from_('documents').download(
+                            f"{user_id}/{doc_type}.pdf"
+                        )
+                    except Exception as e:
+                        print(f"Error downloading file for {doc_type}: {str(e)}")
+                        document_summaries[doc_type] = {
+                            "error": f"Failed to download file: {str(e)}",
+                            "processed": False
+                        }
+                        continue
                     
                     if file_response:
                         # Process the PDF content with page-by-page updates
@@ -187,6 +212,13 @@ def validate_documents():
                         "error": str(e),
                         "processed": False
                     }
+                    # Update status to error for this document
+                    try:
+                        supabase.table("user_documents").update({
+                            "processing_status": f"error_{doc_type}"
+                        }).eq("user_id", user_id).execute()
+                    except Exception as update_error:
+                        print(f"Error updating error status for {doc_type}: {str(update_error)}")
 
         # Create update data
         update_data = {
@@ -194,44 +226,65 @@ def validate_documents():
             "document_summaries": document_summaries
         }
 
-        if not response.data:
-            # Create new record
-            insert_data = {
-                "user_id": user_id,
-                "processing_status": "pending",
-                "completion_score": 0,
-                **uploaded_documents,
-                "document_summaries": document_summaries
-            }
-            
-            insert_response = supabase.table("user_documents").insert(insert_data).execute()
-            user_docs = insert_response.data[0]
-        else:
-            user_docs = response.data[0]
-            # Update existing record
-            supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
+        try:
+            if not response.data:
+                # Create new record
+                insert_data = {
+                    "user_id": user_id,
+                    "processing_status": "completed",
+                    "completion_score": 0,
+                    **uploaded_documents,
+                    "document_summaries": document_summaries
+                }
+                
+                insert_response = supabase.table("user_documents").insert(insert_data).execute()
+                user_docs = insert_response.data[0]
+            else:
+                user_docs = response.data[0]
+                # Update existing record
+                supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
 
-        # Calculate completion score
-        optional_docs = ["recommendations", "awards", "publications", "salary", "memberships"]
-        uploaded_optional = sum(1 for doc in optional_docs if user_docs.get(doc))
-        completion_score = (uploaded_optional / len(optional_docs)) * 100
-        
-        # Final update with completion score
-        supabase.table("user_documents").update({
-            "completion_score": completion_score,
-            "last_validated": "now()"
-        }).eq("user_id", user_id).execute()
-        
-        return jsonify({
-            "status": "success",
-            "completion_score": completion_score,
-            "message": f"Documents validated successfully. Your profile is {completion_score}% complete.",
-            "can_proceed": True,
-            "document_summaries": document_summaries
-        })
+            # Calculate completion score
+            optional_docs = ["recommendations", "awards", "publications", "salary", "memberships"]
+            uploaded_optional = sum(1 for doc in optional_docs if user_docs.get(doc))
+            completion_score = (uploaded_optional / len(optional_docs)) * 100
+            
+            # Final update with completion score
+            supabase.table("user_documents").update({
+                "completion_score": completion_score,
+                "last_validated": "now()"
+            }).eq("user_id", user_id).execute()
+            
+            return jsonify({
+                "status": "success",
+                "completion_score": completion_score,
+                "message": f"Documents validated successfully. Your profile is {completion_score}% complete.",
+                "can_proceed": True,
+                "document_summaries": document_summaries
+            })
+        except Exception as e:
+            print(f"Error updating database: {str(e)}")
+            # Even if database update fails, return the processed summaries
+            return jsonify({
+                "status": "partial",
+                "message": f"Documents processed but database update failed: {str(e)}",
+                "can_proceed": True,
+                "document_summaries": document_summaries
+            })
         
     except Exception as e:
         print(f"Error processing documents: {str(e)}")
+        # Update status to error if we have a user_id
+        if user_id:
+            try:
+                supabase = get_supabase()
+                if supabase:
+                    supabase.table("user_documents").update({
+                        "processing_status": "error"
+                    }).eq("user_id", user_id).execute()
+            except Exception as update_error:
+                print(f"Error updating status to error: {str(update_error)}")
+        
         return jsonify({
             "status": "error",
             "message": f"Error processing documents: {str(e)}"

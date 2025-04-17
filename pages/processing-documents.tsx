@@ -186,7 +186,19 @@ export default function ProcessingDocuments() {
         }
         
         userId.current = user.id;
-        const documentsObject = JSON.parse(documents as string);
+        
+        // Validate documents data
+        if (!documents) {
+          throw new Error('No documents data provided');
+        }
+        
+        let documentsObject;
+        try {
+          documentsObject = JSON.parse(documents as string);
+        } catch (e) {
+          console.error('Error parsing documents data:', e);
+          throw new Error('Invalid documents data format');
+        }
 
         // Use the correct API URL based on environment
         const apiUrl = process.env.NODE_ENV === 'development' 
@@ -197,14 +209,23 @@ export default function ProcessingDocuments() {
         console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');
         console.log("Environment:", process.env.NODE_ENV);
         console.log("API URL from env:", process.env.NEXT_PUBLIC_API_URL);
+        console.log("Documents data:", documentsObject);
 
         try {
+          // Get the session token
+          const { data: sessionData } = await supabase.auth.getSession();
+          const accessToken = sessionData.session?.access_token;
+          
+          if (!accessToken) {
+            throw new Error('No authentication token available');
+          }
+          
           // Make the API call to the backend
           const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+              'Authorization': `Bearer ${accessToken}`
             },
             body: JSON.stringify({
               user_id: user.id,
@@ -218,7 +239,20 @@ export default function ProcessingDocuments() {
           if (!response.ok) {
             const errorText = await response.text();
             console.error("Error response:", errorText);
-            throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+            hasCalledApi.current = false; // Reset the flag on error
+            
+            let errorMessage = `API request failed with status ${response.status}`;
+            try {
+              const errorJson = JSON.parse(errorText);
+              if (errorJson.message) {
+                errorMessage = errorJson.message;
+              }
+            } catch (e) {
+              // If parsing fails, use the raw error text
+              errorMessage = errorText || errorMessage;
+            }
+            
+            throw new Error(errorMessage);
           }
 
           const result = await response.json();
@@ -237,15 +271,18 @@ export default function ProcessingDocuments() {
               }
             });
           } else {
+            hasCalledApi.current = false; // Reset the flag on error
             throw new Error(result.message || 'Please ensure you have uploaded all required documents.');
           }
         } catch (error) {
           console.error('Error processing documents:', error);
+          hasCalledApi.current = false; // Reset the flag on error
           alert(error instanceof Error ? error.message : 'An error occurred while processing your documents.');
           router.push('/document-collection');
         }
       } catch (error) {
         console.error('Error:', error);
+        hasCalledApi.current = false; // Reset the flag on error
         alert(error instanceof Error ? error.message : 'An error occurred while processing your documents.');
         router.push('/document-collection');
       }
@@ -254,7 +291,13 @@ export default function ProcessingDocuments() {
     if (documents) {
       processDocuments();
     }
-  }, [documents, router]);
+
+    return () => {
+      if (pollInterval.current) {
+        clearInterval(pollInterval.current);
+      }
+    };
+  }, [documents]);
 
   const circumference = 2 * Math.PI * 76; // circle radius = 76
   const strokeDashoffset = circumference - (progress / 100) * circumference;

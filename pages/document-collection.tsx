@@ -184,6 +184,7 @@ export default function DocumentCollection() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [documentSummaries, setDocumentSummaries] = useState<Record<string, any>>({});
+  const [error, setError] = useState<string | null>(null);
   
   const documentTypes: DocumentType[] = [
     {
@@ -258,88 +259,47 @@ export default function DocumentCollection() {
   }, []);
 
   const handleFileUpload = async (docType: string, file: File) => {
-    console.log('Starting file upload for document type:', docType, 'File:', file.name);
-    
     try {
-      // Clear the processing flags and summaries when uploading new documents
-      sessionStorage.removeItem('documentsProcessed');
-      sessionStorage.removeItem('documentSummaries');
-      localStorage.removeItem('documentSummaries');
+      setError(null);
+      setIsProcessing(true);
       
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw new Error('Authentication error: ' + authError.message);
+      // Validate file type
+      if (!file.type.includes('pdf')) {
+        throw new Error('Please upload a PDF file');
       }
       
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File size must be less than 10MB');
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('No authenticated user found');
       }
 
-      // Upload file to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${docType}.${fileExt}`;
-      console.log('Attempting to upload file:', fileName);
-      
-      // Check if file already exists and remove it
-      const { data: existingFile } = await supabase.storage
+      // Upload file to Supabase storage
+      const { error: uploadError } = await supabase.storage
         .from('documents')
-        .list(`${user.id}`);
-
-      if (existingFile?.some(f => f.name.startsWith(docType + '.'))) {
-        const { error: removeError } = await supabase.storage
-          .from('documents')
-          .remove([fileName]);
-          
-        if (removeError) {
-          console.error('Error removing existing file:', removeError);
-        }
-      }
-
-      // Upload new file
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('documents')
-        .upload(fileName, file, {
+        .upload(`${user.id}/${docType}.pdf`, file, {
           cacheControl: '3600',
           upsert: true
         });
 
       if (uploadError) {
-        console.error('Upload error details:', uploadError);
-        throw new Error('File upload failed: ' + uploadError.message);
-      }
-
-      console.log('File uploaded successfully:', uploadData);
-
-      // Update user_documents table
-      const { error: updateError } = await supabase
-        .from('user_documents')
-        .upsert({
-          user_id: user.id,
-          [docType]: true,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (updateError) {
-        console.error('Database update error:', updateError);
-        throw new Error('Database update failed: ' + updateError.message);
+        throw new Error(`Failed to upload file: ${uploadError.message}`);
       }
 
       // Update local state
-      setUploadedDocs(prev => {
-        const newSet = new Set(prev);
-        newSet.add(docType);
-        console.log('Updated uploadedDocs:', Array.from(newSet));
-        return newSet;
-      });
-
-      alert('Document uploaded successfully!');
+      setUploadedDocs(prev => new Set([...Array.from(prev), docType]));
+      
+      // Clear any previous errors
+      setError(null);
     } catch (error) {
-      console.error('Error uploading document:', error);
-      alert(error instanceof Error ? error.message : 'Error uploading document. Please try again.');
+      console.error('Error uploading file:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred while uploading the file');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -350,40 +310,60 @@ export default function DocumentCollection() {
   }, [uploadedDocs]);
 
   const handleContinueToDashboard = async () => {
-    if (isProcessing) return;
-    
     try {
+      setError(null);
       setIsProcessing(true);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('No authenticated user found');
       }
 
-      const documentsObject = Array.from(uploadedDocs).reduce((obj, docType) => {
-        obj[docType] = true;
-        return obj;
-      }, {} as Record<string, boolean>);
+      // Check if required documents are uploaded
+      const requiredDocs = documentTypes.filter(doc => doc.required);
+      const missingDocs = requiredDocs.filter(doc => !uploadedDocs.has(doc.id));
+      
+      if (missingDocs.length > 0) {
+        throw new Error(`Please upload the following required documents: ${missingDocs.map(doc => doc.name).join(', ')}`);
+      }
 
+      // Check if any documents are uploaded at all
+      if (uploadedDocs.size === 0) {
+        throw new Error('Please upload at least one document before proceeding');
+      }
+
+      // Prepare documents object for processing
+      const documentsObject = {};
+      documentTypes.forEach(doc => {
+        documentsObject[doc.id] = uploadedDocs.has(doc.id);
+      });
+
+      console.log('Submitting documents for processing:', documentsObject);
+
+      // Navigate to processing page
       router.push({
         pathname: '/processing-documents',
-        query: { 
-          documents: JSON.stringify(documentsObject)
-        }
+        query: { documents: JSON.stringify(documentsObject) }
       });
     } catch (error) {
-      console.error('Error:', error);
-      alert(error instanceof Error ? error.message : 'An error occurred while processing your documents.');
-    } finally {
+      console.error('Error continuing to dashboard:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred while processing your documents');
       setIsProcessing(false);
     }
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-slate-900 text-white">
       <Head>
         <style>{SharedStyles}</style>
         <title>Prometheus - Document Collection</title>
       </Head>
+
+      {error && (
+        <div className="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+          {error}
+        </div>
+      )}
 
       {isLoading && <LoadingScreen />}
 

@@ -5,7 +5,112 @@ import Head from 'next/head';
 import { SharedStyles } from '../components/SharedStyles';
 import { BackgroundEffects } from '../components/BackgroundEffects';
 import Script from 'next/script';
-import { parseSummary, FieldStats, DocumentSummaries } from '../utils/documentProcessor';
+
+// Define types that were previously imported from utils/documentProcessor
+export interface FieldStats {
+  total_fields: number;
+  user_info_filled: number;
+  percent_filled: number;
+  N_A_per: number;      // Fields needed for personal info
+  N_A_r: number;        // Fields needed for resume info
+  N_A_rl: number;       // Fields needed for recommendation letters
+  N_A_ar: number;       // Fields needed for awards/recognition
+  N_A_p: number;        // Fields needed for publications
+  N_A_ss: number;       // Fields needed for salary/success info
+  N_A_pm: number;       // Fields needed for professional membership
+  // Additional fields used in document-review.tsx
+  na_extraordinary: number;  // Fields needed for extraordinary ability evidence
+  na_recognition: number;    // Fields needed for recognition evidence
+  na_publications: number;   // Fields needed for publications evidence
+  na_leadership: number;     // Fields needed for leadership evidence
+  na_contributions: number;  // Fields needed for contributions evidence
+  na_salary: number;         // Fields needed for salary evidence
+  na_success: number;        // Fields needed for success evidence
+}
+
+export interface DocumentSummary {
+  summary: string;
+  pages: number;
+  pdf_filled_pages: number;
+  processed: boolean;
+  text_preview?: string;
+  error?: string;
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+}
+
+export interface DocumentSummaries {
+  [key: string]: DocumentSummary;
+}
+
+// Function to parse document summaries (simplified version)
+export function parseSummary(analysis: string): ParsedSummary {
+  console.log('Parsing analysis:', analysis);
+  
+  const sections = {
+    strengths: [] as string[],
+    weaknesses: [] as string[],
+    recommendations: [] as string[]
+  };
+
+  try {
+    // Split the analysis into sections based on headers
+    const sectionRegex = /(?:###\s*)?(?:Strengths|Weaknesses|Recommendations):/gi;
+    const parts = analysis.split(sectionRegex);
+    
+    // Skip the first part (it's before any section header)
+    for (let i = 1; i < parts.length; i++) {
+      const sectionContent = parts[i].trim();
+      
+      // Determine which section this is based on the previous header
+      let currentSection: 'strengths' | 'weaknesses' | 'recommendations' | null = null;
+      const prevHeader = analysis.substring(0, analysis.indexOf(parts[i])).match(sectionRegex);
+      
+      if (prevHeader) {
+        const headerText = prevHeader[prevHeader.length - 1].toLowerCase();
+        if (headerText.includes('strengths')) {
+          currentSection = 'strengths';
+        } else if (headerText.includes('weaknesses')) {
+          currentSection = 'weaknesses';
+        } else if (headerText.includes('recommendations')) {
+          currentSection = 'recommendations';
+        }
+      }
+      
+      if (currentSection) {
+        // Split the section content by [SEP] markers
+        const bulletPoints = sectionContent.split('[SEP]');
+        
+        // Process each bullet point
+        for (const bulletPoint of bulletPoints) {
+          const cleanedPoint = bulletPoint
+            .replace(/^\[|\]$/g, '') // Remove square brackets if present
+            .trim();
+            
+          if (cleanedPoint) {
+            sections[currentSection].push(cleanedPoint);
+          }
+        }
+      }
+    }
+
+    console.log('Parsed sections:', sections);
+
+    return {
+      strengths: sections.strengths,
+      weaknesses: sections.weaknesses,
+      recommendations: sections.recommendations
+    };
+  } catch (error) {
+    console.error('Error parsing summary:', error);
+    return {
+      strengths: [],
+      weaknesses: [],
+      recommendations: []
+    };
+  }
+}
 
 interface DocumentInfo {
   fileName: string;
@@ -21,23 +126,63 @@ interface ParsedSummary {
   recommendations: string[];
 }
 
+// Helper function to safely extract document summary from API response
+function getDocumentSummaryFromApi(apiResponseData: any, docType: string): ParsedSummary | null {
+  if (!apiResponseData?.document_summaries?.[docType]) {
+    console.log(`No API summary found for document type: ${docType}`);
+    return null;
+  }
+  
+  const docSummary = apiResponseData.document_summaries[docType];
+  console.log(`API summary for ${docType}:`, docSummary);
+  
+  // Ensure the arrays exist and are actually arrays
+  const strengths = Array.isArray(docSummary.strengths) ? docSummary.strengths : [];
+  const weaknesses = Array.isArray(docSummary.weaknesses) ? docSummary.weaknesses : [];
+  const recommendations = Array.isArray(docSummary.recommendations) ? docSummary.recommendations : [];
+  
+  // If all arrays are empty, return null to fall back to parseSummary
+  if (strengths.length === 0 && weaknesses.length === 0 && recommendations.length === 0) {
+    console.log(`All arrays are empty for ${docType}, falling back to parseSummary`);
+    return null;
+  }
+  
+  const result = {
+    strengths,
+    weaknesses,
+    recommendations
+  };
+  
+  console.log(`Extracted summary for ${docType}:`, result);
+  return result;
+}
+
 function SummarySection({ title, items, colorClass }: { 
   title: string; 
   items: string[];
   colorClass: 'green' | 'red' | 'blue';
 }) {
+  console.log(`Rendering ${title} section with ${items.length} items:`, items);
+  
   return (
-    <div className="summary-section">
-      <h4 className={`summary-title summary-title-${colorClass}`}>{title}</h4>
+    <div className="summary-section" style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '15px' }}>
+      <h4 className={`summary-title summary-title-${colorClass}`} style={{ fontWeight: 'bold', marginBottom: '10px' }}>{title}</h4>
       <ul className="space-y-2.5">
         {items.map((item, index) => (
-          <li key={index} className="flex gap-2.5">
-            <span className={`summary-dot summary-dot-${colorClass}`} />
-            <span className="summary-text">{item}</span>
+          <li key={index} className="flex gap-2.5" style={{ marginBottom: '5px' }}>
+            <span className={`summary-dot summary-dot-${colorClass}`} style={{ 
+              display: 'inline-block', 
+              width: '10px', 
+              height: '10px', 
+              borderRadius: '50%', 
+              backgroundColor: colorClass === 'green' ? '#4CAF50' : colorClass === 'red' ? '#F44336' : '#2196F3',
+              marginRight: '10px'
+            }} />
+            <span className="summary-text" style={{ color: '#fff' }}>{item}</span>
           </li>
         ))}
         {items.length === 0 && (
-          <li className="text-sm text-slate-500 italic">No items found.</li>
+          <li className="text-sm text-slate-500 italic" style={{ color: '#aaa' }}>No items found.</li>
         )}
       </ul>
     </div>
@@ -290,6 +435,57 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
   );
 }
 
+// Function to validate API response data
+function validateApiResponseData(data: any): boolean {
+  if (!data) {
+    console.error("API response data is null or undefined");
+    return false;
+  }
+  
+  if (!data.document_summaries) {
+    console.error("API response data is missing document_summaries");
+    return false;
+  }
+  
+  // Check if document_summaries is an object
+  if (typeof data.document_summaries !== 'object') {
+    console.error("API response data document_summaries is not an object");
+    return false;
+  }
+  
+  // Check if document_summaries has any keys
+  const docTypes = Object.keys(data.document_summaries);
+  if (docTypes.length === 0) {
+    console.error("API response data document_summaries is empty");
+    return false;
+  }
+  
+  console.log("API response data document_summaries has the following document types:", docTypes);
+  
+  // Check if each document summary has the required fields
+  let isValid = true;
+  docTypes.forEach(docType => {
+    const summary = data.document_summaries[docType];
+    
+    if (!Array.isArray(summary.strengths)) {
+      console.error(`Document summary for ${docType} is missing strengths array`);
+      isValid = false;
+    }
+    
+    if (!Array.isArray(summary.weaknesses)) {
+      console.error(`Document summary for ${docType} is missing weaknesses array`);
+      isValid = false;
+    }
+    
+    if (!Array.isArray(summary.recommendations)) {
+      console.error(`Document summary for ${docType} is missing recommendations array`);
+      isValid = false;
+    }
+  });
+  
+  return isValid;
+}
+
 export default function DocumentReview() {
   const router = useRouter();
   const { userId, processed, apiResponse } = router.query;
@@ -313,6 +509,43 @@ export default function DocumentReview() {
     if (apiResponse && typeof apiResponse === 'string') {
       try {
         const parsedData = JSON.parse(apiResponse);
+        
+        // Validate the API response data
+        const isValid = validateApiResponseData(parsedData);
+        console.log("API response data validation result:", isValid);
+        
+        // Ensure the API response data has the expected structure
+        if (parsedData.document_summaries) {
+          console.log("API Response document_summaries structure:", parsedData.document_summaries);
+          
+          // Make sure each document summary has the required fields
+          Object.keys(parsedData.document_summaries).forEach(docType => {
+            const summary = parsedData.document_summaries[docType];
+            console.log(`Document summary for ${docType}:`, summary);
+            
+            // Check if the summary has the required fields
+            if (!Array.isArray(summary.strengths)) {
+              console.warn(`Missing or invalid strengths array for ${docType}`);
+              summary.strengths = [];
+            }
+            if (!Array.isArray(summary.weaknesses)) {
+              console.warn(`Missing or invalid weaknesses array for ${docType}`);
+              summary.weaknesses = [];
+            }
+            if (!Array.isArray(summary.recommendations)) {
+              console.warn(`Missing or invalid recommendations array for ${docType}`);
+              summary.recommendations = [];
+            }
+            
+            // Log the arrays to verify they have content
+            console.log(`${docType} strengths:`, summary.strengths);
+            console.log(`${docType} weaknesses:`, summary.weaknesses);
+            console.log(`${docType} recommendations:`, summary.recommendations);
+          });
+        } else {
+          console.warn("API Response missing document_summaries");
+        }
+        
         setApiResponseData(parsedData);
         console.log("API Response Data:", parsedData);
       } catch (error) {
@@ -433,7 +666,14 @@ export default function DocumentReview() {
         if (docs.length > 0) {
           setSelectedDoc(docs[0].fileType);
           if (docs[0].summary) {
-            setParsedSummary(parseSummary(docs[0].summary));
+            // Check if we have API response data with document summaries
+            const apiSummary = getDocumentSummaryFromApi(apiResponseData, docs[0].fileType);
+            if (apiSummary) {
+              setParsedSummary(apiSummary);
+            } else {
+              // Fallback to the original parseSummary function if API data is not available
+              setParsedSummary(parseSummary(docs[0].summary));
+            }
           }
         }
         
@@ -455,10 +695,48 @@ export default function DocumentReview() {
     if (selectedDoc) {
       const doc = documents.find(d => d.fileType === selectedDoc);
       if (doc?.summary) {
-        setParsedSummary(parseSummary(doc.summary));
+        console.log(`Selected document: ${selectedDoc}, summary:`, doc.summary);
+        
+        // Check if we have API response data with document summaries
+        const apiSummary = getDocumentSummaryFromApi(apiResponseData, selectedDoc);
+        if (apiSummary) {
+          console.log(`Setting parsed summary from API for ${selectedDoc}:`, apiSummary);
+          setParsedSummary(apiSummary);
+        } else {
+          // Fallback to the original parseSummary function if API data is not available
+          console.log(`Falling back to parseSummary for ${selectedDoc}`);
+          const parsed = parseSummary(doc.summary);
+          console.log(`Parsed summary from text:`, parsed);
+          setParsedSummary(parsed);
+        }
       }
     }
-  }, [selectedDoc, documents]);
+  }, [selectedDoc, documents, apiResponseData]);
+
+  // Add a useEffect to log the parsed summary when it changes
+  useEffect(() => {
+    console.log("parsedSummary state updated:", parsedSummary);
+  }, [parsedSummary]);
+
+  // Add a useEffect to check if parsedSummary has any items
+  useEffect(() => {
+    const hasItems = parsedSummary.strengths.length > 0 || 
+                    parsedSummary.weaknesses.length > 0 || 
+                    parsedSummary.recommendations.length > 0;
+    
+    console.log("parsedSummary has items:", hasItems);
+    
+    // If no items and we have a selected document, try to parse the summary again
+    if (!hasItems && selectedDoc) {
+      const doc = documents.find(d => d.fileType === selectedDoc);
+      if (doc?.summary) {
+        console.log("No items found in parsedSummary, trying to parse the summary again");
+        const parsed = parseSummary(doc.summary);
+        console.log("Parsed summary from text:", parsed);
+        setParsedSummary(parsed);
+      }
+    }
+  }, [parsedSummary, selectedDoc, documents]);
 
   const handleLawyerMatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -676,7 +954,6 @@ export default function DocumentReview() {
               <div className="card p-6 w-full border-primary-500/30 mt-8">
                 <h3 className="text-xl font-semibold text-white mb-4">Document Analysis</h3>
                 
-                
                 {documents.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-slate-300 mb-4">No documents found. Please upload your documents first.</p>
@@ -732,22 +1009,22 @@ export default function DocumentReview() {
                           </h4>
                           
                           <div className="summary-sections">
-                          <SummarySection 
+                            <SummarySection 
                               title="Strengths" 
-                            items={parsedSummary.strengths}
-                            colorClass="green"
-                          />
-                          <SummarySection 
+                              items={parsedSummary.strengths}
+                              colorClass="green"
+                            />
+                            <SummarySection 
                               title="Weaknesses" 
-                            items={parsedSummary.weaknesses}
-                            colorClass="red"
-                          />
-                          <SummarySection 
+                              items={parsedSummary.weaknesses}
+                              colorClass="red"
+                            />
+                            <SummarySection 
                               title="Recommendations" 
-                            items={parsedSummary.recommendations}
-                            colorClass="blue"
-                          />
-                        </div>
+                              items={parsedSummary.recommendations}
+                              colorClass="blue"
+                            />
+                          </div>
                         </>
                       ) : (
                         <div className="text-center py-8">
