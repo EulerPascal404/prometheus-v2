@@ -481,7 +481,7 @@ export default function DocumentReview() {
         throw new Error('No authenticated user found');
       }
       
-      // Use the API endpoint from index.py
+      // Use the API endpoint
       const apiUrl = '/api/match-lawyer';
       
       console.log("Making API request to server:", apiUrl);

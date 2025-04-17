@@ -6,7 +6,8 @@ const nextConfig = {
         domains: [
             'localhost',
             'prometheus-ai-backend.herokuapp.com',
-            'prometheus-ai-backend-app-589cbe98fdc3.herokuapp.com'
+            'prometheus-ai-backend-app-589cbe98fdc3.herokuapp.com',
+            'getprometheus.ai'
         ],
     },
     env: {
@@ -18,17 +19,15 @@ const nextConfig = {
         return [
             {
                 source: '/api/validate-documents',
-                destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://prometheus-ai-backend.herokuapp.com'}/api/validate-documents`,
+                destination: 'https://prometheus-ai-backend.herokuapp.com/api/validate-documents',
             },
             {
                 source: '/api/match-lawyer',
-                destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://prometheus-ai-backend.herokuapp.com'}/api/match-lawyer`,
+                destination: 'https://prometheus-ai-backend.herokuapp.com/api/match-lawyer',
             },
             {
                 source: '/api/:path*',
-                destination: process.env.NODE_ENV === 'development' 
-                    ? 'http://localhost:8000/api/:path*' 
-                    : `${process.env.NEXT_PUBLIC_API_URL || 'https://prometheus-ai-backend.herokuapp.com'}/api/:path*`,
+                destination: 'https://prometheus-ai-backend.herokuapp.com/api/:path*',
             },
         ];
     },
