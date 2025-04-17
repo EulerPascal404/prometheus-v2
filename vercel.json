@@ -3,6 +3,16 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
+  "builds": [
+    {
+      "src": "api/test.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
   "rewrites": [
     { "source": "/api/test", "destination": "/api/test.py" },
     { "source": "/api/(.*)", "destination": "/api/index.py" }
