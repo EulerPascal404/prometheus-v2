@@ -22,6 +22,30 @@
       }
     },
     {
+      "src": "api/validate-documents.py",
+      "use": "@vercel/python",
+      "config": { 
+        "runtime": "python3.9",
+        "requirementsPath": "api/requirements.txt"
+      }
+    },
+    {
+      "src": "api/document-status.py",
+      "use": "@vercel/python",
+      "config": { 
+        "runtime": "python3.9",
+        "requirementsPath": "api/requirements.txt"
+      }
+    },
+    {
+      "src": "api/match-lawyer.py",
+      "use": "@vercel/python",
+      "config": { 
+        "runtime": "python3.9",
+        "requirementsPath": "api/requirements.txt"
+      }
+    },
+    {
       "src": "package.json",
       "use": "@vercel/next"
     }

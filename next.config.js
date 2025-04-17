@@ -28,6 +28,24 @@ const nextConfig = {
                     : '/api/test.py',
             },
             {
+                source: '/api/validate-documents',
+                destination: process.env.NODE_ENV === 'development'
+                    ? 'http://127.0.0.1:8000/api/validate-documents'
+                    : '/api/validate-documents.py',
+            },
+            {
+                source: '/api/document-status/:user',
+                destination: process.env.NODE_ENV === 'development'
+                    ? 'http://127.0.0.1:8000/api/document-status/:user'
+                    : '/api/document-status.py',
+            },
+            {
+                source: '/api/match-lawyer',
+                destination: process.env.NODE_ENV === 'development'
+                    ? 'http://127.0.0.1:8000/api/match-lawyer'
+                    : '/api/match-lawyer.py',
+            },
+            {
                 source: '/api/:path*',
                 destination: process.env.NODE_ENV === 'development'
                     ? 'http://127.0.0.1:8000/api/:path*'
