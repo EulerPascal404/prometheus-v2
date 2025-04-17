@@ -12,6 +12,16 @@ import base64
 from o1_pdf_filler import run
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import logging
+import sys
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 env_path = Path(__file__).parent.parent / '.env'
@@ -40,6 +50,7 @@ supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")  # Changed to use service role key
 
 if not supabase_url or not supabase_key:
+    logger.error("Missing required environment variables")
     raise ValueError(
         "Missing required environment variables. Please check .env.local for:"
         "\n- NEXT_PUBLIC_SUPABASE_URL"
@@ -50,7 +61,7 @@ def get_supabase() -> Client:
     try:
         return create_client(supabase_url, supabase_key)
     except Exception as e:
-        print(f"Error creating Supabase client: {str(e)}")
+        logger.error(f"Error creating Supabase client: {str(e)}")
         return None
 
 # Setup OpenAI
@@ -139,9 +150,16 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supaba
 
 @app.route("/api/validate-documents", methods=["GET", "POST"])
 def validate_documents():
+    logger.info(f"Received {request.method} request to /api/validate-documents")
+    logger.info(f"Request headers: {dict(request.headers)}")
+    logger.info(f"Request args: {dict(request.args)}")
+    
     if request.method == "GET":
         user_id = request.args.get("user_id")
+        logger.info(f"GET request - user_id: {user_id}")
+        
         if not user_id:
+            logger.warning("GET request missing user_id parameter")
             return jsonify({
                 "status": "error",
                 "message": "user_id is required as a query parameter",
@@ -151,17 +169,19 @@ def validate_documents():
         try:
             supabase = get_supabase()
             if not supabase:
+                logger.error("Failed to connect to Supabase")
                 return jsonify({
                     "status": "error",
                     "message": "Could not connect to database"
                 }), 500
 
             # Try to get existing document
+            logger.info(f"Fetching documents for user: {user_id}")
             response = supabase.table("user_documents").select("*").eq("user_id", user_id).execute()
             
             # If no document exists, create one
             if not response.data:
-                print(f"Creating new document record for user: {user_id}")
+                logger.info(f"Creating new document record for user: {user_id}")
                 insert_response = supabase.table("user_documents").insert({
                     "user_id": user_id,
                     "processing_status": "pending",
@@ -181,7 +201,8 @@ def validate_documents():
                     "message": "Document record created"
                 })
                 
-            user_docs = response.data[0]  # Get first record since we might have multiple now
+            user_docs = response.data[0]
+            logger.info(f"Successfully retrieved documents for user: {user_id}")
             return jsonify({
                 "status": "success",
                 "completion_score": user_docs.get("completion_score", 0),
@@ -190,27 +211,30 @@ def validate_documents():
             })
             
         except Exception as e:
-            print(f"Error processing documents: {str(e)}")
+            logger.error(f"Error processing GET request: {str(e)}")
             return jsonify({
                 "status": "error",
                 "message": f"Error checking validation status: {str(e)}"
             }), 500
 
     # Handle POST request
-    print("Starting document validation")
+    logger.info("Processing POST request")
     try:
         request_data = request.get_json()
+        logger.info(f"POST request data: {request_data}")
+        
         user_id = request_data.get("user_id")
         uploaded_documents = request_data.get("uploaded_documents", {})
         
         if not user_id or not uploaded_documents:
+            logger.warning("POST request missing required fields")
             return jsonify({
                 "status": "error",
                 "message": "Missing required fields: user_id and uploaded_documents"
             }), 400
 
-        print(f"Processing documents for user: {user_id}")
-        print(f"Uploaded documents: {uploaded_documents}")
+        logger.info(f"Processing documents for user: {user_id}")
+        logger.info(f"Uploaded documents: {uploaded_documents}")
         
         # Get documents from Supabase
         supabase = get_supabase()
@@ -236,7 +260,7 @@ def validate_documents():
                         
                         # If processing has been running for more than 10 minutes, reset it
                         if time_diff > timedelta(minutes=10):
-                            print(f"Processing timeout detected for user {user_id}, resetting status")
+                            logger.info(f"Processing timeout detected for user {user_id}, resetting status")
                             supabase.table("user_documents").update({
                                 "processing_status": "pending",
                                 "last_validated": "now()"
@@ -247,7 +271,7 @@ def validate_documents():
                                 "message": "Documents are already being processed. Please wait."
                             }), 409
                     except Exception as time_error:
-                        print(f"Error checking processing time: {str(time_error)}")
+                        logger.error(f"Error checking processing time: {str(time_error)}")
                         # Continue with processing if we can't check time
             elif response.data and response.data.get("processing_status") == "completed":
                 # If processing is already completed, return the existing results
@@ -259,7 +283,7 @@ def validate_documents():
                     "document_summaries": response.data.get("document_summaries", {})
                 })
         except Exception as e:
-            print(f"Error checking processing status: {str(e)}")
+            logger.error(f"Error checking processing status: {str(e)}")
             # Continue with processing if we can't check status
 
         # First update to "pending" status
@@ -269,7 +293,7 @@ def validate_documents():
                 "last_validated": "now()"
             }).eq("user_id", user_id).execute()
         except Exception as e:
-            print(f"Error updating status to pending: {str(e)}")
+            logger.error(f"Error updating status to pending: {str(e)}")
             # Continue with processing even if status update fails
         
         document_summaries = {}
@@ -283,7 +307,7 @@ def validate_documents():
                             "processing_status": f"processing_{doc_type}"
                         }).eq("user_id", user_id).execute()
                     except Exception as e:
-                        print(f"Error updating status for {doc_type}: {str(e)}")
+                        logger.error(f"Error updating status for {doc_type}: {str(e)}")
                     
                     # Get the file from storage
                     try:
@@ -291,7 +315,7 @@ def validate_documents():
                             f"{user_id}/{doc_type}.pdf"
                         )
                     except Exception as e:
-                        print(f"Error downloading file for {doc_type}: {str(e)}")
+                        logger.error(f"Error downloading file for {doc_type}: {str(e)}")
                         document_summaries[doc_type] = {
                             "error": f"Failed to download file: {str(e)}",
                             "processed": False
@@ -304,7 +328,7 @@ def validate_documents():
                         document_summaries[doc_type] = summary
                 
                 except Exception as e:
-                    print(f"Error processing {doc_type}: {str(e)}")
+                    logger.error(f"Error processing {doc_type}: {str(e)}")
                     document_summaries[doc_type] = {
                         "error": str(e),
                         "processed": False
@@ -315,7 +339,7 @@ def validate_documents():
                             "processing_status": f"error_{doc_type}"
                         }).eq("user_id", user_id).execute()
                     except Exception as update_error:
-                        print(f"Error updating error status for {doc_type}: {str(update_error)}")
+                        logger.error(f"Error updating error status for {doc_type}: {str(update_error)}")
 
         # Create update data
         update_data = {
@@ -360,7 +384,7 @@ def validate_documents():
                 "document_summaries": document_summaries
             })
         except Exception as e:
-            print(f"Error updating database: {str(e)}")
+            logger.error(f"Error updating database: {str(e)}")
             # Even if database update fails, return the processed summaries
             return jsonify({
                 "status": "partial",
@@ -370,7 +394,7 @@ def validate_documents():
             })
         
     except Exception as e:
-        print(f"Error processing documents: {str(e)}")
+        logger.error(f"Error processing documents: {str(e)}")
         # Update status to error if we have a user_id
         if user_id:
             try:
@@ -380,7 +404,7 @@ def validate_documents():
                         "processing_status": "error"
                     }).eq("user_id", user_id).execute()
             except Exception as update_error:
-                print(f"Error updating status to error: {str(update_error)}")
+                logger.error(f"Error updating status to error: {str(update_error)}")
         
         return jsonify({
             "status": "error",
