@@ -667,16 +667,6 @@ export default function DocumentReview() {
               <div className="card p-6 w-full border-primary-500/30 mt-8">
                 <h3 className="text-xl font-semibold text-white mb-4">Document Analysis</h3>
                 
-                {apiResponseData && (
-                  <div className="mb-6 p-4 bg-slate-800 rounded-lg border border-primary-500/30">
-                    <h4 className="text-lg font-medium text-primary-300 mb-2">API Response Data</h4>
-                    <div className="overflow-auto max-h-60">
-                      <pre className="text-sm text-slate-300 whitespace-pre-wrap">
-                        {JSON.stringify(apiResponseData, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                )}
                 
                 {documents.length === 0 ? (
                   <div className="text-center py-8">
