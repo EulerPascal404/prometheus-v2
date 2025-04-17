@@ -188,8 +188,8 @@ export default function ProcessingDocuments() {
         userId.current = user.id;
         const documentsObject = JSON.parse(documents as string);
 
-        // Use the API endpoint
-        const apiUrl = '/api/validate-documents';
+        // Use direct API URL to avoid routing loops
+        const apiUrl = 'https://getprometheus.ai/backend/validate-documents';
         
         console.log("Making API request to server:", apiUrl);
         console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');
