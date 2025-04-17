@@ -17,15 +17,15 @@ const nextConfig = {
         return [
             {
                 source: '/api/validate-documents',
-                destination: 'https://getprometheus.ai/api/validate-documents',
+                destination: 'https://getprometheus.ai/backend/validate-documents',
             },
             {
                 source: '/api/match-lawyer',
-                destination: 'https://getprometheus.ai/api/match-lawyer',
+                destination: 'https://getprometheus.ai/backend/match-lawyer',
             },
             {
                 source: '/api/:path*',
-                destination: 'https://getprometheus.ai/api/:path*',
+                destination: 'https://getprometheus.ai/backend/:path*',
             },
         ];
     },
