@@ -5,8 +5,21 @@
   "outputDirectory": ".next",
   "builds": [
     {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": { 
+        "runtime": "python3.9",
+        "maxLambdaSize": "15mb",
+        "requirementsPath": "api/requirements.txt"
+      }
+    },
+    {
       "src": "api/test.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": { 
+        "runtime": "python3.9",
+        "requirementsPath": "api/requirements.txt"
+      }
     },
     {
       "src": "package.json",
