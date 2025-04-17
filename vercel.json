@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.py" }
   ],
@@ -18,12 +21,6 @@
     }
   ],
   "regions": ["iad1"],
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
   "git": {
     "deploymentEnabled": {
       "main": true

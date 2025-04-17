@@ -45,6 +45,15 @@ CORS(app, resources={
     }
 })
 
+# Add a test route to verify API is working
+@app.route("/api/test", methods=["GET"])
+def test_route():
+    return jsonify({
+        "status": "success",
+        "message": "Flask API is working correctly!",
+        "version": "1.0.0"
+    })
+
 # Supabase setup with better error handling
 supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")  # Changed to use service role key
@@ -636,8 +645,18 @@ def match_lawyer():
 
 # Run the Flask app if this file is executed directly (development mode)
 if __name__ == "__main__":
-    
     print("Running Flask server in development mode on http://localhost:8000")
     app.run(host="0.0.0.0", port=8000, debug=True)
+
+# Handler for serverless function
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Apply ProxyFix to handle proxy headers correctly
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+# This is required for Vercel serverless functions
+# Need to use `app` as the variable name here to match Vercel's requirements
+def handler(event, context):
+    return app(event, context)
 
     
