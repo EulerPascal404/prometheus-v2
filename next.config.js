@@ -19,7 +19,7 @@ const nextConfig = {
                 source: '/api/:path*',
                 destination: process.env.NODE_ENV === 'development' 
                     ? 'http://localhost:8000/api/:path*' 
-                    : '/api/:path*',
+                    : `${process.env.NEXT_PUBLIC_API_URL || 'https://prometheus-ai-backend.herokuapp.com'}/api/:path*`,
             },
         ];
     },

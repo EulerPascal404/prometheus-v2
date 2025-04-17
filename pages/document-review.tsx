@@ -481,8 +481,10 @@ export default function DocumentReview() {
         throw new Error('No authenticated user found');
       }
       
-      // Always use the Flask server directly
-      const apiUrl = 'http://localhost:8000/api/match-lawyer';
+      // Use environment variable for API URL
+      const apiUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:8000/api/match-lawyer'
+        : '/api/match-lawyer';
       
       // Get uploaded documents from Supabase
       const { data: userDocs, error: userDocsError } = await supabase
