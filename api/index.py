@@ -137,8 +137,66 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supaba
             "processed": False
         }
 
-@app.route("/api/validate-documents", methods=["POST"])
+@app.route("/api/validate-documents", methods=["GET", "POST"])
 def validate_documents():
+    if request.method == "GET":
+        user_id = request.args.get("user_id")
+        if not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "user_id is required as a query parameter",
+                "example": "/api/validate-documents?user_id=your-user-id-here"
+            }), 400
+        
+        try:
+            supabase = get_supabase()
+            if not supabase:
+                return jsonify({
+                    "status": "error",
+                    "message": "Could not connect to database"
+                }), 500
+
+            # Try to get existing document
+            response = supabase.table("user_documents").select("*").eq("user_id", user_id).execute()
+            
+            # If no document exists, create one
+            if not response.data:
+                print(f"Creating new document record for user: {user_id}")
+                insert_response = supabase.table("user_documents").insert({
+                    "user_id": user_id,
+                    "processing_status": "pending",
+                    "completion_score": 0,
+                    "resume": False,
+                    "recommendations": False,
+                    "awards": False,
+                    "publications": False,
+                    "salary": False,
+                    "memberships": False
+                }).execute()
+                
+                return jsonify({
+                    "status": "initialized",
+                    "completion_score": 0,
+                    "can_proceed": False,
+                    "message": "Document record created"
+                })
+                
+            user_docs = response.data[0]  # Get first record since we might have multiple now
+            return jsonify({
+                "status": "success",
+                "completion_score": user_docs.get("completion_score", 0),
+                "can_proceed": bool(user_docs.get("resume")),
+                "documents": user_docs
+            })
+            
+        except Exception as e:
+            print(f"Error processing documents: {str(e)}")
+            return jsonify({
+                "status": "error",
+                "message": f"Error checking validation status: {str(e)}"
+            }), 500
+
+    # Handle POST request
     print("Starting document validation")
     try:
         request_data = request.get_json()
@@ -358,64 +416,6 @@ def get_document_status(user_id):
         return jsonify({
             "status": "error",
             "message": f"Error checking document status: {str(e)}"
-        }), 500
-
-@app.route("/api/validate-documents", methods=["GET"])
-def get_validation_status():
-    user_id = request.args.get("user_id")
-    if not user_id:
-        return jsonify({
-            "status": "error",
-            "message": "user_id is required as a query parameter",
-            "example": "/api/validate-documents?user_id=your-user-id-here"
-        }), 400
-    
-    try:
-        supabase = get_supabase()
-        if not supabase:
-            return jsonify({
-                "status": "error",
-                "message": "Could not connect to database"
-            }), 500
-
-        # Try to get existing document
-        response = supabase.table("user_documents").select("*").eq("user_id", user_id).execute()
-        
-        # If no document exists, create one
-        if not response.data:
-            print(f"Creating new document record for user: {user_id}")
-            insert_response = supabase.table("user_documents").insert({
-                "user_id": user_id,
-                "processing_status": "pending",
-                "completion_score": 0,
-                "resume": False,
-                "recommendations": False,
-                "awards": False,
-                "publications": False,
-                "salary": False,
-                "memberships": False
-            }).execute()
-            
-            return jsonify({
-                "status": "initialized",
-                "completion_score": 0,
-                "can_proceed": False,
-                "message": "Document record created"
-            })
-            
-        user_docs = response.data[0]  # Get first record since we might have multiple now
-        return jsonify({
-            "status": "success",
-            "completion_score": user_docs.get("completion_score", 0),
-            "can_proceed": bool(user_docs.get("resume")),
-            "documents": user_docs
-        })
-        
-    except Exception as e:
-        print(f"Error processing documents: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": f"Error checking validation status: {str(e)}"
         }), 500
 
 # Add the lawyer database
