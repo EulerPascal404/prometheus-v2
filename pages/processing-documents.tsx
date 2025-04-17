@@ -251,6 +251,8 @@ export default function ProcessingDocuments() {
             throw new Error('No authentication token available');
           }
           
+          console.log('Making request with token:', accessToken.substring(0, 10) + '...');
+          
           // Make the API call to the backend
           const response = await fetch(apiUrl, {
             method: 'POST',
@@ -264,26 +266,13 @@ export default function ProcessingDocuments() {
             })
           });
           
-          console.log("Response status:", response.status);
-          console.log("Response headers:", Object.fromEntries(response.headers.entries()));
-
+          console.log('Response status:', response.status);
+          console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+          
           if (!response.ok) {
             const errorText = await response.text();
-            console.error("Error response:", errorText);
-            hasCalledApi.current = false; // Reset the flag on error
-            
-            let errorMessage = `API request failed with status ${response.status}`;
-            try {
-              const errorJson = JSON.parse(errorText);
-              if (errorJson.message) {
-                errorMessage = errorJson.message;
-              }
-            } catch (e) {
-              // If parsing fails, use the raw error text
-              errorMessage = errorText || errorMessage;
-            }
-            
-            throw new Error(errorMessage);
+            console.error('Error response:', errorText);
+            throw new Error(`API request failed with status ${response.status}: ${errorText}`);
           }
 
           const result = await response.json();
