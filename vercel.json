@@ -2,12 +2,17 @@
   "version": 2,
   "builds": [
     {
+      "src": "api/test.py",
+      "use": "@vercel/python"
+    },
+    {
       "src": "package.json",
       "use": "@vercel/next"
     }
   ],
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.py" }
+  "routes": [
+    { "src": "/api/test", "dest": "/api/test.py" },
+    { "src": "/(.*)", "dest": "/$1" }
   ],
   "headers": [
     {
