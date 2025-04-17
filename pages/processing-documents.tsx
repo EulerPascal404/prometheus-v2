@@ -203,9 +203,7 @@ export default function ProcessingDocuments() {
         // Use the correct API URL based on environment
         const apiUrl = process.env.NODE_ENV === 'development' 
           ? 'http://localhost:8000/api/validate-documents'
-          : process.env.NEXT_PUBLIC_API_URL 
-            ? `${process.env.NEXT_PUBLIC_API_URL}/api/validate-documents`
-            : 'https://getprometheus.ai/api/validate-documents';
+          : 'https://getprometheus.ai/api/validate-documents';
         
         console.log("Making API request to server:", apiUrl);
         console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');

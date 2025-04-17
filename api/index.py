@@ -25,10 +25,8 @@ CORS(app, resources={
         "origins": [
             "http://localhost:3000",
             "https://localhost:3000",
-            "https://prometheus-ai.vercel.app",
-            "https://prometheus-v2.vercel.app",
-            "https://prometheus-v2-*-eulerpascal404.vercel.app",
-            "https://*.vercel.app",
+            "https://getprometheus.ai",
+            "https://*.getprometheus.ai",
             os.getenv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000")
         ],
         "methods": ["GET", "POST", "OPTIONS"],
