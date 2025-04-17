@@ -56,7 +56,7 @@ def test_route():
 
 # Supabase setup with better error handling
 supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
-supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")  # Changed to use service role key
+supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")  # Changed to use service role ke
 
 if not supabase_url or not supabase_key:
     logger.error("Missing required environment variables")
