@@ -203,7 +203,9 @@ export default function ProcessingDocuments() {
         // Use the correct API URL based on environment
         const apiUrl = process.env.NODE_ENV === 'development' 
           ? 'http://localhost:8000/api/validate-documents'
-          : '/api/validate-documents';
+          : process.env.NEXT_PUBLIC_API_URL 
+            ? `${process.env.NEXT_PUBLIC_API_URL}/api/validate-documents`
+            : 'https://getprometheus.ai/api/validate-documents';
         
         console.log("Making API request to server:", apiUrl);
         console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');
@@ -230,9 +232,9 @@ export default function ProcessingDocuments() {
             body: JSON.stringify({
               user_id: user.id,
               uploaded_documents: documentsObject
-            }),
+            })
           });
-
+          
           console.log("Response status:", response.status);
           console.log("Response headers:", Object.fromEntries(response.headers.entries()));
 
@@ -257,7 +259,12 @@ export default function ProcessingDocuments() {
 
           const result = await response.json();
           console.log("API response:", result);
-
+          
+          // Check if the response has the expected structure
+          if (!result || typeof result !== 'object') {
+            throw new Error('Invalid response format from server');
+          }
+          
           if (result.can_proceed) {
             // Store the new summaries
             localStorage.setItem('documentSummaries', JSON.stringify(result.document_summaries));
@@ -274,11 +281,13 @@ export default function ProcessingDocuments() {
             hasCalledApi.current = false; // Reset the flag on error
             throw new Error(result.message || 'Please ensure you have uploaded all required documents.');
           }
-        } catch (error) {
-          console.error('Error processing documents:', error);
-          hasCalledApi.current = false; // Reset the flag on error
-          alert(error instanceof Error ? error.message : 'An error occurred while processing your documents.');
-          router.push('/document-collection');
+        } catch (fetchError) {
+          if (fetchError.name === 'TypeError' && fetchError.message.includes('Failed to fetch')) {
+            console.error('Network error:', fetchError);
+            throw new Error('Network error. Please check your connection and try again.');
+          } else {
+            throw fetchError;
+          }
         }
       } catch (error) {
         console.error('Error:', error);

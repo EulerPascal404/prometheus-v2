@@ -77,18 +77,28 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supaba
                     "processing_status": progress_status
                 }).eq("user_id", user_id).execute()
                 
-                text = page.extract_text()
-                if text.strip():  # Only add non-empty pages
-                    text_content.append(text)
+                try:
+                    text = page.extract_text()
+                    # Ensure text is a string and not empty
+                    if isinstance(text, str) and text.strip():
+                        text_content.append(text)
+                    elif isinstance(text, list):
+                        # If text is a list, join it with spaces
+                        text = ' '.join(str(item) for item in text if item)
+                        if text.strip():
+                            text_content.append(text)
+                except Exception as e:
+                    print(f"Error extracting text from page {page_num + 1}: {str(e)}")
+                    continue
 
         # Clean up temporary file
         os.unlink(tmp_path)
 
         print("RUNNING RAG GENERATION")
 
-        # Join all text content
-        full_text = "\n".join(text_content)
-        print("Extracted text:", full_text[:10])  # Print first 10 chars for debugging
+        # Join all text content and ensure it's a string
+        full_text = "\n".join(text_content) if text_content else ""
+        print("Extracted text:", full_text[:10] if full_text else "No text extracted")  # Print first 10 chars for debugging
 
         # Update status to show we're running RAG generation
         supabase.table("user_documents").update({
