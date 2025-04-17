@@ -19,6 +19,22 @@ const nextConfig = {
     experimental: {
         optimizePackageImports: ['@supabase/supabase-js', 'pdfjs-dist'],
     },
+    rewrites: async () => {
+        return [
+            {
+                source: '/api/test',
+                destination: process.env.NODE_ENV === 'development' 
+                    ? 'http://127.0.0.1:8000/api/test'
+                    : '/api/test.py',
+            },
+            {
+                source: '/api/:path*',
+                destination: process.env.NODE_ENV === 'development'
+                    ? 'http://127.0.0.1:8000/api/:path*'
+                    : '/api/index.py',
+            },
+        ]
+    },
     webpack: (config, { dev, isServer }) => {
         // Optimize bundle size
         if (!dev && !isServer) {
