@@ -188,7 +188,7 @@ export default function ProcessingDocuments() {
         userId.current = user.id;
         const documentsObject = JSON.parse(documents as string);
 
-        // Use the API route that will be handled by the rewrite rule
+        // Use local API route to avoid CORS issues
         const apiUrl = '/api/validate-documents';
         
         console.log("Making API request to server:", apiUrl);
