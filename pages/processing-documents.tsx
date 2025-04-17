@@ -188,8 +188,10 @@ export default function ProcessingDocuments() {
         userId.current = user.id;
         const documentsObject = JSON.parse(documents as string);
 
-        // Use local API route to avoid CORS issues
-        const apiUrl = '/api/validate-documents';
+        // Use the correct API URL based on environment
+        const apiUrl = process.env.NODE_ENV === 'development' 
+          ? 'http://localhost:8000/api/validate-documents'
+          : '/api/validate-documents';
         
         console.log("Making API request to server:", apiUrl);
         console.log("Current hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');

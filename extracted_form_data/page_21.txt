@@ -1,0 +1,136 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line1/137FamilyName/1332/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line1/137FamilyName/1333/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (a/137no/137diploma/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (b/137HSDiploma/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (c/137some/137college/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (d/137collegeplus/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (e/137AssociateDegree/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (g/137MasterDegree/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (h/137ProfessionalDegree/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (f/137BachelorDegree/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (i/137DoctorateDegree/1330/135)
+Available Options: ['/1', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1a/137No/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1b/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1c/137No/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1c1/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1c2/137No/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1d/137No/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1d1/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1d1/137No/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1d/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1c2/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1c1/137No/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1c/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1b/137No/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSecALine1a/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (PartA/137q3/137Field/137of/137Study/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line6/137NAICSCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line5/137DOTCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line4/137RateofPayPerYear/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line1/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line1/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line2/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (H1BSec2Line2/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
