@@ -1,21 +1,11 @@
 {
   "version": 2,
+  "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "framework": "nextjs",
-  "builds": [
-    {
-      "src": "api/test.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    { "src": "/api/test", "dest": "/api/test.py" },
-    { "src": "/(.*)", "dest": "/$1" }
+  "rewrites": [
+    { "source": "/api/test", "destination": "/api/test.py" },
+    { "source": "/api/(.*)", "destination": "/api/index.py" }
   ],
   "headers": [
     {
