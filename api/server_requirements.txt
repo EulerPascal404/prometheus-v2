@@ -1,0 +1,2 @@
+# Server requirements - minimal set needed for running the development server
+importlib-metadata>=4.0.0 

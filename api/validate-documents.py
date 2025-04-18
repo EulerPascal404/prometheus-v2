@@ -630,16 +630,7 @@ class handler(BaseHTTPRequestHandler):
                         except Exception as time_error:
                             logger.error(f"Error checking processing time: {str(time_error)}")
                             # Continue with processing if we can't check time
-                elif response.data and response.data.get("processing_status") == "completed":
-                    # If processing is already completed, return the existing results
-                    self.send_json_response({
-                        "status": "success",
-                        "completion_score": response.data.get("completion_score", 0),
-                        "message": "Documents were already processed.",
-                        "can_proceed": True,
-                        "document_summaries": response.data.get("document_summaries", {})
-                    })
-                    return
+                # Remove the check for already processed documents
             except Exception as e:
                 logger.error(f"Error checking processing status: {str(e)}")
                 # Continue with processing if we can't check status
