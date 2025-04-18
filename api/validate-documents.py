@@ -396,7 +396,6 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supaba
             ]
         )
 
-        logger.log(response.choices[0].message.content)
 
         return {
             "summary": response.choices[0].message.content,
