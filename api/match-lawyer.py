@@ -2,7 +2,6 @@ from http.server import BaseHTTPRequestHandler
 import json
 import os
 import datetime
-import logging
 import traceback
 import socket
 import uuid
@@ -14,17 +13,10 @@ openai_api_key = os.environ.get("OPENAI_API_KEY")
 
 client = OpenAI(api_key=openai_api_key)
 
-# Configure logging
+# Create logs directory
 log_dir = "logs"
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
-
-logging.basicConfig(
-    filename=os.path.join(log_dir, "lawyer_matching.log"),
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
 
 def extract_all_text(data):
     """
@@ -203,10 +195,11 @@ def save_request_data(request_data, extracted_text, handler_instance=None):
         with open(text_file_path, 'w') as f:
             f.write(full_text)
         
+        print(f"Saved request data to {raw_file_path} and {text_file_path}")
         return raw_file_path, text_file_path
     except Exception as e:
-        logging.error(f"Error saving request data: {str(e)}")
-        logging.error(traceback.format_exc())
+        print(f"Error saving request data: {str(e)}")
+        print(traceback.format_exc())
         return None, None
 
 class handler(BaseHTTPRequestHandler):
@@ -230,7 +223,7 @@ class handler(BaseHTTPRequestHandler):
                 try:
                     request_data = json.loads(post_data)
                 except json.JSONDecodeError as e:
-                    logging.error(f"Error decoding JSON: {str(e)}")
+                    print(f"Error decoding JSON: {str(e)}")
                     request_data = {
                         "error": "Invalid JSON", 
                         "raw_data": post_data.decode('utf-8', errors='replace')
@@ -238,11 +231,11 @@ class handler(BaseHTTPRequestHandler):
             
             # Log request received
             user_id = request_data.get('user_id', 'unknown')
-            logging.info(f"Received lawyer matching request from user: {user_id}")
+            print(f"Received lawyer matching request from user: {user_id}")
             
             # Process only the document summaries from the request data
             document_summaries = request_data.get('document_summaries', {})
-            logging.info(f"Processing {len(document_summaries)} document summaries from request")
+            print(f"Processing {len(document_summaries)} document summaries from request")
             
             # Extract all text from request data
             all_request_text = extract_all_text(request_data)
@@ -250,8 +243,6 @@ class handler(BaseHTTPRequestHandler):
             
             # Save request data to files with this instance for metadata
             raw_file, text_file = save_request_data(request_data, all_request_text, self)
-            if raw_file and text_file:
-                logging.info(f"Saved request data to {raw_file} and {text_file}")
             
             # Use only the document summaries for matching
             query_text = ""
@@ -276,15 +267,15 @@ class handler(BaseHTTPRequestHandler):
             
             # Make sure we have a valid query
             if not search_query or len(search_query.strip()) < 10:
-                logging.warning("Query text too short, using default search")
+                print("Query text too short, using default search")
                 search_query = "O-1 visa lawyer for extraordinary ability"
             
             # Truncate if too long (OpenAI limits)
             if len(search_query) > 8000:
-                logging.warning(f"Query too long ({len(search_query)} chars), truncating")
+                print(f"Query too long ({len(search_query)} chars), truncating")
                 search_query = search_query[:8000]
             
-                # Search the vector store with the processed query
+            # Search the vector store with the processed query
             results = client.vector_stores.search(
                 vector_store_id=VECTOR_STORE_ID,
                 query=search_query,
@@ -301,13 +292,12 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
-            
             self.wfile.write(json.dumps(response_dict).encode())
             
         except Exception as e:
             # Log the error
-            logging.error(f"Error processing request: {str(e)}")
-            logging.error(traceback.format_exc())
+            print(f"Error processing request: {str(e)}")
+            print(traceback.format_exc())
             
             # Send error response
             self.send_response(500)
