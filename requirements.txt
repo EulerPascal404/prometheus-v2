@@ -7,7 +7,11 @@ PyPDF2==3.0.1
 pdfrw==0.4
 tqdm==4.66.2
 requests>=2.25.0
-#sentence-transformers==2.5.1
 numpy>=1.24.0
 werkzeug>=2.0.0
+# Required for dev server and API endpoints
+typing-extensions>=4.0.0
+# For handling datetime operations in the API
+python-dateutil>=2.8.2
+# For running the development server
 # minimal requirements for the project
