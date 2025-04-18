@@ -14,4 +14,6 @@ typing-extensions>=4.0.0
 # For handling datetime operations in the API
 python-dateutil>=2.8.2
 # For running the development server
+# Include current directory in Python path (for local module imports)
+-e .
 # minimal requirements for the project

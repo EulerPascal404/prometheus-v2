@@ -11,4 +11,6 @@ numpy>=1.24.0
 werkzeug>=2.0.0
 # Additional requirements for API functionality
 typing-extensions>=4.0.0
-python-dateutil>=2.8.2 
+python-dateutil>=2.8.2
+# Include current directory in Python path (for local module imports)
+-e . 
