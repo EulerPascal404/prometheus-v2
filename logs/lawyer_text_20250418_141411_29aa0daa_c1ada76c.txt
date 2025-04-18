@@ -1,0 +1,93 @@
+============================================================
+LAWYER MATCHING REQUEST METADATA
+============================================================
+Timestamp: 2025-04-18T14:14:11.252000
+Request ID: c1ada76c
+User ID: 29aa0daa
+Client IP: 127.0.0.1
+Client Hostname: DESKTOP-9BPBDO7
+
+REQUEST HEADERS:
+  Host: 127.0.0.1:8000
+  Connection: close
+  Content-Length: 3691
+  Sec-Ch-Ua-Platform: "Windows"
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6IlAyRnNtdXhwRmI2YXBMUWgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2tlaHJsaGV5bnhwYnRxenhkanV5LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIyOWFhMGRhYS1mZDcxLTRmY2UtOTA0OC0xYWQ0YWFhNTY1NTYiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQ1MDA0NDg3LCJpYXQiOjE3NDUwMDA4ODcsImVtYWlsIjoicnlhbnNhdmFnZWJhcnJldHRvQGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZ29vZ2xlIiwicHJvdmlkZXJzIjpbImdvb2dsZSJdfSwidXNlcl9tZXRhZGF0YSI6eyJhdmF0YXJfdXJsIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSjZZQ2lxMWp4UDBOUVg1VGZrQmFuTkctaWtRdEdGVjZsYTJMSm03ZHhYNGtjMlNBPXM5Ni1jIiwiZW1haWwiOiJyeWFuc2F2YWdlYmFycmV0dG9AZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZ1bGxfbmFtZSI6IlJ5YW4gQmFycmV0dG8iLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJuYW1lIjoiUnlhbiBCYXJyZXR0byIsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0o2WUNpcTFqeFAwTlFYNVRma0Jhbk5HLWlrUXRHRlY2bGEyTEptN2R4WDRrYzJTQT1zOTYtYyIsInByb3ZpZGVyX2lkIjoiMTA3MzQ2ODUzNjQ2NTUwMjgxNzI3Iiwic3ViIjoiMTA3MzQ2ODUzNjQ2NTUwMjgxNzI3In0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoib2F1dGgiLCJ0aW1lc3RhbXAiOjE3NDQzNDE0NzV9XSwic2Vzc2lvbl9pZCI6ImRkYTk0NzE2LWM0ODEtNDUzNy1hZjIxLTEwNDg0Yzg4YjcxYSIsImlzX2Fub255bW91cyI6ZmFsc2V9.KDHmqzoD9EjeoZpICFTbhqw2ACX_RpfXAFmi__FO3gM
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0
+  Sec-Ch-Ua: "Microsoft Edge";v="135", "Not-A.Brand";v="8", "Chromium";v="135"
+  Content-Type: application/json
+  Sec-Ch-Ua-Mobile: ?0
+  Accept: */*
+  Origin: http://localhost:3000
+  Sec-Fetch-Site: same-origin
+  Sec-Fetch-Mode: cors
+  Sec-Fetch-Dest: empty
+  Referer: http://localhost:3000/lawyer-search
+  Accept-Encoding: gzip, deflate, br, zstd
+  Accept-Language: en-US,en;q=0.9
+  X-Real-Ip: ::1
+  X-Vercel-Deployment-Url: localhost:3000
+  X-Vercel-Forwarded-For: ::1
+  X-Vercel-Id: dev1::qi7q8-1745003651237-aafe3a30ca0b
+  X-Forwarded-For: ::1
+  X-Forwarded-Port: 3000
+  X-Forwarded-Proto: http
+  X-Forwarded-Host: [::1]:55806
+============================================================
+
+
+========================================
+   DOCUMENT SUMMARIES (UPLOADED DOCUMENTS)   
+========================================
+
+
+--- RESUME DOCUMENT ---
+
+STRENGTHS:
+  • Strong academic performance with a GPA of 4.0
+  • Practical work experience in AI and Machine Learning
+  • Multiple awards and recognitions in relative fields
+  • Leadership experience and involvement in extracurricular activities
+  • Publication of several works
+  • Multiple independent projects showcasing practical application of skills
+  • Extensive experience with relevant technical skills.
+
+WEAKNESSES:
+  • Limited professional work experience
+  • Specific professional references are lacking
+  • Lack of formal higher education.
+
+RECOMMENDATIONS:
+  • Gain more professional experience in your field of interest
+  • Include specific references who can attest your professional and technical skills
+  • Consider pursuing formal higher education to strengthen your academic credentials
+  • Keep up to date with the latest developments and tools in AI and Machine Learning
+  • Consider participating in more competitions to enhance credibility and visibility in your field of expertise.
+
+SUMMARY:
+Strengths: [SEP] Strong academic performance with a GPA of 4.0 [SEP] Practical work experience in AI and Machine Learning [SEP] Multiple awards and recognitions in relative fields [SEP] Leadership experience and involvement in extracurricular activities [SEP] Publication of several works [SEP] Multiple independent projects showcasing practical application of skills [SEP] Extensive experience with relevant technical skills. 
+
+Weaknesses: [SEP] Limited professional work experience [SEP] Specific professional references are lacking [SEP] Lack of formal higher education.
+
+Recommendations: [SEP] Gain more professional experience in your field of interest [SEP] Include specific references who can attest your professional and technical skills [SEP] Consider pursuing formal higher education to strengthen your academic credentials [SEP] Keep up to date with the latest developments and tools in AI and Machine Learning [SEP] Consider participating in more competitions to enhance credibility and visibility in your field of expertise.
+
+========================================
+   UPLOADED DOCUMENTS STATUS   
+========================================
+
+  • resume: UPLOADED
+  • publications: NOT UPLOADED
+  • awards: NOT UPLOADED
+  • recommendation: NOT UPLOADED
+  • press: NOT UPLOADED
+  • salary: NOT UPLOADED
+  • judging: NOT UPLOADED
+  • membership: NOT UPLOADED
+  • contributions: NOT UPLOADED
+
+========================================
+   USER INFORMATION   
+========================================
+
+User ID: 29aa0daa-fd71-4fce-9048-1ad4aaa56556
+Address: Cannery Row, Monterey, CA 93940, USA

@@ -168,24 +168,17 @@ function SummarySection({ title, items, colorClass }: {
   console.log(`Rendering ${title} section with ${items.length} items:`, items);
   
   return (
-    <div className="summary-section" style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '15px' }}>
-      <h4 className={`summary-title summary-title-${colorClass}`} style={{ fontWeight: 'bold', marginBottom: '10px' }}>{title}</h4>
+    <div className="summary-section">
+      <h4 className={`summary-title summary-title-${colorClass}`}>{title}</h4>
       <ul className="space-y-2.5">
         {items.map((item, index) => (
-          <li key={index} className="flex gap-2.5" style={{ marginBottom: '5px' }}>
-            <span className={`summary-dot summary-dot-${colorClass}`} style={{ 
-              display: 'inline-block', 
-              width: '10px', 
-              height: '10px', 
-              borderRadius: '50%', 
-              backgroundColor: colorClass === 'green' ? '#4CAF50' : colorClass === 'red' ? '#F44336' : '#2196F3',
-              marginRight: '10px'
-            }} />
-            <span className="summary-text" style={{ color: '#fff' }}>{item}</span>
+          <li key={index} className="flex gap-2.5">
+            <span className={`summary-dot summary-dot-${colorClass}`} />
+            <span className="summary-text">{item}</span>
           </li>
         ))}
         {items.length === 0 && (
-          <li className="text-sm text-slate-500 italic" style={{ color: '#aaa' }}>No items found.</li>
+          <li className="text-sm text-slate-500 italic">No items found.</li>
         )}
       </ul>
     </div>
@@ -361,18 +354,45 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
       <div className="stats-grid mt-8">
         <div className="stats-section">
           <h4 className="stats-section-title">Petition Completeness</h4>
-          <div className="space-y-3">
-            <div className="stats-item">
-              <span className="stats-label">Total Evidence Fields</span>
-              <span className="stats-value stats-value-total">{petitionData.totalFields}</span>
+          <div className="flex flex-col items-center">
+            <div className="relative w-32 h-32 mb-4">
+              <svg className="w-full h-full" viewBox="0 0 100 100">
+                <circle 
+                  cx="50" 
+                  cy="50" 
+                  r="45" 
+                  fill="none" 
+                  stroke="rgba(203, 213, 225, 0.2)" 
+                  strokeWidth="8" 
+                />
+                <circle 
+                  cx="50" 
+                  cy="50" 
+                  r="45" 
+                  fill="none" 
+                  stroke="rgba(56, 189, 248, 0.8)" 
+                  strokeWidth="8"
+                  strokeDasharray={`${2 * Math.PI * 45}`}
+                  strokeDashoffset={`${2 * Math.PI * 45 * (1 - petitionData.percentFilled / 10)}`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 50 50)"
+                />
+              </svg>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                <div className="text-xl font-bold text-blue-400">{petitionData.percentFilled.toFixed(1)}%</div>
+                <div className="text-xs text-slate-400">Complete</div>
+              </div>
             </div>
-            <div className="stats-item">
-              <span className="stats-label">Fields Provided</span>
-              <span className="stats-value stats-value-filled">{petitionData.fieldsFilled}</span>
-            </div>
-            <div className="stats-item">
-              <span className="stats-label">Completion Rate</span>
-              <span className="stats-value stats-value-completion">{petitionData.percentFilled}%</span>
+            
+            <div className="grid grid-cols-2 gap-4 w-full">
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <div className="text-sm text-slate-400">Total Fields</div>
+                <div className="text-xl font-bold text-white">{petitionData.totalFields}</div>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <div className="text-sm text-slate-400">Fields Provided</div>
+                <div className="text-xl font-bold text-blue-400">{petitionData.fieldsFilled}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -381,13 +401,18 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
       <div className="grid grid-cols-2 gap-6 mt-8">
         <div className="stats-section">
           <h4 className="stats-section-title">O-1 Criteria Coverage</h4>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {formFieldData.map(({ label, value }) => (
               <div key={label} className="stats-item">
                 <span className="stats-label">{label}</span>
-                <div className="stats-value stats-value-missing">
-                  <span>{value}</span>
-                  <div className="stats-indicator"></div>
+                <div className="w-32 h-4 bg-slate-800 rounded-full overflow-hidden relative">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
+                    style={{ width: `${Math.min(100, (value / 10) * 100)}%` }}
+                  ></div>
+                  <span className="absolute top-1/2 right-2 transform -translate-y-1/2 text-xs text-white font-medium">
+                    {value}
+                  </span>
                 </div>
               </div>
             ))}
@@ -399,8 +424,11 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
                 href={filledPdfUrl} 
                 target="_blank"
                 rel="noopener noreferrer"
-                className="primary-button w-full text-center block py-3 font-bold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
               >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
                 View Document
               </a>
             </div>
@@ -411,7 +439,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
           <div className="stats-section">
             <h4 className="stats-section-title">O-1 Form Preview</h4>
             <div className="space-y-4">
-              <div className="w-full h-[300px] rounded-lg overflow-hidden border border-primary-500/30 bg-slate-900">
+              <div className="w-full h-[300px] rounded-lg overflow-hidden border border-primary-500/30 bg-slate-900 hover:shadow-lg transition-all duration-300 hover:border-primary-500/50">
                 <iframe
                   src={`${filledPdfUrl}#toolbar=0`}
                   className="w-full h-full"
@@ -423,14 +451,21 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
                   href={filledPdfUrl} 
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="primary-button"
+                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-600/10 border border-blue-500/30 text-blue-400 hover:from-blue-500/20 hover:to-purple-600/20 hover:border-blue-500/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
                   View in New Tab
                 </a>
                 <button 
                   onClick={() => window.open(filledPdfUrl, '_blank')}
-                  className="secondary-button"
+                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-600/10 border border-green-500/30 text-green-400 hover:from-green-500/20 hover:to-emerald-600/20 hover:border-green-500/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
                   Download PDF
                 </button>
               </div>
@@ -440,11 +475,47 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
       </div>
       
       <div className="application-score-footer mt-8">
-        <div className="score-display">
-          <span className="score-value">{applicationScore}</span>
-          <span className="score-max">/10</span>
+        <div className="relative">
+          <svg className="w-32 h-32" viewBox="0 0 100 100">
+            <circle 
+              cx="50" 
+              cy="50" 
+              r="45" 
+              fill="none" 
+              stroke="rgba(99, 102, 241, 0.1)" 
+              strokeWidth="8" 
+            />
+            <circle 
+              cx="50" 
+              cy="50" 
+              r="45" 
+              fill="none" 
+              stroke="url(#scoreGradient)" 
+              strokeWidth="8"
+              strokeDasharray={`${2 * Math.PI * 45}`}
+              strokeDashoffset={`${2 * Math.PI * 45 * (1 - applicationScore / 10)}`}
+              strokeLinecap="round"
+              transform="rotate(-90 50 50)"
+            />
+            <defs>
+              <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#38BDF8" />
+                <stop offset="50%" stopColor="#818CF8" />
+                <stop offset="100%" stopColor="#C084FC" />
+              </linearGradient>
+            </defs>
+          </svg>
+          
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+            <div className="score-value">{applicationScore}</div>
+            <div className="text-xs text-slate-400">out of 10</div>
+          </div>
         </div>
-        <div className="score-label">O-1 Qualification Score</div>
+        <div className="score-label mt-4">O-1 Qualification Score</div>
+        
+        <p className="mt-4 text-sm text-slate-400 max-w-md text-center">
+          This score represents your estimated qualification level for an O-1 visa based on the documents you've provided.
+        </p>
       </div>
 
       <div className="stats-footer">
@@ -1036,8 +1107,15 @@ export default function DocumentReview() {
       const matchedLawyerData = await response.json();
       console.log("API response:", matchedLawyerData);
       
-      setMatchedLawyer(matchedLawyerData);
-      setShowLawyerForm(false);
+      // Store the matched lawyer data and form data in localStorage
+      localStorage.setItem('lawyerMatch', JSON.stringify(matchedLawyerData));
+      localStorage.setItem('lawyerFormData', JSON.stringify({
+        address: address,
+        additional_comments: additionalComments
+      }));
+      
+      // Redirect to the lawyer-search page
+      router.push('/lawyer-search');
     } catch (error) {
       console.error('Error matching lawyer:', error);
       alert('Error finding a matching lawyer. Please try again.');
@@ -1144,6 +1222,973 @@ export default function DocumentReview() {
     <div>
       <Head>
         <style>{SharedStyles}</style>
+        <style>{`
+          .card {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 0.75rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          }
+          
+          .gradient-text {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(to right, #38BDF8, #818CF8, #C084FC);
+          }
+          
+          /* StatsSection Styles */
+          .stats-container {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+          }
+          
+          .stats-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(to right, #38BDF8, #818CF8, #C084FC);
+          }
+          
+          .next-steps-section {
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            background-color: rgba(30, 41, 59, 0.5);
+            margin-bottom: 1.5rem;
+          }
+          
+          .next-steps-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #e2e8f0;
+          }
+          
+          .next-steps-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+          }
+          
+          .priority-areas, .action-path {
+            padding: 1rem;
+            background-color: rgba(51, 65, 85, 0.4);
+            border-radius: 0.5rem;
+          }
+          
+          .priority-title, .action-path-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #94a3b8;
+          }
+          
+          .priority-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+          
+          .priority-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+          }
+          
+          .priority-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #a5b4fc;
+          }
+          
+          .priority-details {
+            display: flex;
+            flex-direction: column;
+          }
+          
+          .priority-label {
+            font-weight: 500;
+            color: #e2e8f0;
+            font-size: 0.875rem;
+          }
+          
+          .priority-value {
+            font-size: 0.75rem;
+            color: #94a3b8;
+          }
+          
+          .action-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+          
+          .action-step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+          }
+          
+          .action-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 9999px;
+            background: rgba(51, 65, 85, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.875rem;
+          }
+          
+          .action-indicator.completed {
+            background: rgba(52, 211, 153, 0.2);
+            border-color: rgba(52, 211, 153, 0.5);
+            color: #10b981;
+          }
+          
+          .action-indicator.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.5);
+            color: #818cf8;
+          }
+          
+          .action-label {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+          }
+          
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.25rem;
+          }
+          
+          .stats-section {
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+          }
+          
+          .stats-section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #e2e8f0;
+          }
+          
+          .stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+          }
+          
+          .stats-label {
+            font-size: 0.875rem;
+            color: #94a3b8;
+          }
+          
+          .stats-value {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+          
+          .stats-value-total {
+            color: #e2e8f0;
+          }
+          
+          .stats-value-filled {
+            color: #818cf8;
+          }
+          
+          .stats-value-completion {
+            color: #10b981;
+          }
+          
+          .stats-value-missing {
+            color: #f87171;
+          }
+          
+          .stats-indicator {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 5px currentColor;
+          }
+          
+          .application-score-footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 0;
+            margin-top: 1.5rem;
+            border-top: 1px solid rgba(100, 116, 139, 0.3);
+          }
+          
+          .score-display {
+            display: flex;
+            align-items: baseline;
+          }
+          
+          .score-value {
+            font-size: 3rem;
+            font-weight: 700;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(to right, #38BDF8, #818CF8, #C084FC);
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+          }
+          
+          .score-max {
+            font-size: 1.5rem;
+            color: #94a3b8;
+            margin-left: 0.25rem;
+          }
+          
+          .score-label {
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+          }
+          
+          .stats-footer {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(100, 116, 139, 0.3);
+          }
+          
+          .stats-info {
+            display: flex;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #94a3b8;
+          }
+          
+          .primary-button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(to right, #4f46e5, #8b5cf6);
+            color: white;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+          }
+          
+          .primary-button:hover {
+            background: linear-gradient(to right, #4338ca, #7c3aed);
+            transform: translateY(-1px);
+          }
+          
+          .secondary-button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: rgba(51, 65, 85, 0.8);
+            color: #e2e8f0;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            cursor: pointer;
+          }
+          
+          .secondary-button:hover {
+            background-color: rgba(51, 65, 85, 0.9);
+            transform: translateY(-1px);
+          }
+          
+          /* Document Analysis Styles */
+          .document-review-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 1.5rem;
+          }
+          
+          .document-selector {
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 0.5rem;
+            padding: 1rem;
+          }
+          
+          .document-selector-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #e2e8f0;
+          }
+          
+          .document-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+          
+          .document-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background-color: rgba(51, 65, 85, 0.4);
+            border: 1px solid transparent;
+          }
+          
+          .document-item:hover {
+            background-color: rgba(51, 65, 85, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+          
+          .document-item.selected {
+            background-color: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+          }
+          
+          .document-icon {
+            font-size: 1.25rem;
+            margin-right: 0.75rem;
+          }
+          
+          .document-name {
+            flex: 1;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+          }
+          
+          .document-view-link {
+            font-size: 0.75rem;
+            color: #818cf8;
+            text-decoration: none;
+          }
+          
+          .document-analysis {
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+          }
+          
+          .analysis-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #e2e8f0;
+          }
+          
+          .summary-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+          }
+          
+          .summary-section {
+            background-color: rgba(51, 65, 85, 0.4) !important;
+            border: 1px solid rgba(100, 116, 139, 0.3) !important;
+            border-radius: 0.5rem !important;
+            padding: 1.25rem !important;
+            margin-bottom: 0 !important;
+          }
+          
+          .summary-title {
+            font-size: 1.125rem !important;
+            font-weight: 600 !important;
+            margin-bottom: 1rem !important;
+          }
+          
+          .summary-title-green {
+            color: #10b981 !important;
+          }
+          
+          .summary-title-red {
+            color: #ef4444 !important;
+          }
+          
+          .summary-title-blue {
+            color: #3b82f6 !important;
+          }
+          
+          .summary-dot-green, .summary-dot-red, .summary-dot-blue {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+            margin-top: 5px;
+          }
+          
+          .summary-dot-green {
+            background-color: #10b981 !important;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6) !important;
+          }
+          
+          .summary-dot-red {
+            background-color: #ef4444 !important;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6) !important;
+          }
+          
+          .summary-dot-blue {
+            background-color: #3b82f6 !important;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6) !important;
+          }
+          
+          .summary-text {
+            color: #e2e8f0 !important;
+            font-size: 0.875rem !important;
+          }
+          
+          /* Next Steps Styles */
+          .next-steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.25rem;
+          }
+          
+          .next-step-card {
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+          }
+          
+          .next-step-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+          }
+          
+          .next-step-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #e2e8f0;
+          }
+          
+          .next-step-description {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-bottom: 1.25rem;
+          }
+          
+          .next-step-button {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(to right, #4f46e5, #8b5cf6);
+            color: white;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            width: 100%;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+          }
+          
+          .next-step-button:hover {
+            background: linear-gradient(to right, #4338ca, #7c3aed);
+            transform: translateY(-1px);
+          }
+          
+          /* Lawyer Form Styles */
+          .lawyer-form-container {
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+          }
+          
+          .lawyer-form-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #e2e8f0;
+          }
+          
+          .lawyer-form-description {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+          }
+          
+          .lawyer-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+          }
+          
+          .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+          
+          .form-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #cbd5e1;
+          }
+          
+          .form-input, .form-textarea {
+            padding: 0.75rem;
+            background-color: rgba(51, 65, 85, 0.8);
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            border-radius: 0.375rem;
+            color: #e2e8f0;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+          }
+          
+          .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+          }
+          
+          .submit-button {
+            padding: 0.75rem;
+            background: linear-gradient(to right, #4f46e5, #8b5cf6);
+            color: white;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+          }
+          
+          .submit-button:hover:not(:disabled) {
+            background: linear-gradient(to right, #4338ca, #7c3aed);
+            transform: translateY(-1px);
+          }
+          
+          .submit-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+          }
+          
+          /* Matched Lawyer Styles */
+          .matched-lawyer-container {
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+          }
+          
+          .matched-lawyer-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #e2e8f0;
+          }
+          
+          .lawyer-card {
+            background-color: rgba(51, 65, 85, 0.4);
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+          }
+          
+          .lawyer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(100, 116, 139, 0.3);
+          }
+          
+          .lawyer-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #e2e8f0;
+          }
+          
+          .match-score {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          
+          .match-score-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #10b981;
+          }
+          
+          .match-score-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+          }
+          
+          .lawyer-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+          }
+          
+          .lawyer-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+          }
+          
+          .lawyer-detail-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+          }
+          
+          .lawyer-detail-value {
+            font-size: 0.875rem;
+            color: #e2e8f0;
+          }
+          
+          .lawyer-description {
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+          }
+          
+          .lawyer-actions {
+            display: flex;
+            gap: 1rem;
+          }
+          
+          .contact-button {
+            flex: 1;
+            padding: 0.75rem;
+            background: linear-gradient(to right, #4f46e5, #8b5cf6);
+            color: white;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+          }
+          
+          .contact-button:hover {
+            background: linear-gradient(to right, #4338ca, #7c3aed);
+            transform: translateY(-1px);
+          }
+          
+          .find-another-button {
+            flex: 1;
+            padding: 0.75rem;
+            background-color: rgba(51, 65, 85, 0.8);
+            color: #e2e8f0;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            cursor: pointer;
+          }
+          
+          .find-another-button:hover {
+            background-color: rgba(51, 65, 85, 0.9);
+            transform: translateY(-1px);
+          }
+          
+          /* Responsive Adjustments */
+          @media (max-width: 768px) {
+            .next-steps-content {
+              grid-template-columns: 1fr;
+            }
+            
+            .document-review-container {
+              grid-template-columns: 1fr;
+            }
+            
+            .lawyer-actions {
+              flex-direction: column;
+            }
+          }
+          
+          /* Loading Spinner */
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          
+          .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            border-top-color: #38BDF8;
+            border-right-color: #818CF8; 
+            border-bottom-color: #C084FC;
+            animation: spin 1.5s linear infinite;
+            margin: 2rem auto;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+          }
+          
+          /* StatsSection Enhanced Styles */
+          .stats-container {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+          }
+          
+          .stats-container:hover {
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
+            border-color: rgba(168, 85, 247, 0.4);
+          }
+          
+          .stats-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(to right, #38BDF8, #818CF8, #C084FC);
+            text-align: center;
+            letter-spacing: -0.025em;
+          }
+          
+          .next-steps-section {
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            background-color: rgba(30, 41, 59, 0.5);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+          }
+          
+          .next-steps-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            color: #e2e8f0;
+            text-align: center;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(to right, #38BDF8, #818CF8);
+          }
+          
+          .next-steps-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+          }
+          
+          .priority-areas, .action-path {
+            padding: 1.25rem;
+            background-color: rgba(51, 65, 85, 0.4);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            transition: all 0.3s ease;
+          }
+          
+          .priority-areas:hover, .action-path:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-color: rgba(99, 102, 241, 0.25);
+            transform: translateY(-2px);
+          }
+          
+          .priority-title, .action-path-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #a5b4fc;
+            text-align: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+          }
+          
+          .priority-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+          
+          .priority-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background-color: rgba(51, 65, 85, 0.3);
+            transition: all 0.2s ease;
+          }
+          
+          .priority-item:hover {
+            background-color: rgba(51, 65, 85, 0.5);
+          }
+          
+          .priority-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.4), rgba(139, 92, 246, 0.4));
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+          }
+          
+          .priority-details {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+          }
+          
+          .priority-label {
+            font-weight: 500;
+            color: #e2e8f0;
+            font-size: 0.875rem;
+          }
+          
+          .priority-value {
+            font-size: 0.75rem;
+            color: #94a3b8;
+          }
+          
+          .action-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+          
+          .action-step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background-color: rgba(51, 65, 85, 0.3);
+            transition: all 0.2s ease;
+          }
+          
+          .action-step:hover {
+            background-color: rgba(51, 65, 85, 0.5);
+          }
+          
+          .action-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 9999px;
+            background: rgba(51, 65, 85, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.875rem;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+          }
+          
+          .action-indicator.completed {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
+            border-color: rgba(16, 185, 129, 0.5);
+            color: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+          }
+          
+          .action-indicator.active {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(139, 92, 246, 0.2));
+            border-color: rgba(99, 102, 241, 0.5);
+            color: #818cf8;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+          }
+          
+          .action-label {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            flex: 1;
+          }
+          
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+          }
+          
+          .stats-section {
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            transition: all 0.3s ease;
+          }
+          
+          .stats-section:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-color: rgba(99, 102, 241, 0.25);
+            transform: translateY(-2px);
+          }
+          
+          .stats-section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            color: #e2e8f0;
+            text-align: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+          }
+          
+          .stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background-color: rgba(51, 65, 85, 0.3);
+            transition: all 0.2s ease;
+          }
+          
+          .stats-item:hover {
+            background-color: rgba(51, 65, 85, 0.5);
+          }
+          
+          .stats-label {
+            font-size: 0.875rem;
+            color: #a5b4fc;
+          }
+          
+        `}</style>
         <title>Prometheus - Document Review</title>
       </Head>
 
@@ -1160,7 +2205,7 @@ export default function DocumentReview() {
 
           {isLoading ? (
             <div className="card p-8 w-full text-center border-primary-500/30">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-600 border-t-primary-400 animate-spin mx-auto mb-4"></div>
+              <div className="loading-spinner"></div>
               <p className="text-slate-300">Loading your document analysis...</p>
             </div>
           ) : (
@@ -1278,7 +2323,7 @@ export default function DocumentReview() {
                       Connect with an experienced immigration lawyer who specializes in O-1 visas.
                     </p>
                     <button 
-                      onClick={() => setShowLawyerForm(true)}
+                      onClick={() => router.push('/lawyer-search')}
                       className="next-step-button"
                     >
                       Find My Lawyer

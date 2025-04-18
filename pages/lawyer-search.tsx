@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import Script from 'next/script';
 // Import SharedStyles and BackgroundEffects
 import { SharedStyles, BackgroundEffects } from '../components/SharedStyles';
+import { supabase } from '../config/supabase';
 
 interface LawyerMatch {
   name: string;
@@ -60,6 +61,10 @@ export default function LawyerSearch() {
   const mapsAttempted = useRef(false);
   const calculationAttempted = useRef(false);
   const [isExpanded, setIsExpanded] = useState(false); // State for description expansion
+  const [address, setAddress] = useState('');
+  const [additionalComments, setAdditionalComments] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement>(null);
   
   // Add style for any Google Maps elements
   useEffect(() => {
@@ -197,7 +202,7 @@ export default function LawyerSearch() {
     }
   }, [matchedLawyer, userAddress, googleMapsReady]);
 
-  // Load data from localStorage
+  // Load data from localStorage and make API call
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -209,6 +214,12 @@ export default function LawyerSearch() {
           hasFormData: !!formData
         });
         
+        let userData = {
+          address: '',
+          additional_comments: ''
+        };
+        
+        // First load data from localStorage for immediate display
         if (storedMatch) {
           const matchData = JSON.parse(storedMatch);
           // Clean up lawyer address formatting
@@ -217,17 +228,95 @@ export default function LawyerSearch() {
             console.log("Lawyer address:", matchData.address);
           }
           setMatchedLawyer(matchData);
-        }
-        
-        if (formData) {
-          const parsedFormData = JSON.parse(formData);
-          if (parsedFormData.address) {
-            // Clean up user address formatting
-            const cleanAddress = parsedFormData.address.trim();
-            console.log("User address:", cleanAddress);
-            setUserAddress(cleanAddress);
+          
+          if (formData) {
+            const parsedFormData = JSON.parse(formData);
+            userData = parsedFormData;
+            if (parsedFormData.address) {
+              // Clean up user address formatting
+              const cleanAddress = parsedFormData.address.trim();
+              console.log("User address:", cleanAddress);
+              setUserAddress(cleanAddress);
+            }
           }
         }
+        
+        // Always make an API call to match-lawyer, regardless of localStorage
+        console.log("Making API call to match-lawyer endpoint");
+        
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error("No authenticated user found");
+          if (!storedMatch) setLoading(false); // Only set loading to false if we don't have cached data
+          return;
+        }
+        
+        // Get document summaries from localStorage
+        const storedSummaries = localStorage.getItem('documentSummaries');
+        const documentSummaries = storedSummaries ? JSON.parse(storedSummaries) : {};
+        
+        // Get uploaded documents from Supabase
+        const { data: userDocs, error: userDocsError } = await supabase
+          .from('user_documents')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (userDocsError) {
+          console.error('Error fetching user documents:', userDocsError.message);
+          if (!storedMatch) setLoading(false); // Only set loading to false if we don't have cached data
+          return;
+        }
+        
+        // Create uploaded_documents object
+        const uploaded_documents = {
+          resume: userDocs?.resume || false,
+          publications: userDocs?.publications || false,
+          awards: userDocs?.awards || false,
+          recommendation: userDocs?.recommendation || false,
+          press: userDocs?.press || false,
+          salary: userDocs?.salary || false,
+          judging: userDocs?.judging || false,
+          membership: userDocs?.membership || false,
+          contributions: userDocs?.contributions || false
+        };
+        
+        // Use local API route to avoid CORS issues
+        const apiUrl = '/api/match-lawyer';
+        
+        // Make API call to match lawyer
+        console.log("Making API request to match lawyer");
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            uploaded_documents: uploaded_documents,
+            document_summaries: documentSummaries,
+            additional_info: userData
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Error response from match-lawyer API:", errorText);
+          if (!storedMatch) setLoading(false); // Only set loading to false if we don't have cached data
+          return;
+        }
+        
+        const matchedLawyerData = await response.json();
+        console.log("API response:", matchedLawyerData);
+        
+        // Update the state with fresh data from API
+        setMatchedLawyer(matchedLawyerData);
+        
+        // Store in localStorage for future use
+        localStorage.setItem('lawyerMatch', JSON.stringify(matchedLawyerData));
+        localStorage.setItem('lawyerFormData', JSON.stringify(userData));
         
         // If we already have Maps API ready, attempt to calculate distance
         if (window.google && window.google.maps && !mapsAttempted.current) {
@@ -236,7 +325,7 @@ export default function LawyerSearch() {
           mapsAttempted.current = true;
         }
       } catch (e) {
-        console.error("Error parsing stored data:", e);
+        console.error("Error loading lawyer data:", e);
       } finally {
         setLoading(false);
       }
@@ -280,6 +369,167 @@ export default function LawyerSearch() {
   const toggleExpansion = () => {
     setIsExpanded(!isExpanded);
   };
+
+  // Add function to handle lawyer search form submission
+  const handleLawyerSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!address.trim()) {
+      alert('Please enter your address');
+      return;
+    }
+    
+    setIsSearching(true);
+    
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+      
+      // Get document summaries from localStorage
+      const storedSummaries = localStorage.getItem('documentSummaries');
+      const documentSummaries = storedSummaries ? JSON.parse(storedSummaries) : {};
+      
+      // Get uploaded documents from Supabase
+      const { data: userDocs, error: userDocsError } = await supabase
+        .from('user_documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (userDocsError) {
+        throw new Error('Error fetching user documents: ' + userDocsError.message);
+      }
+      
+      // Create uploaded_documents object
+      const uploaded_documents = {
+        resume: userDocs?.resume || false,
+        publications: userDocs?.publications || false,
+        awards: userDocs?.awards || false,
+        recommendation: userDocs?.recommendation || false,
+        press: userDocs?.press || false,
+        salary: userDocs?.salary || false,
+        judging: userDocs?.judging || false,
+        membership: userDocs?.membership || false,
+        contributions: userDocs?.contributions || false
+      };
+      
+      // API endpoint for lawyer matching
+      const apiUrl = '/api/match-lawyer';
+      
+      console.log("Making API request to match lawyer from form submission");
+      // Make API call to match lawyer
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          uploaded_documents: uploaded_documents,
+          document_summaries: documentSummaries,
+          additional_info: {
+            address: address,
+            additional_comments: additionalComments
+          }
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response from match-lawyer API:", errorText);
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+      }
+      
+      const matchedLawyerData = await response.json();
+      console.log("API response from form submission:", matchedLawyerData);
+      
+      // Save form data for future use
+      localStorage.setItem('lawyerFormData', JSON.stringify({
+        address: address,
+        additional_comments: additionalComments
+      }));
+      
+      // Store the matched lawyer data in localStorage
+      localStorage.setItem('lawyerMatch', JSON.stringify(matchedLawyerData));
+      
+      // Set matched lawyer data
+      setMatchedLawyer(matchedLawyerData);
+      setUserAddress(address);
+    } catch (error) {
+      console.error('Error matching lawyer:', error);
+      alert('Error finding a matching lawyer. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Add an effect to recalculate distance when userAddress or matchedLawyer is updated from API
+  useEffect(() => {
+    // Reset distance calculation flag when the data changes
+    calculationAttempted.current = false;
+    
+    // Check if we have both pieces of data and Maps is ready
+    if (matchedLawyer?.address && userAddress && googleMapsReady) {
+      console.log("Data updated from API call, recalculating distance...");
+      // Add a small delay to ensure Google Maps is fully initialized
+      const timer = setTimeout(() => {
+        calculateDistance();
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [matchedLawyer, userAddress, googleMapsReady, calculateDistance]);
+
+  // Add a component to render the search form
+  const renderLawyerSearchForm = () => (
+    <div className="card w-full overflow-hidden border-accent-400/20">
+      <div className="p-6 md:p-8 flex flex-col items-center">
+        <h2 className="text-xl font-semibold gradient-text mb-4">Find Your Immigration Expert</h2>
+        <p className="text-slate-300 text-sm mb-6 text-center">
+          Enter your address and any additional information to help us match you with the best immigration lawyer for your O-1 visa case.
+        </p>
+        
+        <form onSubmit={handleLawyerSearch} className="w-full max-w-md space-y-4">
+          <div className="form-group">
+            <label htmlFor="address" className="block text-sm font-medium text-slate-300 mb-1">Your Address</label>
+            <input
+              ref={addressInputRef}
+              type="text"
+              id="address"
+              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500/50 text-white"
+              placeholder="Enter your address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="additionalComments" className="block text-sm font-medium text-slate-300 mb-1">Additional Information</label>
+            <textarea
+              id="additionalComments"
+              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500/50 text-white"
+              placeholder="Any specific requirements or preferences for your immigration lawyer"
+              value={additionalComments}
+              onChange={(e) => setAdditionalComments(e.target.value)}
+              rows={4}
+            />
+          </div>
+          
+          <button
+            type="submit"
+            className="gradient-button px-6 py-2.5 text-base w-full"
+            disabled={isSearching}
+          >
+            {isSearching ? 'Finding Your Match...' : 'Find My Immigration Lawyer'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 
   return (
     <div>
@@ -406,14 +656,7 @@ export default function LawyerSearch() {
                 </div>
               </div>
             ) : !loading && (
-              // Use card style for the 'not found' message
-              <div className="card p-6 md:p-8 text-center w-full border-accent-400/20">
-                <p className="text-slate-300 text-lg mb-4">NO O-1 EXPERT MATCH FOUND</p>
-                <p className="text-slate-400 mb-6">We couldn't find a suitable O-1 visa expert based on your qualification profile.</p>
-                <button onClick={handleGoBack} className="gradient-button text-sm mx-auto">
-                  RETURN TO ANALYSIS
-                </button>
-              </div>
+              renderLawyerSearchForm()
             )}
             {!loading && (
               <div className="text-center mt-6">

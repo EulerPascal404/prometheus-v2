@@ -1352,6 +1352,19 @@ export const SharedStyles = `
       flex-direction: column;
     }
   }
+
+  /* Add Tailwind-like utility classes */
+  .text-primary-300 {
+    color: #a78bfa;
+  }
+  
+  .text-primary-400 {
+    color: #8b5cf6;
+  }
+  
+  .border-primary-500\/30 {
+    border-color: rgba(139, 92, 246, 0.3);
+  }
 `;
 
 export const BackgroundEffects: FC = () => {

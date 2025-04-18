@@ -349,6 +349,145 @@ export default function ProcessingDocuments() {
     <div>
       <Head>
         <style>{SharedStyles}</style>
+        <style>{`
+          .card {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 0.75rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          }
+          
+          .gradient-text {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(to right, #38BDF8, #818CF8, #C084FC);
+          }
+          
+          .processing-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, rgba(56, 189, 248, 0.1) 50%, transparent 70%);
+            filter: blur(20px);
+            z-index: -1;
+          }
+          
+          .circular-progress {
+            position: relative;
+            width: 164px;
+            height: 164px;
+            margin: 0 auto 2rem;
+          }
+          
+          .progress-background {
+            fill: none;
+            stroke: rgba(51, 65, 85, 0.5);
+            stroke-width: 8;
+          }
+          
+          .progress-bar {
+            fill: none;
+            stroke: url(#gradient);
+            stroke-width: 8;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            transition: stroke-dashoffset 0.5s ease;
+            filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.4));
+          }
+          
+          .progress-percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+          }
+          
+          .processing-text {
+            text-align: center;
+            margin-top: 1.5rem;
+          }
+          
+          .processing-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+          }
+          
+          .current-stage {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+          }
+          
+          .criteria-chip {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            color: #c4b5fd;
+            box-shadow: 0 0 5px rgba(168, 85, 247, 0.3);
+            transition: all 0.3s ease;
+          }
+          
+          .criteria-chip:nth-child(odd) {
+            animation: pulse 3s infinite;
+            animation-delay: calc(0.5s * var(--i, 0));
+          }
+          
+          .criteria-chip:nth-child(even) {
+            animation: pulse 4s infinite;
+            animation-delay: calc(0.5s * var(--i, 0));
+          }
+          
+          @keyframes pulse {
+            0%, 100% { 
+              transform: scale(1);
+              opacity: 1;
+            }
+            50% { 
+              transform: scale(1.05);
+              opacity: 0.9;
+            }
+          }
+          
+          .processing-messages {
+            position: relative;
+            height: 4rem;
+            overflow: hidden;
+            margin-top: 1.5rem;
+          }
+          
+          .message-transition {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            color: #94a3b8;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            animation: fadeInOut 5s ease infinite;
+            transform: translateY(20px);
+          }
+          
+          @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(10px); }
+            10%, 90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+          }
+        `}</style>
         <title>Prometheus - Processing Documents</title>
       </Head>
 
@@ -404,13 +543,13 @@ export default function ProcessingDocuments() {
               </h1>
               <div className="current-stage">{currentStage}</div>
               <div className="flex flex-wrap justify-center gap-2 my-4">
-                <span className="criteria-chip">Awards</span>
-                <span className="criteria-chip">Publications</span>
-                <span className="criteria-chip">Leadership</span>
-                <span className="criteria-chip">High Salary</span>
-                <span className="criteria-chip">Critical Role</span>
-                <span className="criteria-chip">Commercial Success</span>
-                <span className="criteria-chip">Judging</span>
+                <span className="criteria-chip" style={{ '--i': 0 } as React.CSSProperties}>Awards</span>
+                <span className="criteria-chip" style={{ '--i': 1 } as React.CSSProperties}>Publications</span>
+                <span className="criteria-chip" style={{ '--i': 2 } as React.CSSProperties}>Leadership</span>
+                <span className="criteria-chip" style={{ '--i': 3 } as React.CSSProperties}>High Salary</span>
+                <span className="criteria-chip" style={{ '--i': 4 } as React.CSSProperties}>Critical Role</span>
+                <span className="criteria-chip" style={{ '--i': 5 } as React.CSSProperties}>Commercial Success</span>
+                <span className="criteria-chip" style={{ '--i': 6 } as React.CSSProperties}>Judging</span>
               </div>
               <div className="processing-messages">
                 <p key={currentMessageIndex} className="message-transition">
