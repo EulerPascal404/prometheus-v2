@@ -307,6 +307,8 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supaba
             ]
         )
 
+        logger.log(response.choices[0].message.content)
+
         return {
             "summary": response.choices[0].message.content,
             "pages": total_pages,
@@ -596,7 +598,6 @@ class handler(BaseHTTPRequestHandler):
                         if file_response:
                             # Process the PDF content with page-by-page updates
                             summary = process_pdf_content(file_response, doc_type, user_id, supabase)
-                            logger.log(summary)
                             document_summaries[doc_type] = summary
                     
                     except Exception as e:
