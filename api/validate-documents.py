@@ -377,7 +377,7 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supaba
         }).eq("user_id", user_id).execute()
         
         # Pass context information to run function for progress tracking
-      #  pdf_pages, field_stats = run(full_text, doc_type=doc_type, user_id=user_id, supabase=supabase)
+        pdf_pages, field_stats = run(full_text, doc_type=doc_type, user_id=user_id, supabase=supabase)
 
         # Get OpenAI API key from environment variable
         openai_api_key = os.environ.get("OPENAI_API_KEY")
@@ -397,10 +397,10 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supaba
         return {
             "summary": response.choices[0].message.content,
             "pages": total_pages,
-       #     "pdf_filled_pages": pdf_pages,
+            "pdf_filled_pages": pdf_pages,
             "processed": True,
             "text_preview": full_text[:1000],  # Include first 1000 chars of text for verification
-          #  "field_stats": field_stats  # Include field stats in the response
+            "field_stats": field_stats  # Include field stats in the response
         }
     except Exception as e:
         print(f"Error processing PDF: {str(e)}")
