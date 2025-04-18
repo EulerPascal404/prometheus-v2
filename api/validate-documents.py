@@ -118,13 +118,13 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     print(f"Base directory exists: {os.path.exists(base_dir)}")
     
     # Use absolute paths for all file operations
-    extracted_text_dir = base_dir / "extracted_text"
+    extracted_text_dir = base_dir + "extracted_text"
     print(f"Extracted text directory: {extracted_text_dir}")
     print(f"Extracted text directory exists: {os.path.exists(extracted_text_dir)}")
     
     # Create directories if they don't exist
     os.makedirs(extracted_text_dir, exist_ok=True)
-    os.makedirs(base_dir / "rag_responses", exist_ok=True)
+    os.makedirs(base_dir + "rag_responses", exist_ok=True)
     
     files = glob(str(extracted_text_dir / "*.txt"))
     print(f"Found {len(files)} text files in {extracted_text_dir}")
@@ -132,7 +132,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
         print(f"  - {file}")
     
     # Clear history file before starting
-    history_file = str(base_dir / "rag_responses/history.txt")
+    history_file = str(base_dir + "rag_responses/history.txt")
     os.makedirs(os.path.dirname(history_file), exist_ok=True)
     # Clear history file before we start
     with open(history_file, 'w', encoding='utf-8') as f:
@@ -144,8 +144,8 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
         if supabase and user_id:
             log_page_progress(idx + 1, total_pages, user_id, supabase)
         
-        form_data_file = str(base_dir / f"extracted_form_data/page_{page_num}.txt")
-        page_filled_file = str(base_dir / f"rag_responses/page_{page_num}_filled.txt")
+        form_data_file = str(base_dir + f"extracted_form_data/page_{page_num}.txt")
+        page_filled_file = str(base_dir + f"rag_responses/page_{page_num}_filled.txt")
         print(f"Looking for form data file: {form_data_file}")
         print(f"Form data file exists: {os.path.exists(form_data_file)}")
         
@@ -263,7 +263,7 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
             logger.error(f"Error updating RAG progress: {str(e)}")
     
     # Make sure the RAG responses directory exists
-    rag_responses_dir = base_dir / "rag_responses"
+    rag_responses_dir = base_dir + "rag_responses"
     os.makedirs(rag_responses_dir, exist_ok=True)
     
     # Generate RAG responses using the user info
