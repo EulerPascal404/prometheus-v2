@@ -6,10 +6,12 @@ import traceback
 import socket
 import uuid
 from openai import OpenAI
+import requests
 
 VECTOR_STORE_ID = "vs_680295db3acc8191b3018c1fda9f5f58"
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+google_maps_api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
 
 client = OpenAI(api_key=openai_api_key)
 
@@ -202,6 +204,38 @@ def save_request_data(request_data, extracted_text, handler_instance=None):
         print(traceback.format_exc())
         return None, None
 
+# Function to calculate distance between two addresses using Google Maps Distance Matrix API
+def calculate_distance(origin_address, destination_address):
+    if not origin_address or not destination_address or not google_maps_api_key:
+        print("Missing address or API key for distance calculation")
+        return None
+    
+    try:
+        url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+        params = {
+            "origins": origin_address,
+            "destinations": destination_address,
+            "mode": "driving",
+            "units": "imperial",
+            "key": google_maps_api_key
+        }
+        
+        print(f"Calculating distance between {origin_address} and {destination_address}")
+        response = requests.get(url, params=params)
+        data = response.json()
+        
+        if data["status"] == "OK" and data["rows"][0]["elements"][0]["status"] == "OK":
+            distance_text = data["rows"][0]["elements"][0]["distance"]["text"]
+            duration_text = data["rows"][0]["elements"][0]["duration"]["text"]
+            return f"{distance_text} (approx. {duration_text} drive)"
+        else:
+            print(f"Distance calculation error: {data}")
+            return None
+    except Exception as e:
+        print(f"Error calculating distance: {str(e)}")
+        print(traceback.format_exc())
+        return None
+
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         """Handle OPTIONS requests for CORS preflight"""
@@ -284,6 +318,21 @@ class handler(BaseHTTPRequestHandler):
             
             response_dict = eval(results.data[0].content[0].text)
             response_dict["match_score"] = results.data[0].score
+            
+            # Calculate distance if we have addresses
+            user_address = None
+            if 'additional_info' in request_data and 'address' in request_data['additional_info']:
+                user_address = request_data['additional_info']['address']
+            
+            lawyer_address = response_dict.get('address')
+            
+            if user_address and lawyer_address:
+                print(f"Calculating distance for user at {user_address}")
+                distance = calculate_distance(user_address, lawyer_address)
+                if distance:
+                    response_dict["distance"] = distance
+                    print(f"Distance calculated: {distance}")
+            
             response_dict = {k.lower().replace(" ", "_"): v for k, v in response_dict.items()}
             
             # Send successful response
