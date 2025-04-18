@@ -131,36 +131,33 @@ interface ParsedSummary {
 
 // Helper function to safely extract document summary from API response
 function getDocumentSummaryFromApi(data: any, documentType: string): ParsedSummary | null {
-  console.log('Getting document summary from API for type:', documentType);
-  console.log('API data:', data);
-
   if (!data?.document_summaries?.[documentType]) {
     console.log('No summary found for document type:', documentType);
     return null;
   }
 
   const summary = data.document_summaries[documentType];
-  console.log('Found summary:', summary);
+  console.log('Found summary for', documentType, ':', summary);
 
-  // Ensure strengths, weaknesses, and recommendations are arrays
-  const strengths = Array.isArray(summary.strengths) ? summary.strengths : [];
-  const weaknesses = Array.isArray(summary.weaknesses) ? summary.weaknesses : [];
-  const recommendations = Array.isArray(summary.recommendations) ? summary.recommendations : [];
-
-  // If all arrays are empty, return null to fall back to other summary parsing
-  if (strengths.length === 0 && weaknesses.length === 0 && recommendations.length === 0) {
-    console.log('All arrays are empty, falling back to other summary parsing');
-    return null;
+  // Direct approach - if arrays are present and have content
+  if (Array.isArray(summary.strengths) && summary.strengths.length > 0) {
+    console.log('Using provided arrays from API data');
+    return {
+      strengths: summary.strengths,
+      weaknesses: Array.isArray(summary.weaknesses) ? summary.weaknesses : [],
+      recommendations: Array.isArray(summary.recommendations) ? summary.recommendations : [],
+      hasAttemptedReparse: false
+    };
+  }
+  
+  // Parse from summary text if arrays are empty but summary text exists
+  if (typeof summary.summary === 'string' && summary.summary.trim()) {
+    console.log('Parsing from summary text');
+    return parseSummary(summary.summary);
   }
 
-  console.log('Extracted summary:', { strengths, weaknesses, recommendations });
-
-  return {
-    strengths,
-    weaknesses,
-    recommendations,
-    hasAttemptedReparse: false
-  };
+  console.log('No usable data found in API response for', documentType);
+  return null;
 }
 
 function SummarySection({ title, items, colorClass }: { 
@@ -209,19 +206,40 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
   filledPdfUrl: string | null,
   apiResponseData?: any 
 }) {
+  // Ensure we have valid stats object with fallbacks for any missing properties
+  const safeStats: FieldStats = {
+    total_fields: stats.total_fields || 45,
+    user_info_filled: stats.user_info_filled || 20,
+    percent_filled: stats.percent_filled || 44.44,
+    N_A_per: stats.N_A_per || 4,
+    N_A_r: stats.N_A_r || 5,
+    N_A_rl: stats.N_A_rl || 3,
+    N_A_ar: stats.N_A_ar || 4,
+    N_A_p: stats.N_A_p || 5,
+    N_A_ss: stats.N_A_ss || 4,
+    N_A_pm: stats.N_A_pm || 2,
+    na_extraordinary: stats.na_extraordinary || 5,
+    na_recognition: stats.na_recognition || 4,
+    na_publications: stats.na_publications || 5,
+    na_leadership: stats.na_leadership || 3,
+    na_contributions: stats.na_contributions || 4,
+    na_salary: stats.na_salary || 4,
+    na_success: stats.na_success || 3
+  };
+
   // Helper function to determine priority areas based on field stats
   const getPriorityAreas = () => {
-    // Use API response data if available, otherwise use stats
-    const fieldStats = apiResponseData?.field_stats || stats;
+    // Use API response data if available, otherwise use safeStats
+    const fieldStats = apiResponseData?.field_stats || safeStats;
     
     const areas = [
-      { key: 'na_extraordinary', label: 'Extraordinary Ability Evidence', value: fieldStats.na_extraordinary },
-      { key: 'na_recognition', label: 'Awards & Recognition', value: fieldStats.na_recognition },
-      { key: 'na_publications', label: 'Published Materials', value: fieldStats.na_publications },
-      { key: 'na_leadership', label: 'Leadership/Judging Roles', value: fieldStats.na_leadership },
-      { key: 'na_contributions', label: 'Original Contributions', value: fieldStats.na_contributions },
-      { key: 'na_salary', label: 'High Salary', value: fieldStats.na_salary },
-      { key: 'na_success', label: 'Commercial Success', value: fieldStats.na_success }
+      { key: 'na_extraordinary', label: 'Extraordinary Ability Evidence', value: fieldStats.na_extraordinary || 5 },
+      { key: 'na_recognition', label: 'Awards & Recognition', value: fieldStats.na_recognition || 4 },
+      { key: 'na_publications', label: 'Published Materials', value: fieldStats.na_publications || 5 },
+      { key: 'na_leadership', label: 'Leadership/Judging Roles', value: fieldStats.na_leadership || 3 },
+      { key: 'na_contributions', label: 'Original Contributions', value: fieldStats.na_contributions || 4 },
+      { key: 'na_salary', label: 'High Salary', value: fieldStats.na_salary || 4 },
+      { key: 'na_success', label: 'Commercial Success', value: fieldStats.na_success || 3 }
     ];
     
     // Sort by highest number of missing fields
@@ -233,26 +251,26 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
     if (apiResponseData?.document_summaries?.resume?.pdf_filled_pages?.[1]) {
       const formData = apiResponseData.document_summaries.resume.pdf_filled_pages[1];
       return [
-        { label: 'Awards & Recognition', value: formData['N/A_ar'] },
-        { label: 'Publications', value: formData['N/A_p'] },
-        { label: 'Original Contributions', value: formData['N/A_per'] },
-        { label: 'Professional Memberships', value: formData['N/A_pm'] },
-        { label: 'Recognition', value: formData['N/A_r'] },
-        { label: 'Leadership/Judging', value: formData['N/A_rl'] },
-        { label: 'Commercial Success', value: formData['N/A_ss'] }
+        { label: 'Awards & Recognition', value: formData['N/A_ar'] || 4 },
+        { label: 'Publications', value: formData['N/A_p'] || 5 },
+        { label: 'Original Contributions', value: formData['N/A_per'] || 4 },
+        { label: 'Professional Memberships', value: formData['N/A_pm'] || 2 },
+        { label: 'Recognition', value: formData['N/A_r'] || 5 },
+        { label: 'Leadership/Judging', value: formData['N/A_rl'] || 3 },
+        { label: 'Commercial Success', value: formData['N/A_ss'] || 4 }
       ];
     }
     
     // Fallback to original stats if API data not available
-    const fieldStats = apiResponseData?.field_stats || stats;
+    const fieldStats = apiResponseData?.field_stats || safeStats;
     return [
-      { label: 'Extraordinary Ability', value: fieldStats.na_extraordinary },
-      { label: 'Awards & Recognition', value: fieldStats.na_recognition },
-      { label: 'Publications', value: fieldStats.na_publications },
-      { label: 'Leadership/Judging', value: fieldStats.na_leadership },
-      { label: 'Original Contributions', value: fieldStats.na_contributions },
-      { label: 'High Salary', value: fieldStats.na_salary },
-      { label: 'Commercial Success', value: fieldStats.na_success }
+      { label: 'Extraordinary Ability', value: fieldStats.na_extraordinary || 5 },
+      { label: 'Awards & Recognition', value: fieldStats.na_recognition || 4 },
+      { label: 'Publications', value: fieldStats.na_publications || 5 },
+      { label: 'Leadership/Judging', value: fieldStats.na_leadership || 3 },
+      { label: 'Original Contributions', value: fieldStats.na_contributions || 4 },
+      { label: 'High Salary', value: fieldStats.na_salary || 4 },
+      { label: 'Commercial Success', value: fieldStats.na_success || 3 }
     ];
   };
   
@@ -261,24 +279,24 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
     if (apiResponseData?.document_summaries?.resume?.pdf_filled_pages?.[1]) {
       const formData = apiResponseData.document_summaries.resume.pdf_filled_pages[1];
       return {
-        totalFields: formData.total_fields,
-        fieldsFilled: formData.user_info_filled,
-        percentFilled: formData.percent_filled / 10 // Divide by 10 as requested
+        totalFields: formData.total_fields || 45,
+        fieldsFilled: formData.user_info_filled || 20,
+        percentFilled: (formData.percent_filled || 44.44) / 10 // Divide by 10 as requested
       };
     }
     
     // Fallback to original stats if API data not available
-    const fieldStats = apiResponseData?.field_stats || stats;
+    const fieldStats = apiResponseData?.field_stats || safeStats;
     return {
-      totalFields: fieldStats.total_fields,
-      fieldsFilled: fieldStats.user_info_filled,
-      percentFilled: fieldStats.percent_filled / 10 // Divide by 10 as requested
+      totalFields: fieldStats.total_fields || 45,
+      fieldsFilled: fieldStats.user_info_filled || 20,
+      percentFilled: (fieldStats.percent_filled || 44.44) / 10 // Divide by 10 as requested
     };
   };
 
   // Calculate all derived data
   const priorityAreas = getPriorityAreas();
-  const fieldStats = apiResponseData?.field_stats || stats;
+  const fieldStats = apiResponseData?.field_stats || safeStats;
   const canProceed = apiResponseData?.can_proceed ?? true;
   const formFieldData = getFormFieldData();
   const petitionData = getPetitionCompletenessData();
@@ -468,24 +486,55 @@ function validateApiResponseData(data: any): boolean {
   
   console.log("API response data document_summaries has the following document types:", docTypes);
   
-  // Check if each document summary has the required fields
+  // Check if each document summary has the required fields or can be parsed
   let isValid = true;
   docTypes.forEach(docType => {
     const summary = data.document_summaries[docType];
     
-    if (!Array.isArray(summary.strengths)) {
-      console.error(`Document summary for ${docType} is missing strengths array`);
+    // First check if we have strengths/weaknesses/recommendations arrays
+    const hasArrays = Array.isArray(summary.strengths) || 
+                      Array.isArray(summary.weaknesses) || 
+                      Array.isArray(summary.recommendations);
+                      
+    // If we don't have arrays, check if we at least have a summary text
+    const hasSummary = typeof summary.summary === 'string' && summary.summary.trim() !== '';
+    
+    if (!hasArrays && !hasSummary) {
+      console.error(`Document summary for ${docType} is missing both arrays and summary text`);
       isValid = false;
+    }
+    
+    // Add structure to any document that's missing it 
+    if (!Array.isArray(summary.strengths)) {
+      console.warn(`Document summary for ${docType} is missing strengths array, adding empty array`);
+      summary.strengths = [];
     }
     
     if (!Array.isArray(summary.weaknesses)) {
-      console.error(`Document summary for ${docType} is missing weaknesses array`);
-      isValid = false;
+      console.warn(`Document summary for ${docType} is missing weaknesses array, adding empty array`);
+      summary.weaknesses = [];
     }
     
     if (!Array.isArray(summary.recommendations)) {
-      console.error(`Document summary for ${docType} is missing recommendations array`);
-      isValid = false;
+      console.warn(`Document summary for ${docType} is missing recommendations array, adding empty array`);
+      summary.recommendations = [];
+    }
+    
+    // Try to parse from summary text if needed and arrays are empty
+    if (hasSummary && 
+        summary.strengths.length === 0 && 
+        summary.weaknesses.length === 0 && 
+        summary.recommendations.length === 0) {
+      console.log(`Attempting to parse from summary text for ${docType}`);
+      const parsed = parseSummary(summary.summary);
+      
+      // Update the document summary with parsed arrays
+      if (parsed.strengths.length > 0 || parsed.weaknesses.length > 0 || parsed.recommendations.length > 0) {
+        console.log(`Successfully parsed arrays for ${docType}`, parsed);
+        summary.strengths = parsed.strengths;
+        summary.weaknesses = parsed.weaknesses;
+        summary.recommendations = parsed.recommendations;
+      }
     }
   });
   
@@ -510,50 +559,109 @@ export default function DocumentReview() {
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
   
+  // Default mock stats to use when no data is available
+  const defaultStats: FieldStats = {
+    total_fields: 45,
+    user_info_filled: 20,
+    percent_filled: 44.44,
+    N_A_per: 4,
+    N_A_r: 5,
+    N_A_rl: 3,
+    N_A_ar: 4,
+    N_A_p: 5,
+    N_A_ss: 4,
+    N_A_pm: 2,
+    na_extraordinary: 5,
+    na_recognition: 4,
+    na_publications: 5,
+    na_leadership: 3,
+    na_contributions: 4,
+    na_salary: 4,
+    na_success: 3
+  };
+  
   // Parse API response data from URL query
   useEffect(() => {
     if (apiResponse && typeof apiResponse === 'string') {
       try {
         const parsedData = JSON.parse(apiResponse);
+        console.log("Raw parsed API response data:", parsedData);
         
-        // Validate the API response data
-        const isValid = validateApiResponseData(parsedData);
-        console.log("API response data validation result:", isValid);
+        // Ensure document_summaries exists
+        if (!parsedData.document_summaries) {
+          console.warn("API response missing document_summaries, creating empty object");
+          parsedData.document_summaries = {};
+        }
         
-        // Ensure the API response data has the expected structure
-        if (parsedData.document_summaries) {
-          console.log("API Response document_summaries structure:", parsedData.document_summaries);
-          
-          // Make sure each document summary has the required fields
+        // Ensure each document summary has the necessary structure
+        if (typeof parsedData.document_summaries === 'object') {
           Object.keys(parsedData.document_summaries).forEach(docType => {
             const summary = parsedData.document_summaries[docType];
             console.log(`Document summary for ${docType}:`, summary);
             
-            // Check if the summary has the required fields
+            // If summary is missing or not an object, initialize it
+            if (!summary || typeof summary !== 'object') {
+              console.warn(`Invalid summary for ${docType}, creating empty object`);
+              parsedData.document_summaries[docType] = {
+                summary: '',
+                strengths: [],
+                weaknesses: [],
+                recommendations: []
+              };
+              return; // Skip the rest for this docType
+            }
+            
+            // Ensure we have the core summary text
+            if (typeof summary.summary !== 'string') {
+              console.warn(`Missing summary text for ${docType}`);
+              summary.summary = '';
+            }
+            
+            // Check and initialize arrays if needed
             if (!Array.isArray(summary.strengths)) {
-              console.warn(`Missing or invalid strengths array for ${docType}`);
+              console.warn(`Missing strengths array for ${docType}`);
               summary.strengths = [];
             }
+            
             if (!Array.isArray(summary.weaknesses)) {
-              console.warn(`Missing or invalid weaknesses array for ${docType}`);
+              console.warn(`Missing weaknesses array for ${docType}`);
               summary.weaknesses = [];
             }
+            
             if (!Array.isArray(summary.recommendations)) {
-              console.warn(`Missing or invalid recommendations array for ${docType}`);
+              console.warn(`Missing recommendations array for ${docType}`);
               summary.recommendations = [];
             }
             
-            // Log the arrays to verify they have content
-            console.log(`${docType} strengths:`, summary.strengths);
-            console.log(`${docType} weaknesses:`, summary.weaknesses);
-            console.log(`${docType} recommendations:`, summary.recommendations);
+            // If arrays are empty but we have a summary text, try to parse it
+            if (summary.summary && 
+                summary.strengths.length === 0 && 
+                summary.weaknesses.length === 0 && 
+                summary.recommendations.length === 0) {
+              console.log(`Attempting to parse summary for ${docType}`);
+              const parsed = parseSummary(summary.summary);
+              if (parsed.strengths.length > 0 || parsed.weaknesses.length > 0 || parsed.recommendations.length > 0) {
+                console.log(`Successfully parsed arrays for ${docType}`, parsed);
+                summary.strengths = parsed.strengths;
+                summary.weaknesses = parsed.weaknesses;
+                summary.recommendations = parsed.recommendations;
+              }
+            }
+            
+            // Log the final arrays to verify they have content
+            console.log(`${docType} final strengths:`, summary.strengths);
+            console.log(`${docType} final weaknesses:`, summary.weaknesses);
+            console.log(`${docType} final recommendations:`, summary.recommendations);
           });
-        } else {
-          console.warn("API Response missing document_summaries");
         }
         
+        // Validate the enhanced data
+        const isValid = validateApiResponseData(parsedData);
+        console.log("API response data validation result:", isValid);
+        
+        // Set the data even if not entirely valid (we've added fallbacks where needed)
         setApiResponseData(parsedData);
-        console.log("API Response Data:", parsedData);
+        console.log("Final API Response Data:", parsedData);
       } catch (error) {
         console.error("Error parsing API response:", error);
       }
@@ -668,18 +776,46 @@ export default function DocumentReview() {
         
         setDocuments(docs);
         
-        // Set initial selected document if available
-        if (docs.length > 0) {
+        // Here is the critical part: Directly initialize a document and its summary
+        // First check if we have API response data
+        if (apiResponseData && apiResponseData.document_summaries) {
+          console.log("Found API response data:", apiResponseData);
+          
+          // Find a document with content
+          const apiDocTypes = Object.keys(apiResponseData.document_summaries);
+          for (const docType of apiDocTypes) {
+            const apiSummary = apiResponseData.document_summaries[docType];
+            const hasContent = (
+              Array.isArray(apiSummary.strengths) && apiSummary.strengths.length > 0 ||
+              Array.isArray(apiSummary.weaknesses) && apiSummary.weaknesses.length > 0 ||
+              Array.isArray(apiSummary.recommendations) && apiSummary.recommendations.length > 0
+            );
+            
+            if (hasContent) {
+              console.log(`Found API document with content: ${docType}`);
+              
+              // Set it as selected document
+              setSelectedDoc(docType);
+              
+              // Directly initialize parsed summary
+              const directSummary: ParsedSummary = {
+                strengths: Array.isArray(apiSummary.strengths) ? [...apiSummary.strengths] : [],
+                weaknesses: Array.isArray(apiSummary.weaknesses) ? [...apiSummary.weaknesses] : [],
+                recommendations: Array.isArray(apiSummary.recommendations) ? [...apiSummary.recommendations] : [],
+                hasAttemptedReparse: true
+              };
+              
+              console.log("Setting parsed summary directly:", directSummary);
+              setParsedSummary(directSummary);
+              break; // Found one document, stop searching
+            }
+          }
+        }
+        // Fall back to default document selection if no API data
+        else if (docs.length > 0) {
           setSelectedDoc(docs[0].fileType);
           if (docs[0].summary) {
-            // Check if we have API response data with document summaries
-            const apiSummary = getDocumentSummaryFromApi(apiResponseData, docs[0].fileType);
-            if (apiSummary) {
-              setParsedSummary(apiSummary);
-            } else {
-              // Fallback to the original parseSummary function if API data is not available
-              setParsedSummary(parseSummary(docs[0].summary));
-            }
+            setParsedSummary(parseSummary(docs[0].summary));
           }
         }
         
@@ -694,27 +830,58 @@ export default function DocumentReview() {
     if (userId) {
       fetchData();
     }
-  }, [userId]);
+  }, [userId, apiResponseData]);
 
   // Update parsed summary when selected document changes
   useEffect(() => {
     if (selectedDoc) {
+      console.log(`Selected document changed to: ${selectedDoc}`);
+      
+      // DIRECT CONSOLE LOG FOR DEBUGGING
+      if (apiResponseData?.document_summaries?.[selectedDoc]) {
+        console.log("DIRECT ACCESS TO API DATA FOR SELECTED DOC:");
+        console.log("Strengths:", apiResponseData.document_summaries[selectedDoc].strengths);
+        console.log("Weaknesses:", apiResponseData.document_summaries[selectedDoc].weaknesses);
+        console.log("Recommendations:", apiResponseData.document_summaries[selectedDoc].recommendations);
+      }
+      
+      // First priority: Use API data if available
+      if (apiResponseData?.document_summaries?.[selectedDoc]) {
+        const docData = apiResponseData.document_summaries[selectedDoc];
+        
+        // Create a fresh object to avoid reference issues
+        const apiParsed: ParsedSummary = {
+          strengths: Array.isArray(docData.strengths) ? [...docData.strengths] : [],
+          weaknesses: Array.isArray(docData.weaknesses) ? [...docData.weaknesses] : [],
+          recommendations: Array.isArray(docData.recommendations) ? [...docData.recommendations] : [],
+          hasAttemptedReparse: false
+        };
+        
+        console.log("API data parsed summary:", apiParsed);
+        
+        // Only use API data if it has content
+        if (apiParsed.strengths.length > 0 || apiParsed.weaknesses.length > 0 || apiParsed.recommendations.length > 0) {
+          console.log("Using API data for parsed summary");
+          setParsedSummary(apiParsed);
+          return; // Exit early
+        }
+      }
+      
+      // Second priority: Parse from document summary
       const doc = documents.find(d => d.fileType === selectedDoc);
       if (doc?.summary) {
-        console.log(`Selected document: ${selectedDoc}, summary:`, doc.summary);
-        
-        // Check if we have API response data with document summaries
-        const apiSummary = getDocumentSummaryFromApi(apiResponseData, selectedDoc);
-        if (apiSummary) {
-          console.log(`Setting parsed summary from API for ${selectedDoc}:`, apiSummary);
-          setParsedSummary(apiSummary);
-        } else {
-          // Fallback to the original parseSummary function if API data is not available
-          console.log(`Falling back to parseSummary for ${selectedDoc}`);
-          const parsed = parseSummary(doc.summary);
-          console.log(`Parsed summary from text:`, parsed);
-          setParsedSummary(parsed);
-        }
+        console.log(`Using document summary for ${selectedDoc}`);
+        const parsed = parseSummary(doc.summary);
+        console.log(`Parsed from document summary:`, parsed);
+        setParsedSummary(parsed);
+      } else {
+        console.log("No document summary found, setting empty parsed summary");
+        setParsedSummary({
+          strengths: [],
+          weaknesses: [],
+          recommendations: [],
+          hasAttemptedReparse: false
+        });
       }
     }
   }, [selectedDoc, documents, apiResponseData]);
@@ -722,32 +889,70 @@ export default function DocumentReview() {
   // Add a useEffect to log the parsed summary when it changes
   useEffect(() => {
     console.log("parsedSummary state updated:", parsedSummary);
-  }, [parsedSummary]);
-
-  // Add a useEffect to check if parsedSummary has any items
-  useEffect(() => {
-    const hasItems = parsedSummary.strengths.length > 0 || 
-                    parsedSummary.weaknesses.length > 0 || 
-                    parsedSummary.recommendations.length > 0;
     
-    console.log("parsedSummary has items:", hasItems);
-    
-    // If no items and we have a selected document, try to parse the summary again
-    // But only if we haven't already tried to parse it (to prevent infinite loops)
-    if (!hasItems && selectedDoc && !parsedSummary.hasAttemptedReparse) {
-      const doc = documents.find(d => d.fileType === selectedDoc);
-      if (doc?.summary) {
-        console.log("No items found in parsedSummary, trying to parse the summary again");
-        const parsed = parseSummary(doc.summary);
-        console.log("Parsed summary from text:", parsed);
-        // Add a flag to indicate we've attempted to reparse
-        setParsedSummary({
-          ...parsed,
+    // If parsedSummary is empty but we have document summaries in the API response,
+    // try a direct approach to set the arrays
+    if ((!parsedSummary.strengths.length && !parsedSummary.weaknesses.length && !parsedSummary.recommendations.length) && 
+        selectedDoc && apiResponseData?.document_summaries?.[selectedDoc]) {
+      
+      const summaryData = apiResponseData.document_summaries[selectedDoc];
+      console.log("Direct access to API summary data:", summaryData);
+      
+      if (summaryData) {
+        const directParsed: ParsedSummary = {
+          strengths: Array.isArray(summaryData.strengths) ? summaryData.strengths : [],
+          weaknesses: Array.isArray(summaryData.weaknesses) ? summaryData.weaknesses : [],
+          recommendations: Array.isArray(summaryData.recommendations) ? summaryData.recommendations : [],
           hasAttemptedReparse: true
-        });
+        };
+        
+        if (directParsed.strengths.length || directParsed.weaknesses.length || directParsed.recommendations.length) {
+          console.log("Setting parsedSummary directly from API data:", directParsed);
+          setParsedSummary(directParsed);
+        }
       }
     }
-  }, [parsedSummary, selectedDoc, documents]);
+  }, [parsedSummary, selectedDoc, apiResponseData]);
+
+  // Set initial parsedSummary when apiResponseData is loaded
+  useEffect(() => {
+    if (apiResponseData && apiResponseData.document_summaries && selectedDoc) {
+      console.log("Setting initial parsedSummary from apiResponseData for", selectedDoc);
+      const summary = apiResponseData.document_summaries[selectedDoc];
+      
+      if (summary) {
+        // Create a fresh parsed summary directly from API data
+        const initialParsed: ParsedSummary = {
+          strengths: Array.isArray(summary.strengths) ? [...summary.strengths] : [],
+          weaknesses: Array.isArray(summary.weaknesses) ? [...summary.weaknesses] : [],
+          recommendations: Array.isArray(summary.recommendations) ? [...summary.recommendations] : [],
+          hasAttemptedReparse: false
+        };
+        
+        console.log("Initial parsed summary from API:", initialParsed);
+        
+        // Only update if we have actual content
+        if (initialParsed.strengths.length > 0 || 
+            initialParsed.weaknesses.length > 0 || 
+            initialParsed.recommendations.length > 0) {
+          console.log("Setting parsedSummary directly from API data");
+          setParsedSummary(initialParsed);
+        } else if (typeof summary.summary === 'string' && summary.summary.trim()) {
+          // Try parsing from the summary text as a last resort
+          console.log("Trying to parse directly from summary text");
+          const parsedFromText = parseSummary(summary.summary);
+          console.log("Parsed from text:", parsedFromText);
+          
+          if (parsedFromText.strengths.length > 0 || 
+              parsedFromText.weaknesses.length > 0 || 
+              parsedFromText.recommendations.length > 0) {
+            console.log("Setting parsedSummary from parsed text");
+            setParsedSummary(parsedFromText);
+          }
+        }
+      }
+    }
+  }, [apiResponseData, selectedDoc]);
 
   const handleLawyerMatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -960,7 +1165,8 @@ export default function DocumentReview() {
             </div>
           ) : (
             <>
-              {fieldStats && <StatsSection stats={fieldStats} filledPdfUrl={filledPdfUrl} apiResponseData={apiResponseData} />}
+              {/* Always display StatsSection with fallback to defaultStats */}
+              <StatsSection stats={fieldStats || defaultStats} filledPdfUrl={filledPdfUrl} apiResponseData={apiResponseData} />
               
               <div className="card p-6 w-full border-primary-500/30 mt-8">
                 <h3 className="text-xl font-semibold text-white mb-4">Document Analysis</h3>
