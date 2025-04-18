@@ -130,7 +130,13 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     print(f"Found {len(files)} text files in {extracted_text_dir}")
     for file in files:
         print(f"  - {file}")
-
+    
+    # Clear history file before starting
+    history_file = str(base_dir + "rag_responses/history.txt")
+    os.makedirs(os.path.dirname(history_file), exist_ok=True)
+    # Clear history file before we start
+    with open(history_file, 'w', encoding='utf-8') as f:
+        f.write("")
 
     output_text = ""
     
@@ -193,7 +199,6 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
             print(f"Processing page {page_num}: Response received")
             if response and hasattr(response, 'choices') and len(response.choices) > 0:
                 response_text = response.choices[0].message.content
-                print(response_text)
 
                 output_text += response_text + "\n\n"
                 print(f"Response for page {page_num} has been saved and appended to history")
@@ -372,7 +377,7 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str, supaba
         }).eq("user_id", user_id).execute()
         
         # Pass context information to run function for progress tracking
-        pdf_pages, field_stats = run(full_text, doc_type=doc_type, user_id=user_id, supabase=supabase)
+      #  pdf_pages, field_stats = run(full_text, doc_type=doc_type, user_id=user_id, supabase=supabase)
 
         # Get OpenAI API key from environment variable
         openai_api_key = os.environ.get("OPENAI_API_KEY")
