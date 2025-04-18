@@ -126,7 +126,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     os.makedirs(extracted_text_dir, exist_ok=True)
     os.makedirs(base_dir + "rag_responses", exist_ok=True)
     
-    files = glob(str(extracted_text_dir / "*.txt"))
+    files = glob(str(extracted_text_dir + "/*.txt"))
     print(f"Found {len(files)} text files in {extracted_text_dir}")
     for file in files:
         print(f"  - {file}")
