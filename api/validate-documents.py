@@ -613,7 +613,7 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
     except Exception as e:
         print(f"Error saving field statistics: {str(e)}")
     
-    PdfWriter().write(output_pdf, template)
+  #  PdfWriter().write(output_pdf, template)
     print(f"Completed filling PDF with {total_pages} pages")
     return total_pages, field_stats
 
