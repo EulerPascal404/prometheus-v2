@@ -228,7 +228,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
     console.log('fieldStats', apiResponseData?.field_stats);
     
     const areas = [
-      { key: 'na_extraordinary', label: 'Extraordinary Ability Evidence', value: fieldStats.na_extraordinary || 5 },
+      { key: 'na_extraordinary', label: 'Extraordinary Ability Evidence', value: fieldStats["N/A_ar"] || 5 },
       { key: 'na_recognition', label: 'Awards & Recognition', value: fieldStats.na_recognition || 4 },
       { key: 'na_publications', label: 'Published Materials', value: fieldStats.na_publications || 5 },
       { key: 'na_leadership', label: 'Leadership/Judging Roles', value: fieldStats.na_leadership || 3 },
@@ -247,13 +247,13 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
     const fieldStats = apiResponseData?.field_stats || safeStats;
     
     return [
-      { label: 'Extraordinary Ability', value: fieldStats.na_extraordinary || 5 },
-      { label: 'Awards & Recognition', value: fieldStats.na_recognition || 4 },
-      { label: 'Publications', value: fieldStats.na_publications || 5 },
-      { label: 'Leadership/Judging', value: fieldStats.na_leadership || 3 },
-      { label: 'Original Contributions', value: fieldStats.na_contributions || 4 },
-      { label: 'High Salary', value: fieldStats.na_salary || 4 },
-      { label: 'Commercial Success', value: fieldStats.na_success || 3 }
+      { label: 'Awards & Recognition', value: fieldStats["N/A_ar"]},
+      { label: 'Personal Info', value: fieldStats["N/A_per"]},
+      { label: 'Resume', value: fieldStats["N/A_r"]},
+      { label: 'Recommendation Letters', value: fieldStats["N/A_rl"] },
+      { label: 'Publications', value: fieldStats["N/A_p"]},
+      { label: 'Salary Success', value: fieldStats["N/A_ss"] },
+      { label: 'Professional Membership', value: fieldStats["N/A_pm"] }
     ];
   };
   
