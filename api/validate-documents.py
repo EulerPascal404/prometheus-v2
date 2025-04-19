@@ -391,6 +391,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
             
             # Use both texts, handling empty cases
             text_prompt = (form_data + "\n" + page_text).strip()
+            print(text_prompt)
             if not text_prompt:
                 text_prompt = "No text content available for analysis"
 
@@ -656,7 +657,7 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
     Process extracted text and fill PDF forms
     
     Args:
-        extracted_text (str): The text extracted from the PDF
+        extracted_text (str): The text extracted from the CURRENT uploaded PDF only
         doc_type (str): Type of document being processed
         user_id (str): User ID for tracking
         supabase: Supabase client for database operations
@@ -683,14 +684,20 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
     rag_responses_dir = base_dir + "rag_responses"
     os.makedirs(rag_responses_dir, exist_ok=True)
     
-    # Generate RAG responses using the user info
+    # Limit text to approximately 5000 tokens (using character approximation)
+    char_limit = 5000 * 4  # Rough approximation: 1 token ≈ 4 characters
+    if len(extracted_text) > char_limit:
+        logger.info(f"Truncating extracted text from {len(extracted_text)} to ~{char_limit} characters")
+        extracted_text = extracted_text[:char_limit]
+    
+    # Generate RAG responses using ONLY the current uploaded document text
     full_response_dict = write_rag_responses(
         extra_info=f"Extracted Text: {extracted_text}...", 
-        pages=list(range(1, NUM_PAGES)),  # Limit to 10 pages for serverless environment
+        pages=list(range(1, NUM_PAGES)),  # Limit to defined page count for serverless environment
         user_id=user_id,
         supabase=supabase
     )
-    print(full_response_dict)
+    print(f"Response dict for {doc_type}: {full_response_dict}")
     
     # Update progress for PDF filling preparation
     if supabase and user_id:
@@ -729,7 +736,7 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
     }
     
     total_pages, field_stats = fill_and_check_pdf("data/o1-form-template-cleaned-filled.pdf", "data/o1-form-template-cleaned-filled.pdf", full_response_dict, doc_type, user_id, supabase)
-    print(field_stats)
+    print(f"Field stats after filling for {doc_type}: {field_stats}")
     # Final completion update
     if supabase and user_id:
         try:
@@ -762,6 +769,7 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
             
             # Update status to show page processing progress if Supabase is available
             for page_num, page in enumerate(pdf_reader.pages):
+                print(f"Processing page {page_num + 1} of {total_pages}")
                 # Update processing status with page progress (only if Supabase is available)
                 if supabase and user_id:
                     try:
@@ -793,8 +801,9 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
         print("RUNNING RAG GENERATION")
 
         # Join all text content and ensure it's a string
+        # This is ONLY the text from the CURRENT uploaded document, not all documents in Supabase
         full_text = "\n".join(text_content) if text_content else ""
-        print("Extracted text:", full_text[:10] if full_text else "No text extracted")
+        print("Extracted text from current document:", full_text[:100] if full_text else "No text extracted")
 
         # Update status to show we're running RAG generation (only if Supabase is available)
         if supabase and user_id:
@@ -821,7 +830,15 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
             }
         
         try:
-            # Generate summary using OpenAI
+            print("Processing document text for:", doc_type)
+            # Limit text to 5000 tokens (approximate character count)
+            # A very rough estimate - 1 token ≈ 4 characters for English text
+            char_limit = 5000 * 4
+            if len(full_text) > char_limit:
+                print(f"Truncating text from {len(full_text)} chars to ~{char_limit} chars")
+                full_text = full_text[:char_limit]
+            
+            # Generate summary using OpenAI with the current document only
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
@@ -835,9 +852,11 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
             # Parse the summary into structured arrays
             strengths, weaknesses, recommendations = parse_summary(summary_text)
 
+            # Process ONLY this uploaded document for PDF filling
+            # We're only using the text from the current uploaded document
             num_pages, field_stats = run(full_text, doc_type, user_id, supabase)
 
-            print(f"Field stats: {field_stats}")
+            print(f"Field stats for {doc_type}: {field_stats}")
             
             # Return the structured results
             return {
@@ -1091,6 +1110,7 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             logger.info(f"Processing documents for user: {user_id}")
+            logger.info(f"Documents to process: {list(uploaded_documents.keys())}")
             
             # Try to get Supabase client, but continue even if it fails
             supabase = None
@@ -1115,12 +1135,12 @@ class handler(BaseHTTPRequestHandler):
                 
             document_summaries = {}
             
-            # Process uploaded documents
+            # Process uploaded documents - ONLY the ones explicitly in the uploaded_documents parameter
             if uploaded_documents:
-                logger.info(f"Uploaded documents: {list(uploaded_documents.keys())}")
+                logger.info(f"Processing these specific documents: {list(uploaded_documents.keys())}")
                 
-                for doc_type in uploaded_documents:
-                    if uploaded_documents[doc_type]:
+                for doc_type, should_process in uploaded_documents.items():
+                    if should_process:
                         try:
                             # Update processing status if Supabase is available
                             if supabase:
@@ -1131,16 +1151,28 @@ class handler(BaseHTTPRequestHandler):
                                 except Exception as e:
                                     logger.error(f"Error updating status for {doc_type}: {str(e)}")
                             
-                            # Try to get the file from Supabase storage
+                            # Get the file from Supabase storage - ONLY the specific document listed in uploaded_documents
                             file_response = None
                             if supabase:
                                 try:
-                                    file_response = supabase.storage.from_('documents').download(
-                                        f"{user_id}/{doc_type}.pdf"
-                                    )
-                                    logger.info(f"Downloaded file for {doc_type} from Supabase storage")
+                                    # Look for the most recent document of this type
+                                    # This reflects the document that was just uploaded in document-collection
+                                    results = supabase.storage.from_('documents').list(f"{user_id}/{doc_type}")
+                                    if results and len(results) > 0:
+                                        # Sort by created_at to get the most recent
+                                        sorted_files = sorted(results, key=lambda x: x.get('created_at', ''), reverse=True)
+                                        most_recent_file = sorted_files[0]['name']
+                                        logger.info(f"Found most recent {doc_type} file: {most_recent_file}")
+                                        
+                                        # Download the most recent file
+                                        file_response = supabase.storage.from_('documents').download(
+                                            f"{user_id}/{doc_type}/{most_recent_file}"
+                                        )
+                                        logger.info(f"Downloaded file for {doc_type} from Supabase storage")
+                                    else:
+                                        logger.warning(f"No files found for {doc_type}")
                                 except Exception as e:
-                                    logger.error(f"Error downloading file from Supabase: {str(e)}")
+                                    logger.error(f"Error accessing/downloading file from Supabase: {str(e)}")
                             
                             # If we have the file content, process it
                             if file_response:
@@ -1195,7 +1227,7 @@ class handler(BaseHTTPRequestHandler):
                                 }
                                 continue
                         
-                        # Process the document content
+                        # Process the document content - THIS IS A DIRECTLY UPLOADED DOCUMENT
                         summary = process_pdf_content(content, doc_type, user_id, supabase)
                         document_summaries[doc_type] = summary
                     

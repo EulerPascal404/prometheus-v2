@@ -228,13 +228,13 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
     console.log('fieldStats', apiResponseData?.field_stats);
     
     const areas = [
-      { key: 'na_extraordinary', label: 'Extraordinary Ability Evidence', value: fieldStats["N/A_ar"] || 5 },
-      { key: 'na_recognition', label: 'Awards & Recognition', value: fieldStats.na_recognition || 4 },
-      { key: 'na_publications', label: 'Published Materials', value: fieldStats.na_publications || 5 },
-      { key: 'na_leadership', label: 'Leadership/Judging Roles', value: fieldStats.na_leadership || 3 },
-      { key: 'na_contributions', label: 'Original Contributions', value: fieldStats.na_contributions || 4 },
-      { key: 'na_salary', label: 'High Salary', value: fieldStats.na_salary || 4 },
-      { key: 'na_success', label: 'Commercial Success', value: fieldStats.na_success || 3 }
+      { key : "Awards & Recognition", label: 'Awards & Recognition', value: fieldStats["N/A_ar"]},
+      { key : "Personal Info", label: 'Personal Info', value: fieldStats["N/A_per"]},
+      { key : "Resume", label: 'Resume', value: fieldStats["N/A_r"]},
+      { key : "Recommendation Letters", label: 'Recommendation Letters', value: fieldStats["N/A_rl"] },
+      { key : "Publications", label: 'Publications', value: fieldStats["N/A_p"]},
+      { key : "Salary Success", label: 'Salary Success', value: fieldStats["N/A_ss"] },
+      { key : "Professional Membership", label: 'Professional Membership', value: fieldStats["N/A_pm"] }
     ];
     
     // Sort by highest number of missing fields
@@ -282,7 +282,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
       <h3 className="stats-title">O-1 Petition Strength Analysis</h3>
       
       <div className="next-steps-section">
-        <h4 className="next-steps-title">Application Progress</h4>
+        <h4 className="next-steps-title">Application Progress (1 Page Sample)</h4>
         <div className="next-steps-content">
           <div className="priority-areas">
             <h5 className="priority-title">Priority Focus Areas</h5>
@@ -333,127 +333,79 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
         </div>
       </div>
 
-      <div className="stats-grid mt-8">
-        <div className="stats-section">
-          <h4 className="stats-section-title">Petition Completeness</h4>
-          <div className="flex flex-col items-center">
-            <div className="relative w-32 h-32 mb-4">
-              <svg className="w-full h-full" viewBox="0 0 100 100">
-                <circle 
-                  cx="50" 
-                  cy="50" 
-                  r="45" 
-                  fill="none" 
-                  stroke="rgba(203, 213, 225, 0.2)" 
-                  strokeWidth="8" 
-                />
-                <circle 
-                  cx="50" 
-                  cy="50" 
-                  r="45" 
-                  fill="none" 
-                  stroke="rgba(56, 189, 248, 0.8)" 
-                  strokeWidth="8"
-                  strokeDasharray={`${2 * Math.PI * 45}`}
-                  strokeDashoffset={`${2 * Math.PI * 45 * (1 - petitionData.percentFilled / 10)}`}
-                  strokeLinecap="round"
-                  transform="rotate(-90 50 50)"
-                />
-              </svg>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                <div className="text-xl font-bold text-blue-400">{(10 * petitionData.percentFilled).toFixed(1)}%</div>
-                <div className="text-xs text-slate-400">Complete</div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 w-full">
-              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <div className="text-sm text-slate-400">Total Fields</div>
-                <div className="text-xl font-bold text-white">{petitionData.totalFields}</div>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <div className="text-sm text-slate-400">Fields Provided</div>
-                <div className="text-xl font-bold text-blue-400">{petitionData.fieldsFilled}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-6 mt-8">
-        <div className="stats-section">
-          <h4 className="stats-section-title">O-1 Criteria Coverage</h4>
-          <div className="space-y-3">
-            {formFieldData.map(({ label, value }) => (
-              <div key={label} className="stats-item">
-                <span className="stats-label">{label}</span>
-                <div className="w-32 h-4 bg-slate-800 rounded-full overflow-hidden relative">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
-                    style={{ width: `${Math.min(100, (value / 10) * 100)}%` }}
-                  ></div>
-                  <span className="absolute top-1/2 right-2 transform -translate-y-1/2 text-xs text-white font-medium">
-                    {value}
-                  </span>
+      {/* Remove the stats-grid container to match the layout above */}
+      <div className="mt-8">
+        {/* Use the same layout structure as the next-steps-content */}
+        <div className="next-steps-content">
+          {/* Petition Completeness Panel */}
+          <div className="priority-areas">
+            <h4 className="stats-section-title">Petition Completeness</h4>
+            <div className="flex flex-col items-center">
+              <div className="relative w-32 h-32 mb-4">
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  <circle 
+                    cx="50" 
+                    cy="50" 
+                    r="45" 
+                    fill="none" 
+                    stroke="rgba(203, 213, 225, 0.2)" 
+                    strokeWidth="8" 
+                  />
+                  <circle 
+                    cx="50" 
+                    cy="50" 
+                    r="45" 
+                    fill="none" 
+                    stroke="rgba(56, 189, 248, 0.8)" 
+                    strokeWidth="8"
+                    strokeDasharray={`${2 * Math.PI * 45}`}
+                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - petitionData.percentFilled / 10)}`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 50 50)"
+                  />
+                </svg>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                  <div className="text-xl font-bold text-blue-400">{(10 * petitionData.percentFilled).toFixed(1)}%</div>
+                  <div className="text-xs text-slate-400">Complete</div>
                 </div>
               </div>
-            ))}
-          </div>
-          
-          {filledPdfUrl && (
-            <div className="mt-4">
-              <a 
-                href={filledPdfUrl} 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                View Document
-              </a>
+              
+              <div className="grid grid-cols-2 gap-4 w-full">
+                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <div className="text-sm text-slate-400">Total Fields</div>
+                  <div className="text-xl font-bold text-white">{petitionData.totalFields}</div>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <div className="text-sm text-slate-400">Fields Provided</div>
+                  <div className="text-xl font-bold text-blue-400">{petitionData.fieldsFilled}</div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
 
-        {filledPdfUrl && (
-          <div className="stats-section">
-            <h4 className="stats-section-title">O-1 Form Preview</h4>
-            <div className="space-y-4">
-              <div className="w-full h-[300px] rounded-lg overflow-hidden border border-primary-500/30 bg-slate-900 hover:shadow-lg transition-all duration-300 hover:border-primary-500/50">
-                <iframe
-                  src={`${filledPdfUrl}#toolbar=0`}
-                  className="w-full h-full"
-                  title="O-1 Form Preview"
-                />
-              </div>
-              <div className="flex space-x-4">
-                <a 
-                  href={filledPdfUrl} 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-600/10 border border-blue-500/30 text-blue-400 hover:from-blue-500/20 hover:to-purple-600/20 hover:border-blue-500/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  View in New Tab
-                </a>
-                <button 
-                  onClick={() => window.open(filledPdfUrl, '_blank')}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-600/10 border border-green-500/30 text-green-400 hover:from-green-500/20 hover:to-emerald-600/20 hover:border-green-500/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download PDF
-                </button>
-              </div>
+          {/* O-1 Criteria Coverage Panel */}
+          <div className="action-path">
+            <h4 className="stats-section-title">Missing Information</h4>
+            <div className="space-y-3">
+              {formFieldData.map(({ label, value }) => (
+                <div key={label} className="stats-item">
+                  <span className="stats-label">{label}</span>
+                  <div className="w-32 h-4 bg-slate-800 rounded-full overflow-hidden relative">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
+                      style={{ width: `${Math.min(100, (value / 10) * 100)}%` }}
+                    ></div>
+                    <span className="absolute top-1/2 right-2 transform -translate-y-1/2 text-xs text-white font-medium">
+                      {value}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
+            
+           
           </div>
-        )}
+        </div>
       </div>
       
       <div className="application-score-footer mt-8">

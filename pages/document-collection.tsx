@@ -27,6 +27,13 @@ interface DocumentType {
   description: string;
 }
 
+interface UploadedDocument {
+  id: string;
+  docType: string;
+  filename: string;
+  uploadedAt: Date;
+}
+
 // Function to extract text from PDF
 async function extractTextFromPdf(file: File): Promise<string> {
   // Ensure we're in the browser environment
@@ -180,11 +187,12 @@ function LoadingScreen() {
 
 export default function DocumentCollection() {
   const router = useRouter();
-  const [uploadedDocs, setUploadedDocs] = useState(new Set<string>());
+  const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [documentSummaries, setDocumentSummaries] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
+  const [showAllDocuments, setShowAllDocuments] = useState(false);
   
   const documentTypes: DocumentType[] = [
     {
@@ -278,10 +286,14 @@ export default function DocumentCollection() {
         throw new Error('No authenticated user found');
       }
 
-      // Upload file to Supabase storage
+      // Generate a unique ID for the file
+      const fileId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      const filename = file.name;
+      
+      // Upload file to Supabase storage with unique filename
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(`${user.id}/${docType}.pdf`, file, {
+        .upload(`${user.id}/${docType}/${fileId}-${filename}`, file, {
           cacheControl: '3600',
           upsert: true
         });
@@ -290,8 +302,15 @@ export default function DocumentCollection() {
         throw new Error(`Failed to upload file: ${uploadError.message}`);
       }
 
-      // Update local state
-      setUploadedDocs(prev => new Set([...Array.from(prev), docType]));
+      // Update local state with new document
+      const newDocument: UploadedDocument = {
+        id: fileId,
+        docType,
+        filename,
+        uploadedAt: new Date()
+      };
+      
+      setUploadedDocs(prev => [...prev, newDocument]);
       
       // Clear any previous errors
       setError(null);
@@ -303,10 +322,47 @@ export default function DocumentCollection() {
     }
   };
 
+  // Helper to check if any documents of a specific type have been uploaded
+  const hasDocType = (docType: string) => {
+    return uploadedDocs.some(doc => doc.docType === docType);
+  };
+  
+  // Get documents of a specific type
+  const getDocumentsOfType = (docType: string) => {
+    return uploadedDocs.filter(doc => doc.docType === docType);
+  };
+
+  // Remove a specific document
+  const removeDocument = async (docToRemove: UploadedDocument) => {
+    try {
+      setError(null);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+      
+      // Delete from Supabase storage
+      const { error: deleteError } = await supabase.storage
+        .from('documents')
+        .remove([`${user.id}/${docToRemove.docType}/${docToRemove.id}-${docToRemove.filename}`]);
+        
+      if (deleteError) {
+        throw new Error(`Failed to delete file: ${deleteError.message}`);
+      }
+      
+      // Update local state
+      setUploadedDocs(prev => prev.filter(doc => doc.id !== docToRemove.id));
+    } catch (error) {
+      console.error('Error removing document:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred while removing the document');
+    }
+  };
+
   // Add debugging useEffect
   useEffect(() => {
-    console.log('uploadedDocs changed:', Array.from(uploadedDocs));
-    console.log('Resume uploaded?', uploadedDocs.has('resume'));
+    console.log('uploadedDocs changed:', uploadedDocs);
+    console.log('Resume uploaded?', hasDocType('resume'));
   }, [uploadedDocs]);
 
   const handleContinueToDashboard = async () => {
@@ -325,22 +381,14 @@ export default function DocumentCollection() {
       }
 
       // Check if required documents are uploaded
-      const requiredDocs = documentTypes.filter(doc => doc.required);
-      const missingDocs = requiredDocs.filter(doc => !uploadedDocs.has(doc.id));
-      
-      if (missingDocs.length > 0) {
-        throw new Error(`Please upload the following required documents: ${missingDocs.map(doc => doc.name).join(', ')}`);
-      }
-
-      // Check if any documents are uploaded at all
-      if (uploadedDocs.size === 0) {
-        throw new Error('Please upload at least one document before proceeding');
+      if (!hasDocType('resume')) {
+        throw new Error('Please upload your resume before proceeding');
       }
 
       // Prepare documents object for processing
       const documentsObject = {};
       documentTypes.forEach(doc => {
-        documentsObject[doc.id] = uploadedDocs.has(doc.id);
+        documentsObject[doc.id] = hasDocType(doc.id);
       });
 
       console.log('Submitting documents for processing:', documentsObject);
@@ -356,6 +404,256 @@ export default function DocumentCollection() {
       setIsProcessing(false);
     }
   };
+
+  // Simplified resume-only view
+  const renderSimpleUpload = () => (
+    <div className="max-w-xl mx-auto pt-12 md:pt-24">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold gradient-text mb-2">Get Started with Your O-1 Analysis</h1>
+        <p className="text-slate-300">
+          Upload your resume and Prometheus AI will analyze your qualifications for an O-1 extraordinary ability visa.
+        </p>
+      </div>
+
+      <div className="card p-5 md:p-6 w-full border-primary-500/30 mb-8">
+        <div className="flex flex-col items-center gap-6">
+          <div className="space-y-2 text-center">
+            <h2 className="text-xl font-semibold gradient-text">Upload Your Resume/CV</h2>
+            <p className="text-sm text-slate-400 max-w-lg mx-auto">
+              Let our AI review your professional background and identify your strongest qualifications for an O-1 visa petition.
+            </p>
+          </div>
+          
+          <div className="w-full max-w-md">
+            <div className="border-2 border-dashed border-primary-500/30 rounded-xl p-8 text-center hover:border-primary-500/50 transition-all duration-300">
+              <input
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload('resume', file);
+                }}
+                style={{ display: 'none' }}
+                id="file-resume"
+                accept=".pdf"
+                className="sr-only"
+              />
+              <label
+                htmlFor="file-resume"
+                className="cursor-pointer flex flex-col items-center"
+              >
+                <svg className="w-12 h-12 text-primary-400/70 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="text-slate-300 text-sm mb-2">Drag and drop your resume here or click to browse</span>
+                <span className="text-xs text-slate-500">(PDF format, max 10MB)</span>
+              </label>
+            </div>
+            
+            {/* List uploaded resumes */}
+            {getDocumentsOfType('resume').length > 0 && (
+              <div className="mt-4 bg-slate-800/70 border border-slate-700/50 rounded-lg overflow-hidden">
+                <div className="p-3 border-b border-slate-700/50">
+                  <h3 className="text-sm font-medium text-slate-300">Uploaded Resumes ({getDocumentsOfType('resume').length})</h3>
+                </div>
+                <ul className="divide-y divide-slate-700/50">
+                  {getDocumentsOfType('resume').map((doc) => (
+                    <li key={doc.id} className="p-3 flex items-center justify-between">
+                      <div className="flex items-center">
+                        <svg className="text-primary-400 w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="text-sm text-slate-300 truncate max-w-[180px]">{doc.filename}</span>
+                      </div>
+                      <button 
+                        onClick={() => removeDocument(doc)}
+                        className="text-slate-500 hover:text-red-400 transition-colors p-1"
+                        aria-label="Remove document"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-col gap-4 w-full max-w-md">
+            <button
+              onClick={handleContinueToDashboard}
+              disabled={!hasDocType('resume') || isProcessing}
+              className={`gradient-button text-base px-6 py-3 ${(!hasDocType('resume') || isProcessing) ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              {isProcessing ? 'Processing...' : 'Analyze My Qualifications'}
+              {!isProcessing && (
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              )}
+              {isProcessing && (
+                <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin ml-2"></div>
+              )}
+            </button>
+            
+            <button
+              onClick={() => setShowAllDocuments(true)}
+              className="text-sm text-primary-400 hover:text-primary-300 transition-colors flex items-center justify-center mt-2"
+            >
+              <span>I have additional supporting documents</span>
+              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="text-center text-sm text-slate-500 max-w-lg mx-auto">
+        <p>Your resume is all we need to get started. Our AI will evaluate your qualifications and help identify the strongest evidence for your O-1 visa petition.</p>
+      </div>
+    </div>
+  );
+
+  // Full document collection view
+  const renderFullDocumentCollection = () => (
+    <div className="max-w-3xl mx-auto pt-12 md:pt-24">
+      <div className="text-center mb-8 relative">
+        <button 
+          onClick={() => setShowAllDocuments(false)}
+          className="absolute -top-2 right-0 p-2 text-slate-400 hover:text-primary-400 transition-colors rounded-full hover:bg-slate-800/50"
+          aria-label="Return to simple view"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <h1 className="text-3xl font-bold gradient-text mb-2">Comprehensive Document Collection</h1>
+        <p className="text-slate-300">
+          Upload supporting documents to strengthen your O-1 visa case and improve your qualification score.
+        </p>
+      </div>
+
+      <div className="card p-5 md:p-6 w-full text-center border-primary-500/30 mb-8">
+        <p className="text-sm text-slate-300">
+          <strong className="font-semibold text-accent-300">Important:</strong> At Prometheus, we help the world's top talent establish extraordinary ability. Strong documentation significantly increases your O-1 visa approval chances.
+        </p>
+      </div>
+
+      <div className="space-y-8 w-full">
+        {documentTypes.map((doc) => (
+          <div
+            key={doc.id}
+            className={`card group hover:border-accent-400/30 ${doc.required ? 'border-l-4 border-l-primary-500' : ''}`}
+          >
+            <div className="p-5 md:p-6">
+              <div className="flex flex-col gap-4">
+                <div className="space-y-2 text-center">
+                  <h2 className="text-lg font-semibold gradient-text flex flex-wrap items-center justify-center gap-2">
+                    {doc.name}
+                    {doc.required && (
+                      <span className="text-xs font-medium px-2 py-0.5 bg-primary-500/20 rounded-full text-primary-400">Required</span>
+                    )}
+                  </h2>
+                  <p className="text-sm text-slate-400 max-w-lg mx-auto">{doc.description}</p>
+                </div>
+                
+                {/* File Upload Area */}
+                <div className="flex justify-center">
+                  <input
+                    type="file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(doc.id, file);
+                    }}
+                    style={{ display: 'none' }}
+                    id={`file-${doc.id}`}
+                    accept=".pdf"
+                    className="sr-only"
+                  />
+                  <label
+                    htmlFor={`file-${doc.id}`}
+                    className="gradient-button cursor-pointer text-sm inline-flex items-center"
+                  >
+                    Add Document
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </label>
+                </div>
+                
+                {/* List of uploaded documents for this type */}
+                {getDocumentsOfType(doc.id).length > 0 && (
+                  <div className="mt-2 bg-slate-800/70 border border-slate-700/50 rounded-lg overflow-hidden">
+                    <div className="p-3 border-b border-slate-700/50 flex justify-between items-center">
+                      <h3 className="text-sm font-medium text-slate-300">Uploaded Documents ({getDocumentsOfType(doc.id).length})</h3>
+                    </div>
+                    <ul className="divide-y divide-slate-700/50 max-h-[200px] overflow-y-auto">
+                      {getDocumentsOfType(doc.id).map((document) => (
+                        <li key={document.id} className="p-3 flex items-center justify-between">
+                          <div className="flex items-center">
+                            <svg className="text-primary-400 w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span className="text-sm text-slate-300 truncate max-w-[250px]">{document.filename}</span>
+                            <span className="text-xs text-slate-500 ml-2">
+                              {new Date(document.uploadedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <button 
+                            onClick={() => removeDocument(document)}
+                            className="text-slate-500 hover:text-red-400 transition-colors p-1"
+                            aria-label="Remove document"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-col items-center w-full pt-6">
+        <button
+          onClick={handleContinueToDashboard}
+          disabled={!hasDocType('resume') || isProcessing}
+          className={`gradient-button text-base px-6 py-2.5 ${(!hasDocType('resume') || isProcessing) ? 'opacity-70 cursor-not-allowed' : ''}`}
+        >
+          {isProcessing ? 'Processing...' : 'Analyze My Qualifications'}
+          {!isProcessing && (
+            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          )}
+          {isProcessing && (
+            <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin ml-2"></div>
+          )}
+        </button>
+        
+        <button
+          onClick={() => setShowAllDocuments(false)}
+          className="text-sm text-primary-400 hover:text-primary-300 transition-colors mt-4 flex items-center"
+        >
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Back to simple upload</span>
+        </button>
+      </div>
+      
+      <div className="text-center text-sm text-slate-500 max-w-lg my-6 mx-auto">
+        <p>Not ready to upload all documents? You can start with your resume and add more evidence later. Our AI will identify your strongest qualifications and help position you as exceptional talent for your O-1 petition.</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -375,101 +673,7 @@ export default function DocumentCollection() {
       <BackgroundEffects />
 
       <div className="min-h-screen bg-transparent p-6">
-        <div className="max-w-3xl mx-auto pt-12 md:pt-24">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold gradient-text mb-2">Document Collection</h1>
-            <p className="text-slate-300">
-              Upload your supporting documents to help Prometheus AI build your strongest O-1 visa case.
-            </p>
-          </div>
-
-          <div className="card p-5 md:p-6 w-full text-center border-primary-500/30">
-            <p className="text-sm text-slate-300">
-              <strong className="font-semibold text-accent-300">Important:</strong> At Prometheus, we help the world's top talent establish extraordinary ability. Strong documentation significantly increases your O-1 visa approval chances.
-            </p>
-          </div>
-
-          <div className="space-y-4 w-full">
-            {documentTypes.map((doc) => (
-              <div
-                key={doc.id}
-                className={`card group hover:border-accent-400/30 ${doc.required ? 'border-l-4 border-l-primary-500' : ''}`}
-              >
-                <div className="p-5 md:p-6 text-center">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="space-y-2 text-center">
-                      <h2 className="text-lg font-semibold gradient-text flex flex-wrap items-center justify-center gap-2">
-                        {doc.name}
-                        {doc.required && (
-                          <span className="text-xs font-medium px-2 py-0.5 bg-primary-500/20 rounded-full text-primary-400">Required</span>
-                        )}
-                      </h2>
-                      <p className="text-sm text-slate-400 max-w-lg mx-auto">{doc.description}</p>
-                    </div>
-                    <div className="mt-1">
-                      <input
-                        type="file"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(doc.id, file);
-                        }}
-                        style={{ display: 'none', position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', border: '0' }}
-                        id={`file-${doc.id}`}
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor={`file-${doc.id}`}
-                        className="gradient-button cursor-pointer text-sm inline-flex items-center"
-                      >
-                        Upload
-                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                      </label>
-                    </div>
-                  </div>
-                  {uploadedDocs.has(doc.id) && (
-                    <div className="mt-3 flex items-center justify-center">
-                      <svg
-                        className="text-emerald-400 w-3.5 h-3.5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      <span className="ml-2 text-xs text-emerald-400">
-                        Document uploaded successfully
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-center w-full pt-4">
-            <button
-              onClick={handleContinueToDashboard}
-              disabled={!uploadedDocs.has('resume') || isProcessing}
-              className={`gradient-button text-base px-6 py-2.5 ${(!uploadedDocs.has('resume') || isProcessing) ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
-              {isProcessing ? 'Processing...' : 'Analyze My Qualifications'}
-              {!isProcessing && (
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              )}
-              {isProcessing && (
-                <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin ml-2"></div>
-              )}
-            </button>
-          </div>
-          
-          <div className="text-center text-sm text-slate-500 max-w-lg">
-            <p>Not ready to upload all documents? You can start with your resume and add more evidence later. Our AI will identify your strongest qualifications and help position you as exceptional talent for your O-1 petition.</p>
-          </div>
-        </div>
+        {showAllDocuments ? renderFullDocumentCollection() : renderSimpleUpload()}
       </div>
     </div>
   );
