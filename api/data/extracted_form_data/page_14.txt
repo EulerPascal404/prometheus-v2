@@ -1,0 +1,64 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (ClassHLine5b/137ExpDate/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (ClassHLine5b/137CountryOfIssuance/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (ClassHLine5b/137PassportorTravDoc/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line8a/137Check/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line8a/137Check/1331/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (Line2/137SummaryofWorkExperience/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line1/137Duties/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line8b/137Explain/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine5/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine5/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine5/137Yes/1331/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (SupHLine5/137No/1331/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (Sect1/137DateSignedByPetitioner/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Sect1/137PetitionerPrintedName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (P5/137Line6a/137SignatureofApplicant/1332/135)
+Available Options: Text input
+--------------------------------------------------

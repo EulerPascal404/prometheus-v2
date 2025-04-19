@@ -1,0 +1,160 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line10b/137EmpCity/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line10b/137Emp1State/1330/135)
+Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line10b/137Emp1ZipCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line10b/137Emp1StreetName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line10c/137Emp1FromDate/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line10b/137AptSteFlrNumber/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line10b/137Unit/1330/135)
+Available Options: ['/ FLR ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line10b/137Unit/1331/135)
+Available Options: ['/ STE ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line10b/137Unit/1332/135)
+Available Options: ['/ APT ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (LSuppLine10a/137NameofPeer/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line11b/137EmpCity/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line11b/137Emp1State/1330/135)
+Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line11b/137Emp1ZipCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line11b/137Emp1StreetName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Lin11c/137Emp1FromDate/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line11b/137AptSteFlrNumber/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line11b/137Unit/1330/135)
+Available Options: ['/ FLR ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line11b/137Unit/1331/135)
+Available Options: ['/ STE ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line11b/137Unit/1332/135)
+Available Options: ['/ APT ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (LSuppLine11a/137NameofPeer/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line12b/137EmpCity/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line12b/137Emp1State/1330/135)
+Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line12b/137Emp1ZipCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line12b/137Emp1StreetName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Part7Line12c/137Emp1FromDate/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line12b/137AptSteFlrNumber/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line12b/137Unit/1330/135)
+Available Options: ['/ FLR ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line12b/137Unit/1331/135)
+Available Options: ['/ STE ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line12b/137Unit/1332/135)
+Available Options: ['/ APT ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (LSuppLine12a/137NameofPeer/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (OandPSuppLine7/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (OandPSuppLine8/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (OandPSuppLine8/1331/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (OandPSuppLine8/1332/135)
+Available Options: ['/A', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (OandPSuppLine7/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (Line1/137Duties/1331/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Preparer/137DaytimePhoneNumber1/13710d/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Preparer/137DaytimePhoneNumber1/13711d/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Preparer/137DaytimePhoneNumber1/13712d/1330/135)
+Available Options: Text input
+--------------------------------------------------

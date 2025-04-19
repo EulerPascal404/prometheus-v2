@@ -224,6 +224,8 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
   const getPriorityAreas = () => {
     // Use API response data if available, otherwise use safeStats
     const fieldStats = apiResponseData?.field_stats || safeStats;
+
+    console.log('fieldStats', apiResponseData?.field_stats);
     
     const areas = [
       { key: 'na_extraordinary', label: 'Extraordinary Ability Evidence', value: fieldStats.na_extraordinary || 5 },
@@ -241,21 +243,9 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
 
   // Get form field data from API response if available
   const getFormFieldData = () => {
-    if (apiResponseData?.document_summaries?.resume?.pdf_filled_pages?.[1]) {
-      const formData = apiResponseData.document_summaries.resume.pdf_filled_pages[1];
-      return [
-        { label: 'Awards & Recognition', value: formData['N/A_ar'] || 4 },
-        { label: 'Publications', value: formData['N/A_p'] || 5 },
-        { label: 'Original Contributions', value: formData['N/A_per'] || 4 },
-        { label: 'Professional Memberships', value: formData['N/A_pm'] || 2 },
-        { label: 'Recognition', value: formData['N/A_r'] || 5 },
-        { label: 'Leadership/Judging', value: formData['N/A_rl'] || 3 },
-        { label: 'Commercial Success', value: formData['N/A_ss'] || 4 }
-      ];
-    }
-    
-    // Fallback to original stats if API data not available
+    // Use field_stats instead of pdf_filled_pages
     const fieldStats = apiResponseData?.field_stats || safeStats;
+    
     return [
       { label: 'Extraordinary Ability', value: fieldStats.na_extraordinary || 5 },
       { label: 'Awards & Recognition', value: fieldStats.na_recognition || 4 },
@@ -269,17 +259,9 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
   
   // Get petition completeness data from API response if available
   const getPetitionCompletenessData = () => {
-    if (apiResponseData?.document_summaries?.resume?.pdf_filled_pages?.[1]) {
-      const formData = apiResponseData.document_summaries.resume.pdf_filled_pages[1];
-      return {
-        totalFields: formData.total_fields || 45,
-        fieldsFilled: formData.user_info_filled || 20,
-        percentFilled: (formData.percent_filled || 44.44) / 10 // Divide by 10 as requested
-      };
-    }
-    
-    // Fallback to original stats if API data not available
+    // Use field_stats instead of pdf_filled_pages
     const fieldStats = apiResponseData?.field_stats || safeStats;
+    
     return {
       totalFields: fieldStats.total_fields || 45,
       fieldsFilled: fieldStats.user_info_filled || 20,
@@ -379,7 +361,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData }: {
                 />
               </svg>
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                <div className="text-xl font-bold text-blue-400">{petitionData.percentFilled.toFixed(1)}%</div>
+                <div className="text-xl font-bold text-blue-400">{(10 * petitionData.percentFilled).toFixed(1)}%</div>
                 <div className="text-xs text-slate-400">Complete</div>
               </div>
             </div>
@@ -816,7 +798,7 @@ export default function DocumentReview() {
         
         // Set the local O1 form path
         console.log("Setting local O1 form path...");
-        setFilledPdfUrl('/o1-form-template-cleaned-filled.pdf');
+        setFilledPdfUrl('/data/o1-form-template-cleaned-filled.pdf');
         
         // Process files
         const docs: DocumentInfo[] = [];

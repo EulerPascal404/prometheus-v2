@@ -1,0 +1,160 @@
+Page: 1
+Original Key: (PDF417BarCode1/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line4/137HowMany/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line5/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line11a/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line11a/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line5/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line5/137HowMany/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line5/137HowMany/1331/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line8/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line8/1331/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line4/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line4/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line6/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line7/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line9/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line9/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line10/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line10/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line8a/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line8a/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line8b/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line8b/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line7/1331/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line6/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4/137Line11b/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line3/137No/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line3/137Yes/1330/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line3/137HowMany/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line2/137Checkbox/1330/135)
+Available Options: ['/N', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (P4Line2/137Checkbox/1331/135)
+Available Options: ['/Off', '/Y']
+--------------------------------------------------
+Page: 1
+Original Key: (Line2c/137CityTown/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line2b/137StreetNumberName/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line2b2/137Unit/1330/135)
+Available Options: ['/ STE ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line2b2/137Unit/1331/135)
+Available Options: ['/ FLR ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line2b2/137AptSteFlrNumber/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line2b2/137Unit/1332/135)
+Available Options: ['/ APT ', '/Off']
+--------------------------------------------------
+Page: 1
+Original Key: (Line2g2/137Province/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line3f/137PostalCode/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line/137Country/1330/135)
+Available Options: Text input
+--------------------------------------------------
+Page: 1
+Original Key: (Line2g2/137Province/1331/135)
+Available Options: Text input
+--------------------------------------------------

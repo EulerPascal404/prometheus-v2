@@ -316,8 +316,23 @@ class handler(BaseHTTPRequestHandler):
                 max_num_results=1,
             )
             
+            # Add field_stats to the response
+            field_stats = {
+                "total_fields": 45,
+                "user_info_filled": 25,
+                "percent_filled": 55.56,
+                "na_extraordinary": 5,
+                "na_recognition": 4,
+                "na_publications": 5,
+                "na_leadership": 3,
+                "na_contributions": 4,
+                "na_salary": 4,
+                "na_success": 3
+            }
+            
             response_dict = eval(results.data[0].content[0].text)
             response_dict["match_score"] = results.data[0].score
+            response_dict["field_stats"] = field_stats
             
             # Calculate distance if we have addresses
             user_address = None

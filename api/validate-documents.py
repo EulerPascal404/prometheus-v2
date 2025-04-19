@@ -17,6 +17,8 @@ import random
 import re
 from tqdm import tqdm
 from glob import glob
+from pdfrw import PdfReader, PdfWriter, PdfDict, PdfName
+import pdfrw
 
 # Function to parse summary text into structured arrays
 def parse_summary(summary_text: str) -> Tuple[List[str], List[str], List[str]]:
@@ -322,6 +324,8 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
         print(f"Warning: Could not create/clear history file: {str(e)}")
 
     output_text = ""
+
+    response_dict = {}
     
     # Process each page with progress updates
     for idx, page_num in enumerate(pages):
@@ -394,7 +398,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
                 response = client.chat.completions.create(
                     model="gpt-4",
                     messages=[
-                        {"role": "system", "content": "You have been given a text file containing a form and a dictionary containing keys and possible options. You have also been given information about a user. Output the same dictionary but filled with the responses for an application for the user. It is very important that in the outputed dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```" + extra_info},
+                        {"role": "system", "content": "You have been given a text file containing a form and a dictionary containing keys and possible options. You have also been given information about a user. Output the same dictionary but filled with the responses for an application for the user. It is very important that in the outputed dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```. Make sure that in python, eval(output) would return a dictionary with the same keys as the original dictionary." + extra_info},
                         {"role": "user", "content": text_prompt}
                     ]
                 )
@@ -403,11 +407,8 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
                 print(f"Processing page {page_num}: Response received")
                 if response and hasattr(response, 'choices') and len(response.choices) > 0:
                     response_text = response.choices[0].message.content
-                    output_text += response_text + "\n\n"
-                    print(f"Response for page {page_num} has been saved and appended to history")
-                else:
-                    print(f"No valid response found for page {page_num}")
-                    output_text += f"No valid response for page {page_num}\n\n"
+                    response_dict = merge_dicts(response_dict, eval(response_text))
+
             except Exception as e:
                 print(f"Error getting OpenAI response: {str(e)}")
                 output_text += f"Error processing page {page_num}: {str(e)}\n\n"
@@ -423,9 +424,198 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
             log_page_progress(idx + 1, total_pages, user_id, supabase)
             
     print(f"Completed processing {total_pages} pages")
-    return output_text
+    return response_dict
 
-# ----- INCORPORATED FROM o1_pdf_filler.py -----
+def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None):
+    
+    template = PdfReader(input_pdf)
+    total_pages = len(template.pages)
+    
+    print(f"Started filling PDF with {total_pages} pages")
+    
+    # Create field stats dictionary to track filled fields
+    field_stats = {
+        "user_info_filled": 0,
+        "N/A_per": 0,  # personal info needed
+        "N/A_r": 0,    # resume info needed
+        "N/A_rl": 0,   # recommendation letters needed
+        "N/A_ar": 0,   # awards/recognition info needed
+        "N/A_p": 0,    # publications info needed
+        "N/A_ss": 0,   # salary/success info needed
+        "N/A_pm": 0,   # professional membership info needed
+        "total_fields": 0
+    }
+    
+    # Initial progress update
+    if supabase and user_id:
+        update_fill_progress(0, total_pages, doc_type, user_id, supabase)
+    
+    for page_num, page in enumerate(template.pages):
+
+        if (page_num + 1 >= NUM_PAGES):
+            break
+
+        # Update progress for each page
+        if supabase and user_id:
+            update_fill_progress(page_num + 1, total_pages, doc_type, user_id, supabase)
+            
+        annotations = page.get('/Annots')
+        if annotations:
+            for annotation in annotations:
+                if annotation.get('/Subtype') == '/Widget':
+                    field_type = annotation.get('/FT')
+                    original_name = annotation.get('/T').replace("\\", "/")
+                    
+                    # Count total fillable fields
+                    field_stats["total_fields"] += 1
+
+                    print(original_name)
+
+                    # Check if we have a response for this field
+                    if original_name and original_name in response_dict:
+                        field_value = response_dict[original_name]
+                        
+                        # Check for NA field types in the value
+                        value_str = str(field_value).lower() if field_value else ""
+                        
+                        # Classify the field value
+                        if "n/a_per" in value_str:
+                            field_stats["N/A_per"] += 1
+                        elif "n/a_r" in value_str:
+                            field_stats["N/A_r"] += 1
+                        elif "n/a_rl" in value_str:
+                            field_stats["N/A_rl"] += 1
+                        elif "n/a_ar" in value_str:
+                            field_stats["N/A_ar"] += 1
+                        elif "n/a_p" in value_str:
+                            field_stats["N/A_p"] += 1
+                        elif "n/a_ss" in value_str:
+                            field_stats["N/A_ss"] += 1
+                        elif "n/a_pm" in value_str:
+                            field_stats["N/A_pm"] += 1
+                        elif value_str and value_str != "n/a" and value_str != "":
+                            # Count as user info filled if it's not empty and not an N/A type
+                            field_stats["user_info_filled"] += 1
+                        
+                        # Handle checkboxes
+                        if field_type == '/Btn':
+                            # Determine if this is a checkbox or radio button
+                            is_checkbox = annotation.get('/Ff') and int(annotation['/Ff']) & 0x10000
+                            
+                            if is_checkbox:
+                                # For checkboxes, check if the value is truthy
+                                if field_value in [True, 'True', 'Y', 'y', 1, '1']:
+                                    # Find the 'on' state for this checkbox
+                                    on_state = PdfName('Yes')
+                                    if annotation.get('/AP'):
+                                        ap_dict = annotation['/AP']
+                                        if isinstance(ap_dict, PdfDict) and ap_dict.get('/N'):
+                                            states = ap_dict['/N']
+                                            for state in states.keys():
+                                                if state != '/Off':
+                                                    on_state = PdfName(state)
+                                                    break
+                                    
+                                    # Set the checkbox to its 'on' state
+                                    annotation.update(PdfDict(V=on_state, AS=on_state))
+                                else:
+                                    # Ensure checkbox is off
+                                    annotation.update(PdfDict(V=PdfName('Off'), AS=PdfName('Off')))
+                            else:
+                                # For radio buttons, set the selected option     
+                                annotation.V = pdfrw.objects.pdfname.BasePdfName(field_value)
+                        
+                        # Handle text fields
+                        elif field_type == '/Tx':
+                            annotation.update(PdfDict(V=str(field_value), AS=str(field_value)))
+                        
+                        # Handle drop-down fields
+                        elif field_type == '/Ch':
+                            annotation.update(PdfDict(V=str(field_value), AS=str(field_value)))
+                    
+                    # Original logic for fields not in response_dict
+                    else:
+                        # Existing logic for unspecified fields
+                        if field_type == '/Btn':
+                            if annotation.get('/Ff') and int(annotation['/Ff']) & 0x10000:
+                                if annotation.get('/AS') is None:
+                                    opts = annotation.get('/Opt')
+                                    if opts:
+                                        annotation.update(PdfDict(V=opts[0], AS=opts[0]))
+                            else:
+                                
+                                on_state = None
+                                if annotation.get('/AP'):
+                                    ap_dict = annotation['/AP']
+                                    if isinstance(ap_dict, PdfDict) and ap_dict.get('/N'):
+                                        states = ap_dict['/N']
+                                        for state in states.keys():
+                                            if state != '/Off':
+                                                on_state = state
+                                                break
+                                on_state = on_state or PdfName('Yes')
+                                annotation.update(PdfDict(V=on_state, AS=on_state))
+                        
+                        # Handle text fields
+                        elif field_type == '/Tx':
+                            annotation.update(PdfDict(V="", AS=""))
+                        
+                        # Handle drop-down fields
+                        elif field_type == '/Ch':
+                            opts = annotation.get('/Opt')
+                            if opts:
+                                val = random.choice(opts)[0].replace('(', '').replace(')', '')
+                                annotation.update(PdfDict(V=val, AS=val))
+    
+    # Final progress update - completed
+    if supabase and user_id:
+        update_fill_progress(total_pages, total_pages, doc_type, user_id, supabase)
+    
+    # Write field stats to a report file
+    base_dir = Path(output_pdf).parent
+    stats_file = os.path.join(base_dir, "field_stats.json")
+    
+    # Calculate percentages
+    percent_filled = 0
+    if field_stats["total_fields"] > 0:
+        percent_filled = (field_stats["user_info_filled"] / field_stats["total_fields"]) * 100
+    
+    field_stats["percent_filled"] = round(percent_filled, 2)
+    
+    # Save the field stats report
+    try:
+        with open(stats_file, 'w', encoding='utf-8') as f:
+            json.dump(field_stats, f, indent=2)
+        print(f"Field statistics saved to {stats_file}")
+        
+        # Print summary to console
+        print("\n=== O1 FORM FILLING STATISTICS ===")
+        print(f"Total fields processed: {field_stats['total_fields']}")
+        print(f"Fields filled with user info: {field_stats['user_info_filled']} ({field_stats['percent_filled']}%)")
+        print(f"Fields requiring personal info: {field_stats['N/A_per']}")
+        print(f"Fields requiring resume info: {field_stats['N/A_r']}")
+        print(f"Fields requiring recommendation letters: {field_stats['N/A_rl']}")
+        print(f"Fields requiring awards/recognition: {field_stats['N/A_ar']}")
+        print(f"Fields requiring publications: {field_stats['N/A_p']}")
+        print(f"Fields requiring salary/success info: {field_stats['N/A_ss']}")
+        print(f"Fields requiring professional membership: {field_stats['N/A_pm']}")
+        print("==================================\n")
+        
+        # If supabase is provided, store stats there
+        if supabase and user_id:
+            try:
+                supabase.table("user_documents").update({
+                    "field_stats": json.dumps(field_stats)
+                }).eq("user_id", user_id).execute()
+                print("Field statistics stored in database")
+            except Exception as e:
+                print(f"Error storing field statistics: {str(e)}")
+    except Exception as e:
+        print(f"Error saving field statistics: {str(e)}")
+    
+    PdfWriter().write(output_pdf, template)
+    print(f"Completed filling PDF with {total_pages} pages")
+    return total_pages, field_stats
 
 def update_fill_progress(current, total, doc_type, user_id, supabase):
     """Updates the progress status in the database"""
@@ -438,6 +628,28 @@ def update_fill_progress(current, total, doc_type, user_id, supabase):
             logger.info(f"Updated progress: {progress_status}")
         except Exception as e:
             logger.error(f"Error updating progress: {str(e)}")
+
+def merge_dicts(dict1, dict2):
+    """
+    Recursively merge two dictionaries.
+    
+    Args:
+        dict1 (dict): First dictionary
+        dict2 (dict): Second dictionary to merge into first
+    
+    Returns:
+        dict: Merged dictionary
+    """
+    result = dict1.copy()
+    for key, value in dict2.items():
+        if key in result:
+            if isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = merge_dicts(result[key], value)
+            else:
+                result[key] = value
+        else:
+            result[key] = value
+    return result
 
 def run(extracted_text, doc_type=None, user_id=None, supabase=None):
     """
@@ -472,12 +684,13 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
     os.makedirs(rag_responses_dir, exist_ok=True)
     
     # Generate RAG responses using the user info
-    history_file = write_rag_responses(
-        extra_info=f"Extracted Text: {extracted_text[:500]}...", 
-        pages=list(range(1, 10)),  # Limit to 10 pages for serverless environment
+    full_response_dict = write_rag_responses(
+        extra_info=f"Extracted Text: {extracted_text}...", 
+        pages=list(range(1, NUM_PAGES)),  # Limit to 10 pages for serverless environment
         user_id=user_id,
         supabase=supabase
     )
+    print(full_response_dict)
     
     # Update progress for PDF filling preparation
     if supabase and user_id:
@@ -491,13 +704,7 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
     
     # In serverless environment, we don't have a physical PDF to fill
     # So we'll create mock field statistics
-    total_pages = 10  # Default page count
-    if doc_type == "resume":
-        total_pages = 3
-    elif doc_type == "recommendation_letter":
-        total_pages = 2
-    elif doc_type == "publication":
-        total_pages = 5
+    total_pages = NUM_PAGES  # Default page count
     
     # Create mock field statistics
     field_stats = {
@@ -510,14 +717,19 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
         "N/A_ss": 2,
         "N/A_pm": 3,
         "total_fields": 45,
-        "percent_filled": 55.56
+        "percent_filled": 55.56,
+        # Add the na_ fields needed for the O-1 criteria
+        "na_extraordinary": 5,
+        "na_recognition": 4,
+        "na_publications": 5,
+        "na_leadership": 3,
+        "na_contributions": 4,
+        "na_salary": 4,
+        "na_success": 3
     }
     
-    # Simulate filling progress updates
-    for i in range(total_pages):
-        update_fill_progress(i + 1, total_pages, doc_type, user_id, supabase)
-        time.sleep(0.5)  # Brief delay to simulate processing
-    
+    total_pages, field_stats = fill_and_check_pdf("data/o1-form-template-cleaned-filled.pdf", "data/o1-form-template-cleaned-filled.pdf", full_response_dict, doc_type, user_id, supabase)
+    print(field_stats)
     # Final completion update
     if supabase and user_id:
         try:
@@ -622,6 +834,10 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
             
             # Parse the summary into structured arrays
             strengths, weaknesses, recommendations = parse_summary(summary_text)
+
+            num_pages, field_stats = run(full_text, doc_type, user_id, supabase)
+
+            print(f"Field stats: {field_stats}")
             
             # Return the structured results
             return {
@@ -632,7 +848,8 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
                 "openai_available": True,
                 "strengths": strengths,
                 "weaknesses": weaknesses,
-                "recommendations": recommendations
+                "recommendations": recommendations,
+                "field_stats" : field_stats,
             }
         except Exception as e:
             logger.error(f"Error generating OpenAI summary: {str(e)}")
@@ -1031,7 +1248,8 @@ class handler(BaseHTTPRequestHandler):
                         "completion_score": completion_score,
                         "message": f"Documents validated successfully. Your profile is {completion_score}% complete.",
                         "can_proceed": True,
-                        "document_summaries": document_summaries
+                        "document_summaries": document_summaries,
+                        "field_stats": document_summaries.get("resume", {}).get("field_stats", {})
                     })
                 except Exception as e:
                     logger.error(f"Error updating database: {str(e)}")

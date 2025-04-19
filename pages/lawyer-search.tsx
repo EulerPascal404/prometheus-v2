@@ -17,6 +17,18 @@ interface LawyerMatch {
   o1_success_rate?: number;
   expertise?: string[];
   distance?: string;  // Add distance from the API response
+  field_stats?: {
+    total_fields: number;
+    user_info_filled: number;
+    percent_filled: number;
+    na_extraordinary?: number;
+    na_recognition?: number;
+    na_publications?: number;
+    na_leadership?: number;
+    na_contributions?: number;
+    na_salary?: number;
+    na_success?: number;
+  };
 }
 
 // Interface for Google Maps geocoding response
@@ -49,6 +61,86 @@ const calculateGrade = (score: number): string => {
 const getTruncatedText = (text: string): string => {
   const words = text.split(/\s+/);
   return words.length > 10 ? `${words.slice(0, 10).join(' ')}...` : text;
+};
+
+// First, add this component function after the existing helper functions near the top
+const FieldStatsDisplay = ({ fieldStats }: { fieldStats: LawyerMatch['field_stats'] }) => {
+  if (!fieldStats) return null;
+  
+  // Ensure we have the required base properties
+  const safeFieldStats = {
+    total_fields: fieldStats.total_fields || 0,
+    user_info_filled: fieldStats.user_info_filled || 0,
+    percent_filled: fieldStats.percent_filled || 0,
+    
+    // Add defaults for all possible fields
+    na_extraordinary: fieldStats.na_extraordinary || 0,
+    na_recognition: fieldStats.na_recognition || 0,
+    na_publications: fieldStats.na_publications || 0,
+    na_leadership: fieldStats.na_leadership || 0,
+    na_contributions: fieldStats.na_contributions || 0,
+    na_salary: fieldStats.na_salary || 0,
+    na_success: fieldStats.na_success || 0
+  };
+  
+  // Calculate the percentage for display
+  const completionPercentage = Math.round(safeFieldStats.percent_filled);
+
+  // Create categories array with labels and values
+  const categories = [
+    { label: 'Extraordinary Ability', value: safeFieldStats.na_extraordinary },
+    { label: 'Recognition', value: safeFieldStats.na_recognition },
+    { label: 'Publications', value: safeFieldStats.na_publications },
+    { label: 'Leadership', value: safeFieldStats.na_leadership },
+    { label: 'Contributions', value: safeFieldStats.na_contributions },
+    { label: 'Salary', value: safeFieldStats.na_salary },
+    { label: 'Success', value: safeFieldStats.na_success }
+  ];
+
+  // Filter out zero values
+  const nonZeroCategories = categories.filter(cat => cat.value > 0);
+  
+  // Debug logs
+  console.log("Rendering FieldStatsDisplay with data:", safeFieldStats);
+  console.log("Non-zero categories:", nonZeroCategories);
+  
+  return (
+    <div className="border-t border-slate-700/50 pt-4 mt-4 w-full">
+      <h3 className="text-center text-sm text-slate-300 font-semibold mb-3">YOUR APPLICATION COMPLETION</h3>
+      
+      {/* Overall completion percentage */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-slate-400">Application Progress</span>
+          <span className="text-xs text-primary-400 font-medium">{completionPercentage}%</span>
+        </div>
+        <div className="w-full bg-slate-700/50 rounded-full h-2">
+          <div 
+            className="bg-gradient-to-r from-primary-500 to-accent-500 h-2 rounded-full" 
+            style={{ width: `${completionPercentage}%` }}
+          ></div>
+        </div>
+        <div className="mt-1 text-xs text-slate-500 text-center">
+          {safeFieldStats.user_info_filled} of {safeFieldStats.total_fields} fields completed
+        </div>
+      </div>
+      
+      {/* Missing categories section - only show if there are non-zero values */}
+      {nonZeroCategories.length > 0 && (
+        <div className="mt-3">
+          <h4 className="text-xs text-slate-400 mb-2">AREAS NEEDING ATTENTION:</h4>
+          <div className="grid grid-cols-2 gap-2">
+            {nonZeroCategories.map((category, index) => (
+              <div key={index} className="bg-slate-800/50 rounded px-2 py-1.5 flex justify-between text-xs">
+                <span className="text-slate-300">{category.label}</span>
+                <span className="text-amber-400">{category.value} fields</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default function LawyerSearch() {
@@ -334,6 +426,9 @@ export default function LawyerSearch() {
           console.log("Lawyer address:", matchData.address);
         }
         setMatchedLawyer(matchData);
+        
+        // Debug localStorage field_stats
+        console.log("Field Stats from localStorage:", matchData.field_stats);
       }
       
       // Always make an API call to match-lawyer, regardless of localStorage
@@ -408,6 +503,23 @@ export default function LawyerSearch() {
       
       const matchedLawyerData = await response.json();
       console.log("API response:", matchedLawyerData);
+      
+      // Add debugging for field_stats
+      console.log("Field Stats from API:", matchedLawyerData.field_stats);
+      
+      // Check the full structure of the API response to see if field_stats exists anywhere
+      console.log("API response keys:", Object.keys(matchedLawyerData));
+      if (!matchedLawyerData.field_stats) {
+        console.warn("field_stats not found in direct API response - checking for nested objects");
+        for (const key in matchedLawyerData) {
+          if (typeof matchedLawyerData[key] === 'object' && matchedLawyerData[key] !== null) {
+            console.log(`Checking nested object "${key}" keys:`, Object.keys(matchedLawyerData[key]));
+            if (matchedLawyerData[key].field_stats) {
+              console.log(`Found field_stats in nested object "${key}":`, matchedLawyerData[key].field_stats);
+            }
+          }
+        }
+      }
       
       // Update the state with fresh data from API
       setMatchedLawyer(matchedLawyerData);
@@ -566,6 +678,9 @@ export default function LawyerSearch() {
       
       const matchedLawyerData = await response.json();
       console.log("API response from form submission:", matchedLawyerData);
+      
+      // Add debugging for field_stats
+      console.log("Field Stats from form submission API:", matchedLawyerData.field_stats);
       
       // Save form data for future use
       localStorage.setItem('lawyerFormData', JSON.stringify({
@@ -875,6 +990,12 @@ export default function LawyerSearch() {
                       </div>
                     </div>
                   )}
+                  
+                  {/* Add Field Stats Display */}
+                  {matchedLawyer.field_stats && (
+                    <FieldStatsDisplay fieldStats={matchedLawyer.field_stats} />
+                  )}
+                  
                   <div className="mt-6 text-center w-full">
                     <button
                       className="gradient-button px-6 py-2.5 text-base mx-auto"
