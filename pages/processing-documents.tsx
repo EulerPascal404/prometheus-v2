@@ -284,8 +284,9 @@ export default function ProcessingDocuments() {
           }
           
           if (result.can_proceed) {
-            // Store the new summaries
+            // Store the document summaries and full API response in localStorage
             localStorage.setItem('documentSummaries', JSON.stringify(result.document_summaries));
+            localStorage.setItem('apiResponseData', JSON.stringify(result));
             
             // Clear any existing intervals before navigation
             if (pollInterval.current) {
@@ -294,12 +295,12 @@ export default function ProcessingDocuments() {
             }
             
             // Use replace instead of push to prevent back button from returning to processing page
+            // Only pass minimal data in URL query params
             router.replace({
               pathname: '/document-review',
               query: { 
                 userId: user.id,
-                processed: 'true',
-                apiResponse: JSON.stringify(result)
+                processed: 'true'
               }
             });
           } else {

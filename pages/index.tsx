@@ -148,7 +148,7 @@ const HomePage: FC = () => {
             
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight mb-8 font-syne">
               <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent animate-gradient">Building successful</span> O-1 visa applications one at a time
-            </h1>
+              </h1>
             
             <div className="max-w-2xl mx-auto mb-12">
               <p className="text-xl text-slate-300 font-outfit">
@@ -157,27 +157,27 @@ const HomePage: FC = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Link 
-                href="/document-collection" 
+                  <Link 
+                    href="/document-collection" 
                 className="px-8 py-4 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium text-center hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/20 font-outfit relative overflow-hidden group"
               >
                 <span className="relative z-10">Start Your Application</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-500 rounded-md blur opacity-30 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </Link>
-            </div>
-            
+                  </Link>
+                </div>
+                
             <div className="flex items-center justify-center space-x-4">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div 
-                    key={i} 
-                    className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold border-2 border-slate-900 transform hover:scale-110 transition-transform duration-300"
-                  >
-                    {i}
+                  <div className="flex -space-x-2">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div 
+                        key={i} 
+                        className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold border-2 border-slate-900 transform hover:scale-110 transition-transform duration-300"
+                      >
+                        {i}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
               <p className="text-slate-300 font-outfit">
                 <span className="text-white font-semibold">500+</span> successful applications
               </p>
@@ -351,14 +351,14 @@ const HomePage: FC = () => {
                 <div>
                   <h2 className="text-4xl md:text-5xl font-bold mb-4 font-syne">
                     Ready to <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Succeed</span>?
-                  </h2>
+              </h2>
                   <div className="flex flex-col sm:flex-row gap-4 mt-8">
                     <Link 
                       href="/document-collection" 
                       className="px-8 py-4 rounded-md bg-white text-slate-900 font-medium text-center hover:bg-slate-100 transition-all duration-300 transform hover:scale-105 hover:shadow-lg font-outfit"
                     >
                       Start Now
-                    </Link>
+                </Link>
                   </div>
                 </div>
                 <div className="relative group">

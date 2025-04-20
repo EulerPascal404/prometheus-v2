@@ -28,20 +28,29 @@ export interface FieldStats {
   na_success: number;        // Fields needed for success evidence
 }
 
-export interface DocumentSummary {
-  summary: string;
+interface PriorityArea {
+  key: string;
+  label: string;
+  value: number;
+}
+
+interface DocumentSummary {
   pages: number;
-  pdf_filled_pages: number;
-  processed: boolean;
-  text_preview?: string;
-  error?: string;
+  summary: string;
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
 }
 
-export interface DocumentSummaries {
+interface DocumentSummaries {
   [key: string]: DocumentSummary;
+}
+
+interface PersonalInfo {
+  name: string;
+  phone: string;
+  address: string;
+  extraInfo: string;
 }
 
 // Function to parse document summaries (simplified version)
@@ -168,17 +177,62 @@ function SummarySection({ title, items, colorClass }: {
   console.log(`Rendering ${title} section with ${items.length} items:`, items);
   
   return (
-    <div className="summary-section">
-      <h4 className={`summary-title summary-title-${colorClass}`}>{title}</h4>
-      <ul className="space-y-2.5">
+    <div className="summary-section bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
+      <h4 className={`summary-title text-lg font-medium text-white mb-3 flex items-center ${
+        colorClass === 'green' ? 'text-emerald-400' : 
+        colorClass === 'red' ? 'text-rose-400' : 
+        'text-primary-400'
+      }`}>
+        <svg className={`w-4 h-4 mr-2 ${
+          colorClass === 'green' ? 'text-emerald-400' : 
+          colorClass === 'red' ? 'text-rose-400' : 
+          'text-primary-400'
+        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {colorClass === 'green' ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          ) : colorClass === 'red' ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          )}
+        </svg>
+        {title}
+      </h4>
+      <ul className="space-y-3">
         {items.map((item, index) => (
-          <li key={index} className="flex gap-2.5">
-            <span className={`summary-dot summary-dot-${colorClass}`} />
-            <span className="summary-text">{item}</span>
+          <li 
+            key={index} 
+            className="flex items-start gap-3 group-hover:bg-slate-700/30 p-3 rounded-lg transition-all duration-300 hover:transform hover:translate-x-1"
+          >
+            <div className={`flex-shrink-0 mt-1 ${
+              colorClass === 'green' ? 'text-emerald-400' : 
+              colorClass === 'red' ? 'text-rose-400' : 
+              'text-primary-400'
+            }`}>
+              {colorClass === 'green' ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                </svg>
+              ) : colorClass === 'red' ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01" />
+                </svg>
+              )}
+            </div>
+            <span className="text-slate-300 group-hover:text-white transition-colors duration-300 leading-relaxed">{item}</span>
           </li>
         ))}
         {items.length === 0 && (
-          <li className="text-sm text-slate-500 italic">No items found.</li>
+          <li className="text-sm text-slate-500 italic p-3 flex items-center justify-center">
+            <svg className="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            No items found.
+          </li>
         )}
       </ul>
     </div>
@@ -194,270 +248,488 @@ declare global {
 }
 
 // Modified StatsSection component to focus on O-1 criteria
-function StatsSection({ stats, filledPdfUrl, apiResponseData }: { 
+function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: { 
   stats: FieldStats, 
   filledPdfUrl: string | null,
-  apiResponseData?: any 
+  apiResponseData?: any,
+  personalInfo: PersonalInfo
 }) {
+  const router = useRouter();
+  
+  // Check which personal info fields are missing
+  const missingPersonalInfoFields: string[] = [];
+  if (!personalInfo.name) missingPersonalInfoFields.push('Full Name');
+  if (!personalInfo.phone) missingPersonalInfoFields.push('Phone Number');
+  if (!personalInfo.address) missingPersonalInfoFields.push('Address');
+  
+  const hasMissingPersonalInfo = missingPersonalInfoFields.length > 0;
+
   // Ensure we have valid stats object with fallbacks for any missing properties
   const safeStats: FieldStats = {
-    total_fields: stats.total_fields || 45,
-    user_info_filled: stats.user_info_filled || 20,
-    percent_filled: stats.percent_filled || 44.44,
-    N_A_per: stats.N_A_per || 4,
-    N_A_r: stats.N_A_r || 5,
-    N_A_rl: stats.N_A_rl || 3,
-    N_A_ar: stats.N_A_ar || 4,
-    N_A_p: stats.N_A_p || 5,
-    N_A_ss: stats.N_A_ss || 4,
-    N_A_pm: stats.N_A_pm || 2,
-    na_extraordinary: stats.na_extraordinary || 5,
-    na_recognition: stats.na_recognition || 4,
-    na_publications: stats.na_publications || 5,
-    na_leadership: stats.na_leadership || 3,
-    na_contributions: stats.na_contributions || 4,
-    na_salary: stats.na_salary || 4,
-    na_success: stats.na_success || 3
+    total_fields: stats.total_fields,
+    user_info_filled: stats.user_info_filled,
+    percent_filled: stats.percent_filled,
+    N_A_per: stats.N_A_per,
+    N_A_r: stats.N_A_r,
+    N_A_rl: stats.N_A_rl,
+    N_A_ar: stats.N_A_ar,
+    N_A_p: stats.N_A_p,
+    N_A_ss: stats.N_A_ss,
+    N_A_pm: stats.N_A_pm,
+    na_extraordinary: stats.na_extraordinary,
+    na_recognition: stats.na_recognition,
+    na_publications: stats.na_publications,
+    na_leadership: stats.na_leadership,
+    na_contributions: stats.na_contributions,
+    na_salary: stats.na_salary,
+    na_success: stats.na_success
   };
 
-  // Helper function to determine priority areas based on field stats
-  const getPriorityAreas = () => {
-    // Use API response data if available, otherwise use safeStats
-    const fieldStats = apiResponseData?.field_stats || safeStats;
-
-    console.log('fieldStats', apiResponseData?.field_stats);
-    
-    const areas = [
-      { key : "Awards & Recognition", label: 'Awards & Recognition', value: fieldStats["N/A_ar"]},
-      { key : "Personal Info", label: 'Personal Info', value: fieldStats["N/A_per"]},
-      { key : "Resume", label: 'Resume', value: fieldStats["N/A_r"]},
-      { key : "Recommendation Letters", label: 'Recommendation Letters', value: fieldStats["N/A_rl"] },
-      { key : "Publications", label: 'Publications', value: fieldStats["N/A_p"]},
-      { key : "Salary Success", label: 'Salary Success', value: fieldStats["N/A_ss"] },
-      { key : "Professional Membership", label: 'Professional Membership', value: fieldStats["N/A_pm"] }
-    ];
-    
-    // Sort by highest number of missing fields
-    return areas.sort((a, b) => b.value - a.value).slice(0, 3);
-  };
-
-  // Get form field data from API response if available
-  const getFormFieldData = () => {
-    // Use field_stats instead of pdf_filled_pages
-    const fieldStats = apiResponseData?.field_stats || safeStats;
-    
-    return [
-      { label: 'Awards & Recognition', value: fieldStats["N/A_ar"]},
-      { label: 'Personal Info', value: fieldStats["N/A_per"]},
-      { label: 'Resume', value: fieldStats["N/A_r"]},
-      { label: 'Recommendation Letters', value: fieldStats["N/A_rl"] },
-      { label: 'Publications', value: fieldStats["N/A_p"]},
-      { label: 'Salary Success', value: fieldStats["N/A_ss"] },
-      { label: 'Professional Membership', value: fieldStats["N/A_pm"] }
-    ];
+  // Calculate application score from API data or derive from completion percentage
+  const applicationScore = apiResponseData?.completion_score || Math.round(safeStats.percent_filled / 10);
+  
+  // Determine color gradient based on score
+  const getScoreColorGradient = (score: number) => {
+    if (score <= 3) return { start: '#EF4444', end: '#F87171' }; // Red gradient for low scores
+    if (score <= 6) return { start: '#F59E0B', end: '#FBBF24' }; // Amber gradient for medium scores
+    return { start: '#10B981', end: '#34D399' };                  // Green gradient for high scores
   };
   
-  // Get petition completeness data from API response if available
-  const getPetitionCompletenessData = () => {
-    // Use field_stats instead of pdf_filled_pages
-    const fieldStats = apiResponseData?.field_stats || safeStats;
-    
-    return {
-      totalFields: fieldStats.total_fields || 45,
-      fieldsFilled: fieldStats.user_info_filled || 20,
-      percentFilled: (fieldStats.percent_filled || 44.44) / 10 // Divide by 10 as requested
-    };
-  };
-
-  // Calculate all derived data
-  const priorityAreas = getPriorityAreas();
-  const fieldStats = apiResponseData?.field_stats || safeStats;
-  const canProceed = apiResponseData?.can_proceed ?? true;
-  const formFieldData = getFormFieldData();
-  const petitionData = getPetitionCompletenessData();
-  const applicationScore = apiResponseData?.completion_score || Math.round(petitionData.percentFilled * 10) / 10;
+  const scoreColors = getScoreColorGradient(applicationScore);
+  
+  // Calculate missing fields total
+  const totalMissingFields = safeStats.N_A_per + safeStats.N_A_r + safeStats.N_A_rl + 
+    safeStats.N_A_ar + safeStats.N_A_p + safeStats.N_A_ss + safeStats.N_A_pm;
 
   return (
     <div className="stats-container">
       <h3 className="stats-title">O-1 Petition Strength Analysis</h3>
       
-      <div className="next-steps-section">
-        <h4 className="next-steps-title">Application Progress (1 Page Sample)</h4>
-        <div className="next-steps-content">
-          <div className="priority-areas">
-            <h5 className="priority-title">Priority Focus Areas</h5>
-            <div className="priority-list">
-              {priorityAreas.map((area, index) => (
-                <div key={area.key} className="priority-item">
-                  <div className="priority-number">{index + 1}</div>
-                  <div className="priority-details">
-                    <span className="priority-label">{area.label}</span>
-                    <span className="priority-value">{area.value} evidence items needed</span>
-                  </div>
-                </div>
-              ))}
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 mb-6">
+        <h4 className="text-xl font-semibold text-white mb-4">Application Score</h4>
+        <div className="flex flex-col md:flex-row items-center justify-between">
+          <div className="relative w-40 h-40 mb-6 md:mb-0">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              {/* Background circle */}
+              <circle 
+                cx="50" 
+                cy="50" 
+                r="45" 
+                fill="none" 
+                stroke="rgba(148, 163, 184, 0.2)"
+                strokeWidth="10" 
+              />
+              {/* Score indicator circle with dynamic gradient */}
+              <circle 
+                cx="50" 
+                cy="50" 
+                r="45" 
+                fill="none" 
+                stroke="url(#scoreGradient)"
+                strokeWidth="10"
+                strokeDasharray={`${2 * Math.PI * 45}`}
+                strokeDashoffset={`${2 * Math.PI * 45 * (1 - applicationScore / 10)}`}
+                strokeLinecap="round"
+              />
+              {/* Dynamic gradient definition */}
+              <defs>
+                <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor={scoreColors.start} />
+                  <stop offset="100%" stopColor={scoreColors.end} />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+              <div className="text-3xl font-bold text-white">{applicationScore}</div>
+              <div className="text-sm text-slate-400">out of 10</div>
             </div>
           </div>
           
-          <div className="action-path">
-            <h5 className="action-path-title">O-1 Petition Roadmap</h5>
-            <div className="action-steps">
-              <div className="action-step">
-                <div className="action-indicator completed">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="action-label">Initial Qualification Analysis</span>
-              </div>
-              <div className="action-step">
-                <div className={`action-indicator ${canProceed ? 'active' : ''}`}>
-                  <span>2</span>
-                </div>
-                <span className="action-label">Strengthen Evidence</span>
-              </div>
-              <div className="action-step">
-                <div className="action-indicator">
-                  <span>3</span>
-                </div>
-                <span className="action-label">Immigration Expert Review</span>
-              </div>
-              <div className="action-step">
-                <div className="action-indicator">
-                  <span>4</span>
-                </div>
-                <span className="action-label">USCIS Submission</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Remove the stats-grid container to match the layout above */}
-      <div className="mt-8">
-        {/* Use the same layout structure as the next-steps-content */}
-        <div className="next-steps-content">
-          {/* Petition Completeness Panel */}
-          <div className="priority-areas">
-            <h4 className="stats-section-title">Petition Completeness</h4>
-            <div className="flex flex-col items-center">
-              <div className="relative w-32 h-32 mb-4">
-                <svg className="w-full h-full" viewBox="0 0 100 100">
-                  <circle 
-                    cx="50" 
-                    cy="50" 
-                    r="45" 
-                    fill="none" 
-                    stroke="rgba(203, 213, 225, 0.2)" 
-                    strokeWidth="8" 
-                  />
-                  <circle 
-                    cx="50" 
-                    cy="50" 
-                    r="45" 
-                    fill="none" 
-                    stroke="rgba(56, 189, 248, 0.8)" 
-                    strokeWidth="8"
-                    strokeDasharray={`${2 * Math.PI * 45}`}
-                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - petitionData.percentFilled / 10)}`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 50 50)"
-                  />
-                </svg>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                  <div className="text-xl font-bold text-blue-400">{(10 * petitionData.percentFilled).toFixed(1)}%</div>
-                  <div className="text-xs text-slate-400">Complete</div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 w-full">
-                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                  <div className="text-sm text-slate-400">Total Fields</div>
-                  <div className="text-xl font-bold text-white">{petitionData.totalFields}</div>
-                </div>
-                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                  <div className="text-sm text-slate-400">Fields Provided</div>
-                  <div className="text-xl font-bold text-blue-400">{petitionData.fieldsFilled}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* O-1 Criteria Coverage Panel */}
-          <div className="action-path">
-            <h4 className="stats-section-title">Missing Information</h4>
-            <div className="space-y-3">
-              {formFieldData.map(({ label, value }) => (
-                <div key={label} className="stats-item">
-                  <span className="stats-label">{label}</span>
-                  <div className="w-32 h-4 bg-slate-800 rounded-full overflow-hidden relative">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
-                      style={{ width: `${Math.min(100, (value / 10) * 100)}%` }}
-                    ></div>
-                    <span className="absolute top-1/2 right-2 transform -translate-y-1/2 text-xs text-white font-medium">
-                      {value}
+          <div className="w-full md:w-3/5 bg-slate-800/40 rounded-lg p-4 border border-slate-700/30">
+            <h5 className="text-primary-300 font-medium mb-3 flex items-center">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Missing Fields Overview
+            </h5>
+            
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/30">
+              {/* Missing fields indicators with visual status indicators */}
+              {[
+                { label: 'Personal Information', value: safeStats.N_A_per, icon: '👤' },
+                { label: 'Resume Details', value: safeStats.N_A_r, icon: '📄' },
+                { label: 'Recommendation Letters', value: safeStats.N_A_rl, icon: '✉️' },
+                { label: 'Awards & Recognition', value: safeStats.N_A_ar, icon: '🏆' },
+                { label: 'Publications', value: safeStats.N_A_p, icon: '📚' },
+                { label: 'Salary & Success', value: safeStats.N_A_ss, icon: '💰' },
+                { label: 'Professional Membership', value: safeStats.N_A_pm, icon: '🔖' }
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between py-1.5 px-3 rounded-lg hover:bg-slate-700/30 transition-colors duration-200">
+                  <div className="flex items-center">
+                    <span className="mr-2 text-lg">{item.icon}</span>
+                    <span className="text-slate-300">{item.label}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      item.value > 3 ? 'bg-red-500/20 text-red-400' : 
+                      item.value > 0 ? 'bg-amber-500/20 text-amber-400' : 
+                      'bg-green-500/20 text-green-400'
+                    }`}>
+                      {item.value > 0 ? `${item.value} missing` : 'Complete'}
                     </span>
                   </div>
                 </div>
               ))}
             </div>
             
-           
+            <div className="mt-3 pt-3 border-t border-slate-700/30 flex justify-between items-center">
+              <span className="text-slate-400 text-sm">Total Missing Fields:</span>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                totalMissingFields > 10 ? 'bg-red-500/20 text-red-400' : 
+                totalMissingFields > 5 ? 'bg-amber-500/20 text-amber-400' : 
+                'bg-green-500/20 text-green-400'
+              }`}>
+                {totalMissingFields}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div className="application-score-footer mt-8">
-        <div className="relative">
-          <svg className="w-32 h-32" viewBox="0 0 100 100">
-            <circle 
-              cx="50" 
-              cy="50" 
-              r="45" 
-              fill="none" 
-              stroke="rgba(99, 102, 241, 0.1)" 
-              strokeWidth="8" 
-            />
-            <circle 
-              cx="50" 
-              cy="50" 
-              r="45" 
-              fill="none" 
-              stroke="url(#scoreGradient)" 
-              strokeWidth="8"
-              strokeDasharray={`${2 * Math.PI * 45}`}
-              strokeDashoffset={`${2 * Math.PI * 45 * (1 - applicationScore / 10)}`}
-              strokeLinecap="round"
-              transform="rotate(-90 50 50)"
-            />
-            <defs>
-              <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#38BDF8" />
-                <stop offset="50%" stopColor="#818CF8" />
-                <stop offset="100%" stopColor="#C084FC" />
-              </linearGradient>
-            </defs>
-          </svg>
-          
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="score-value">{applicationScore}</div>
-            <div className="text-xs text-slate-400">out of 10</div>
-          </div>
-        </div>
-        <div className="score-label mt-4">O-1 Qualification Score</div>
-        
-        <p className="mt-4 text-sm text-slate-400 max-w-md text-center">
-          This score represents your estimated qualification level for an O-1 visa based on the documents you've provided.
-        </p>
       </div>
 
-      <div className="stats-footer">
-        <div className="stats-info">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4 text-primary-400 mr-2">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      {/* New Critical Issues Section */}
+      {totalMissingFields > 0 && (
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 mb-6">
+          <div className="flex items-center mb-4">
+            <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h4 className="text-xl font-semibold text-white">Critical Issues</h4>
+          </div>
+          
+          <div className="space-y-4">
+            {/* Critical sections that need attention */}
+            {[
+               { 
+                name: 'Personal Information', 
+                criticalThreshold: 3,
+                value: safeStats.N_A_per,
+                icon: '👤',
+                importance: 'High priority - required for O-1 eligibility',
+                tip: 'Include personal information, including name, address, email, and phone number'
+              },
+              { 
+                name: 'Resume/CV', 
+                criticalThreshold: 4,
+                value: safeStats.N_A_r,
+                icon: '📄',
+                importance: 'High priority - required for O-1 eligibility',
+                tip: 'Include all relevant work experience, education, and skills'
+              },
+              
+              { 
+                name: 'Awards & Recognition', 
+                criticalThreshold: 3,
+                value: safeStats.N_A_ar,
+                icon: '🏆',
+                importance: 'High priority - required for O-1 eligibility',
+                tip: 'Include major awards, recognition, and press coverage'
+              },
+              { 
+                name: 'Publications', 
+                criticalThreshold: 2,
+                value: safeStats.N_A_p,
+                icon: '📚',
+                importance: 'Key evidence for extraordinary ability',
+                tip: 'Include all published work, with proper citations'
+              },
+              { 
+                name: 'Recommendation Letters', 
+                criticalThreshold: 1,
+                value: safeStats.N_A_rl,
+                icon: '✉️',
+                importance: 'Essential validation from industry experts',
+                tip: 'Secure letters from prominent individuals in your field'
+              },
+              { 
+                name: 'Salary Evidence', 
+                criticalThreshold: 1,
+                value: safeStats.N_A_ss,
+                icon: '💰',
+                importance: 'Required for O-1 eligibility',
+                tip: 'Provide evidence of your salary or compensation'
+              },
+              { 
+                name: 'Professional Memberships', 
+                criticalThreshold: 1,
+                value: safeStats.N_A_pm,
+                icon: '🔖',
+                importance: 'Essential for O-1 eligibility',
+                tip: 'Include proof of membership in professional organizations'
+              }
+
+            ]
+            .filter(section => section.value >= section.criticalThreshold)
+            .map(section => (
+              <div key={section.name} className="bg-red-900/20 border border-red-800/30 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 bg-red-500/20 rounded-full p-2 mr-3">
+                    <span className="text-xl">{section.icon}</span>
+                  </div>
+                  <div>
+                    <h5 className="text-lg font-medium text-red-300 flex items-center">
+                      {section.name}
+                      <span className="ml-2 px-2 py-0.5 bg-red-500/30 text-red-200 text-xs rounded-full">
+                        {section.value} missing
+                      </span>
+                    </h5>
+                    <p className="text-slate-300 text-sm mt-1">{section.importance}</p>
+                    <div className="mt-2 bg-slate-800/50 rounded p-3 text-slate-300 text-sm">
+                      <span className="font-medium text-primary-300">Tip:</span> {section.tip}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {/* Show if no critical issues */}
+            {![safeStats.N_A_ar >= 3, safeStats.N_A_p >= 2, safeStats.N_A_rl >= 1, safeStats.N_A_per >= 3, safeStats.N_A_r >= 3, safeStats.N_A_ss >= 1, safeStats.N_A_pm >= 1].some(Boolean) && (
+              <div className="bg-green-900/20 border border-green-800/30 rounded-lg p-4 text-center">
+                <div className="flex justify-center mb-2">
+                  <div className="bg-green-500/20 rounded-full p-2">
+                    <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                <h5 className="text-lg font-medium text-green-300">No Critical Issues Found</h5>
+                <p className="text-slate-300 text-sm mt-1">
+                  You've addressed all the most critical sections for your O-1 petition!
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* New Document Upload Section to Address Missing Fields */}
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 mb-6">
+        <div className="flex items-center mb-4">
+          <svg className="w-5 h-5 text-primary-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
-          <span>This analysis is based on the documents you've provided and is not legal advice.</span>
+          <h4 className="text-xl font-semibold text-white">Upload Supporting Documents</h4>
+        </div>
+        
+        <div className="space-y-6">
+          <p className="text-slate-300 text-sm">
+            Address your application's missing fields by uploading the necessary supporting documents.
+          </p>
+          
+          {/* Personal Information Card */}
+          <div className="border rounded-lg p-4 transition-all duration-300 hover:shadow-md bg-slate-800/80 border-primary-500/30 hover:border-primary-500/50 mb-6">
+            <div className="flex items-start mb-3">
+              <div className="flex-shrink-0 bg-primary-500/20 rounded-full p-2 mr-3 text-xl">
+                👤
+              </div>
+              <div>
+                <h5 className="font-medium text-primary-300 flex items-center">
+                  Personal Information
+                  {hasMissingPersonalInfo && (
+                    <span className="ml-2 px-2 py-0.5 bg-red-500/20 text-red-300 text-xs rounded-full">Required</span>
+                  )}
+                </h5>
+                <p className="text-slate-400 text-sm mt-1">Your contact details for the O-1 application</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/50 p-4 rounded-lg">
+              <div>
+                <h6 className="text-sm font-medium text-slate-400 mb-1">Full Name</h6>
+                <p className={`font-medium ${personalInfo.name ? 'text-white' : 'text-red-300'}`}>
+                  {personalInfo.name || "Not provided"}
+                </p>
+              </div>
+              
+              <div>
+                <h6 className="text-sm font-medium text-slate-400 mb-1">Phone Number</h6>
+                <p className={`font-medium ${personalInfo.phone ? 'text-white' : 'text-red-300'}`}>
+                  {personalInfo.phone || "Not provided"}
+                </p>
+              </div>
+              
+              <div>
+                <h6 className="text-sm font-medium text-slate-400 mb-1">Address</h6>
+                <p className={`font-medium ${personalInfo.address ? 'text-white' : 'text-red-300'}`}>
+                  {personalInfo.address || "Not provided"}
+                </p>
+              </div>
+              
+              <div>
+                <h6 className="text-sm font-medium text-slate-400 mb-1">Additional Info</h6>
+                <p className="text-white font-medium">{personalInfo.extraInfo || "None provided"}</p>
+              </div>
+            </div>
+            
+            <div className="mt-3 text-right">
+              <button 
+                onClick={() => router.push('/document-collection')}
+                className="text-primary-400 hover:text-primary-300 text-sm inline-flex items-center bg-primary-500/10 px-3 py-1 rounded transition-colors"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Personal Information
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                type: 'awards',
+                label: 'Awards & Recognition',
+                description: 'Upload certificates, awards, or press mentions',
+                icon: '🏆',
+                status: safeStats.N_A_ar > 2 ? 'critical' : safeStats.N_A_ar > 0 ? 'warning' : 'complete'
+              },
+              {
+                type: 'publications',
+                label: 'Publications',
+                description: 'Upload published articles or papers',
+                icon: '📚',
+                status: safeStats.N_A_p > 2 ? 'critical' : safeStats.N_A_p > 0 ? 'warning' : 'complete'
+              },
+              {
+                type: 'recommendation',
+                label: 'Recommendation Letters',
+                description: 'Upload letters from experts in your field',
+                icon: '✉️',
+                status: safeStats.N_A_rl > 0 ? 'warning' : 'complete'
+              },
+              {
+                type: 'resume',
+                label: 'Resume/CV',
+                description: 'Upload your detailed curriculum vitae',
+                icon: '📄',
+                status: safeStats.N_A_r > 3 ? 'critical' : safeStats.N_A_r > 0 ? 'warning' : 'complete'
+              },
+              {
+                type: 'salary',
+                label: 'Salary Evidence',
+                description: 'Upload salary slips or contracts',
+                icon: '💰',
+                status: safeStats.N_A_ss > 2 ? 'critical' : safeStats.N_A_ss > 0 ? 'warning' : 'complete'
+              },
+              {
+                type: 'membership',
+                label: 'Professional Memberships',
+                description: 'Upload proof of membership in professional organizations',
+                icon: '🔖',
+                status: safeStats.N_A_pm > 2 ? 'critical' : safeStats.N_A_pm > 0 ? 'warning' : 'complete'
+              }
+            ].map((doc) => (
+              <div 
+                key={doc.type}
+                className={`border rounded-lg p-4 transition-all duration-300 hover:shadow-md ${
+                  doc.status === 'critical' 
+                    ? 'bg-red-900/20 border-red-800/30 hover:border-red-500/50' 
+                    : doc.status === 'warning'
+                      ? 'bg-amber-900/20 border-amber-800/30 hover:border-amber-500/50'
+                      : 'bg-green-900/20 border-green-800/30 hover:border-green-500/50'
+                }`}
+              >
+                <div className="flex items-start mb-3">
+                  <div className={`flex-shrink-0 rounded-full p-2 mr-3 text-xl ${
+                    doc.status === 'critical' 
+                      ? 'bg-red-500/20' 
+                      : doc.status === 'warning'
+                        ? 'bg-amber-500/20'
+                        : 'bg-green-500/20'
+                  }`}>
+                    {doc.icon}
+                  </div>
+                  <div>
+                    <h5 className={`font-medium ${
+                      doc.status === 'critical' 
+                        ? 'text-red-300' 
+                        : doc.status === 'warning'
+                          ? 'text-amber-300'
+                          : 'text-green-300'
+                    }`}>
+                      {doc.label}
+                    </h5>
+                    <p className="text-slate-400 text-sm mt-1">{doc.description}</p>
+                  </div>
+                </div>
+                
+                <label 
+                  className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
+                    doc.status === 'critical' 
+                      ? 'border-red-700/50 hover:bg-red-900/30' 
+                      : doc.status === 'warning'
+                        ? 'border-amber-700/50 hover:bg-amber-900/30'
+                        : 'border-green-700/50 hover:bg-green-900/30'
+                  }`}
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg 
+                      className={`w-8 h-8 mb-3 ${
+                        doc.status === 'critical' 
+                          ? 'text-red-500' 
+                          : doc.status === 'warning'
+                            ? 'text-amber-500'
+                            : 'text-green-500'
+                      }`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p className="mb-1 text-sm text-slate-400">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-slate-500">PDF, DOC, DOCX (MAX. 10MB)</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept=".pdf,.doc,.docx" 
+                    onChange={(e) => {
+                      // Handle file upload functionality
+                      console.log(`Uploading ${doc.type} document:`, e.target.files);
+                      // Implement actual upload logic here
+                    }}
+                  />
+                </label>
+                
+                {doc.status === 'complete' && (
+                  <div className="flex items-center justify-center mt-3 text-green-400 bg-green-900/20 rounded-lg p-2">
+                    <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-sm">Complete</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex justify-center mt-6">
+            <button 
+              className="bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-300 flex items-center"
+              onClick={() => {
+                // Handle document analysis
+                console.log("Analyzing uploaded documents...");
+                // Implement document analysis functionality
+              }}
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+              Analyze Documents
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -546,12 +818,32 @@ function validateApiResponseData(data: any): boolean {
   return isValid;
 }
 
+// Loading Screen Component
+function LoadingScreen() {
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-slate-800/90 border border-slate-700/50 rounded-xl p-8 max-w-md w-full">
+        <div className="flex flex-col items-center text-center">
+          <div className="w-12 h-12 rounded-full border-4 border-slate-600 border-t-primary-400 animate-spin mb-6"></div>
+          <h3 className="text-xl font-semibold text-white mb-2">Processing Documents</h3>
+          <p className="text-slate-300 text-sm">Please wait while we analyze your application documents...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DocumentReview() {
   const router = useRouter();
-  const { userId, processed, apiResponse } = router.query;
+  const { userId, processed } = router.query;
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
-  const [parsedSummary, setParsedSummary] = useState<ParsedSummary>({ strengths: [], weaknesses: [], recommendations: [], hasAttemptedReparse: false });
+  const [parsedSummary, setParsedSummary] = useState<ParsedSummary>({
+    strengths: [],
+    weaknesses: [],
+    recommendations: [],
+    hasAttemptedReparse: false
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [fieldStats, setFieldStats] = useState<FieldStats | null>(null);
   const [showLawyerForm, setShowLawyerForm] = useState(false);
@@ -561,8 +853,27 @@ export default function DocumentReview() {
   const [isMatchingLawyer, setIsMatchingLawyer] = useState(false);
   const [filledPdfUrl, setFilledPdfUrl] = useState<string | null>(null);
   const [apiResponseData, setApiResponseData] = useState<any>(null);
+  const [canProceed, setCanProceed] = useState(false);
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
+    name: '',
+    phone: '',
+    address: '',
+    extraInfo: ''
+  });
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    'strength-analysis': false,
+    'document-summaries': false,
+    'next-steps': false
+  });
+  const [activeTab, setActiveTab] = useState('overview');
+  const [priorityAreas, setPriorityAreas] = useState<PriorityArea[]>([
+    { key: 'evidence', label: 'Evidence Collection', value: 3 },
+    { key: 'documentation', label: 'Documentation', value: 2 },
+    { key: 'expertise', label: 'Expertise Demonstration', value: 4 }
+  ]);
+  const [documentSummaries, setDocumentSummaries] = useState<DocumentSummaries>({});
   
   // Default mock stats to use when no data is available
   const defaultStats: FieldStats = {
@@ -585,11 +896,20 @@ export default function DocumentReview() {
     na_success: 3
   };
   
-  // Parse API response data from URL query
+  // Parse API response data from localStorage
   useEffect(() => {
-    if (apiResponse && typeof apiResponse === 'string') {
+    if (typeof window !== 'undefined' && processed) {
       try {
-        const parsedData = JSON.parse(apiResponse);
+        // Retrieve data from localStorage
+        const apiResponseStr = localStorage.getItem('apiResponseData');
+        const documentSummariesStr = localStorage.getItem('documentSummaries');
+        
+        if (!apiResponseStr) {
+          console.warn("No API response data found in localStorage");
+          return;
+        }
+        
+        const parsedData = JSON.parse(apiResponseStr);
         console.log("Raw parsed API response data:", parsedData);
         
         // Ensure document_summaries exists
@@ -667,11 +987,54 @@ export default function DocumentReview() {
         // Set the data even if not entirely valid (we've added fallbacks where needed)
         setApiResponseData(parsedData);
         console.log("Final API Response Data:", parsedData);
+        
+        // Set field stats from API response
+        if (parsedData.field_stats) {
+          console.log("Setting fieldStats from API response:", parsedData.field_stats);
+          setFieldStats(parsedData.field_stats);
+        }
+        
+        // Set document summaries directly from API response or from dedicated localStorage item
+        if (documentSummariesStr) {
+          try {
+            const summaries = JSON.parse(documentSummariesStr);
+            setDocumentSummaries(summaries);
+          } catch (error) {
+            console.error("Error parsing document summaries from localStorage:", error);
+            
+            // Fallback to the API response
+            if (parsedData.document_summaries) {
+              const summaries: DocumentSummaries = {};
+              Object.entries(parsedData.document_summaries).forEach(([docType, summary]: [string, any]) => {
+                summaries[docType] = {
+                  pages: summary.pages || 0,
+                  summary: summary.summary || '',
+                  strengths: Array.isArray(summary.strengths) ? summary.strengths : [],
+                  weaknesses: Array.isArray(summary.weaknesses) ? summary.weaknesses : [],
+                  recommendations: Array.isArray(summary.recommendations) ? summary.recommendations : []
+                };
+              });
+              setDocumentSummaries(summaries);
+            }
+          }
+        } else if (parsedData.document_summaries) {
+          const summaries: DocumentSummaries = {};
+          Object.entries(parsedData.document_summaries).forEach(([docType, summary]: [string, any]) => {
+            summaries[docType] = {
+              pages: summary.pages || 0,
+              summary: summary.summary || '',
+              strengths: Array.isArray(summary.strengths) ? summary.strengths : [],
+              weaknesses: Array.isArray(summary.weaknesses) ? summary.weaknesses : [],
+              recommendations: Array.isArray(summary.recommendations) ? summary.recommendations : []
+            };
+          });
+          setDocumentSummaries(summaries);
+        }
       } catch (error) {
-        console.error("Error parsing API response:", error);
+        console.error("Error parsing API response from localStorage:", error);
       }
     }
-  }, [apiResponse]);
+  }, [processed]);
   
   // Initialize Google Places Autocomplete
   const initializeAutocomplete = () => {
@@ -734,18 +1097,6 @@ export default function DocumentReview() {
           
         if (listError) {
           throw listError;
-        }
-        
-        // Get document summaries from localStorage
-        const storedSummaries = localStorage.getItem('documentSummaries');
-        const documentSummaries: DocumentSummaries = storedSummaries ? JSON.parse(storedSummaries) : {};
-        
-        // Get field stats from localStorage
-        const storedStats = localStorage.getItem('fieldStats');
-        const stats: FieldStats | null = storedStats ? JSON.parse(storedStats) : null;
-        
-        if (stats) {
-          setFieldStats(stats);
         }
         
         // Set the local O1 form path
@@ -835,129 +1186,20 @@ export default function DocumentReview() {
     if (userId) {
       fetchData();
     }
-  }, [userId, apiResponseData]);
+  }, [userId, apiResponseData, documentSummaries]);
 
   // Update parsed summary when selected document changes
   useEffect(() => {
-    if (selectedDoc) {
-      console.log(`Selected document changed to: ${selectedDoc}`);
-      
-      // DIRECT CONSOLE LOG FOR DEBUGGING
-      if (apiResponseData?.document_summaries?.[selectedDoc]) {
-        console.log("DIRECT ACCESS TO API DATA FOR SELECTED DOC:");
-        console.log("Strengths:", apiResponseData.document_summaries[selectedDoc].strengths);
-        console.log("Weaknesses:", apiResponseData.document_summaries[selectedDoc].weaknesses);
-        console.log("Recommendations:", apiResponseData.document_summaries[selectedDoc].recommendations);
-      }
-      
-      // First priority: Use API data if available
-      if (apiResponseData?.document_summaries?.[selectedDoc]) {
-        const docData = apiResponseData.document_summaries[selectedDoc];
-        
-        // Create a fresh object to avoid reference issues
-        const apiParsed: ParsedSummary = {
-          strengths: Array.isArray(docData.strengths) ? [...docData.strengths] : [],
-          weaknesses: Array.isArray(docData.weaknesses) ? [...docData.weaknesses] : [],
-          recommendations: Array.isArray(docData.recommendations) ? [...docData.recommendations] : [],
-          hasAttemptedReparse: false
-        };
-        
-        console.log("API data parsed summary:", apiParsed);
-        
-        // Only use API data if it has content
-        if (apiParsed.strengths.length > 0 || apiParsed.weaknesses.length > 0 || apiParsed.recommendations.length > 0) {
-          console.log("Using API data for parsed summary");
-          setParsedSummary(apiParsed);
-          return; // Exit early
-        }
-      }
-      
-      // Second priority: Parse from document summary
-      const doc = documents.find(d => d.fileType === selectedDoc);
-      if (doc?.summary) {
-        console.log(`Using document summary for ${selectedDoc}`);
-        const parsed = parseSummary(doc.summary);
-        console.log(`Parsed from document summary:`, parsed);
-        setParsedSummary(parsed);
-      } else {
-        console.log("No document summary found, setting empty parsed summary");
-        setParsedSummary({
-          strengths: [],
-          weaknesses: [],
-          recommendations: [],
-          hasAttemptedReparse: false
-        });
-      }
+    if (selectedDoc && documentSummaries[selectedDoc]) {
+      const summary = documentSummaries[selectedDoc];
+      setParsedSummary({
+        strengths: summary.strengths,
+        weaknesses: summary.weaknesses,
+        recommendations: summary.recommendations,
+        hasAttemptedReparse: false
+      });
     }
-  }, [selectedDoc, documents, apiResponseData]);
-
-  // Add a useEffect to log the parsed summary when it changes
-  useEffect(() => {
-    console.log("parsedSummary state updated:", parsedSummary);
-    
-    // If parsedSummary is empty but we have document summaries in the API response,
-    // try a direct approach to set the arrays
-    if ((!parsedSummary.strengths.length && !parsedSummary.weaknesses.length && !parsedSummary.recommendations.length) && 
-        selectedDoc && apiResponseData?.document_summaries?.[selectedDoc]) {
-      
-      const summaryData = apiResponseData.document_summaries[selectedDoc];
-      console.log("Direct access to API summary data:", summaryData);
-      
-      if (summaryData) {
-        const directParsed: ParsedSummary = {
-          strengths: Array.isArray(summaryData.strengths) ? summaryData.strengths : [],
-          weaknesses: Array.isArray(summaryData.weaknesses) ? summaryData.weaknesses : [],
-          recommendations: Array.isArray(summaryData.recommendations) ? summaryData.recommendations : [],
-          hasAttemptedReparse: true
-        };
-        
-        if (directParsed.strengths.length || directParsed.weaknesses.length || directParsed.recommendations.length) {
-          console.log("Setting parsedSummary directly from API data:", directParsed);
-          setParsedSummary(directParsed);
-        }
-      }
-    }
-  }, [parsedSummary, selectedDoc, apiResponseData]);
-
-  // Set initial parsedSummary when apiResponseData is loaded
-  useEffect(() => {
-    if (apiResponseData && apiResponseData.document_summaries && selectedDoc) {
-      console.log("Setting initial parsedSummary from apiResponseData for", selectedDoc);
-      const summary = apiResponseData.document_summaries[selectedDoc];
-      
-      if (summary) {
-        // Create a fresh parsed summary directly from API data
-        const initialParsed: ParsedSummary = {
-          strengths: Array.isArray(summary.strengths) ? [...summary.strengths] : [],
-          weaknesses: Array.isArray(summary.weaknesses) ? [...summary.weaknesses] : [],
-          recommendations: Array.isArray(summary.recommendations) ? [...summary.recommendations] : [],
-          hasAttemptedReparse: false
-        };
-        
-        console.log("Initial parsed summary from API:", initialParsed);
-        
-        // Only update if we have actual content
-        if (initialParsed.strengths.length > 0 || 
-            initialParsed.weaknesses.length > 0 || 
-            initialParsed.recommendations.length > 0) {
-          console.log("Setting parsedSummary directly from API data");
-          setParsedSummary(initialParsed);
-        } else if (typeof summary.summary === 'string' && summary.summary.trim()) {
-          // Try parsing from the summary text as a last resort
-          console.log("Trying to parse directly from summary text");
-          const parsedFromText = parseSummary(summary.summary);
-          console.log("Parsed from text:", parsedFromText);
-          
-          if (parsedFromText.strengths.length > 0 || 
-              parsedFromText.weaknesses.length > 0 || 
-              parsedFromText.recommendations.length > 0) {
-            console.log("Setting parsedSummary from parsed text");
-            setParsedSummary(parsedFromText);
-          }
-        }
-      }
-    }
-  }, [apiResponseData, selectedDoc]);
+  }, [selectedDoc, documentSummaries]);
 
   const handleLawyerMatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -969,10 +1211,6 @@ export default function DocumentReview() {
     
     try {
       setIsMatchingLawyer(true);
-      
-      // Get document summaries from localStorage
-      const storedSummaries = localStorage.getItem('documentSummaries');
-      const documentSummaries: DocumentSummaries = storedSummaries ? JSON.parse(storedSummaries) : {};
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -1152,1138 +1390,346 @@ export default function DocumentReview() {
     </div>
   );
 
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const renderDocumentSummary = () => {
+    if (!selectedDoc || !documentSummaries[selectedDoc]) {
+      return (
+        <div className="summary-section">
+          <p className="text-slate-500 italic">No document selected or summary available.</p>
+        </div>
+      );
+    }
+
+    const summary = documentSummaries[selectedDoc];
+    return (
+      <div className="space-y-6">
+        <div className="summary-section">
+          <h4 className="summary-title summary-title-blue">Document Overview</h4>
+          <p className="summary-text">{summary.summary}</p>
+          <p className="text-sm text-slate-500 mt-2">Pages: {summary.pages}</p>
+        </div>
+        <SummarySection title="Strengths" items={summary.strengths} colorClass="green" />
+        <SummarySection title="Weaknesses" items={summary.weaknesses} colorClass="red" />
+        <SummarySection title="Recommendations" items={summary.recommendations} colorClass="blue" />
+      </div>
+    );
+  };
+
+  // Load personal info from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedPersonalInfo = localStorage.getItem('personalInfo');
+        if (storedPersonalInfo) {
+          const parsedInfo = JSON.parse(storedPersonalInfo);
+          setPersonalInfo(parsedInfo);
+        }
+      } catch (error) {
+        console.error("Error loading personal info from localStorage:", error);
+      }
+    }
+  }, []);
+
   return (
-    <div>
+    <div className="min-h-screen bg-slate-900 text-white">
       <Head>
+        <title>O-1 Document Review | Prometheus AI</title>
         <style>{SharedStyles}</style>
-        <style>{`
-          .card {
-            background-color: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 0.75rem;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          }
-          
-          .gradient-text {
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(to right, #38BDF8, #818CF8, #C084FC);
-          }
-          
-          /* StatsSection Styles */
-          .stats-container {
-            background-color: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-          }
-          
-          .stats-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1.5rem;
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(to right, #38BDF8, #818CF8, #C084FC);
-          }
-          
-          .next-steps-section {
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 0.5rem;
-            padding: 1.25rem;
-            background-color: rgba(30, 41, 59, 0.5);
-            margin-bottom: 1.5rem;
-          }
-          
-          .next-steps-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #e2e8f0;
-          }
-          
-          .next-steps-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.25rem;
-          }
-          
-          .priority-areas, .action-path {
-            padding: 1rem;
-            background-color: rgba(51, 65, 85, 0.4);
-            border-radius: 0.5rem;
-          }
-          
-          .priority-title, .action-path-title {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-            color: #94a3b8;
-          }
-          
-          .priority-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-          }
-          
-          .priority-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-          }
-          
-          .priority-number {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 1.5rem;
-            height: 1.5rem;
-            background: rgba(99, 102, 241, 0.3);
-            border-radius: 9999px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            color: #a5b4fc;
-          }
-          
-          .priority-details {
-            display: flex;
-            flex-direction: column;
-          }
-          
-          .priority-label {
-            font-weight: 500;
-            color: #e2e8f0;
-            font-size: 0.875rem;
-          }
-          
-          .priority-value {
-            font-size: 0.75rem;
-            color: #94a3b8;
-          }
-          
-          .action-steps {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-          
-          .action-step {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-          }
-          
-          .action-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 1.75rem;
-            height: 1.75rem;
-            border-radius: 9999px;
-            background: rgba(51, 65, 85, 0.8);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 0.875rem;
-          }
-          
-          .action-indicator.completed {
-            background: rgba(52, 211, 153, 0.2);
-            border-color: rgba(52, 211, 153, 0.5);
-            color: #10b981;
-          }
-          
-          .action-indicator.active {
-            background: rgba(99, 102, 241, 0.2);
-            border-color: rgba(99, 102, 241, 0.5);
-            color: #818cf8;
-          }
-          
-          .action-label {
-            font-size: 0.875rem;
-            color: #cbd5e1;
-          }
-          
-          .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.25rem;
-          }
-          
-          .stats-section {
-            background-color: rgba(30, 41, 59, 0.5);
-            border-radius: 0.5rem;
-            padding: 1.25rem;
-          }
-          
-          .stats-section-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #e2e8f0;
-          }
-          
-          .stats-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-          }
-          
-          .stats-label {
-            font-size: 0.875rem;
-            color: #94a3b8;
-          }
-          
-          .stats-value {
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          }
-          
-          .stats-value-total {
-            color: #e2e8f0;
-          }
-          
-          .stats-value-filled {
-            color: #818cf8;
-          }
-          
-          .stats-value-completion {
-            color: #10b981;
-          }
-          
-          .stats-value-missing {
-            color: #f87171;
-          }
-          
-          .stats-indicator {
-            width: 0.5rem;
-            height: 0.5rem;
-            border-radius: 50%;
-            background-color: currentColor;
-            box-shadow: 0 0 5px currentColor;
-          }
-          
-          .application-score-footer {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 1.5rem 0;
-            margin-top: 1.5rem;
-            border-top: 1px solid rgba(100, 116, 139, 0.3);
-          }
-          
-          .score-display {
-            display: flex;
-            align-items: baseline;
-          }
-          
-          .score-value {
-            font-size: 3rem;
-            font-weight: 700;
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(to right, #38BDF8, #818CF8, #C084FC);
-            text-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-          }
-          
-          .score-max {
-            font-size: 1.5rem;
-            color: #94a3b8;
-            margin-left: 0.25rem;
-          }
-          
-          .score-label {
-            margin-top: 0.25rem;
-            font-size: 0.875rem;
-            color: #cbd5e1;
-          }
-          
-          .stats-footer {
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(100, 116, 139, 0.3);
-          }
-          
-          .stats-info {
-            display: flex;
-            align-items: center;
-            font-size: 0.75rem;
-            color: #94a3b8;
-          }
-          
-          .primary-button {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: linear-gradient(to right, #4f46e5, #8b5cf6);
-            color: white;
-            font-weight: 500;
-            border-radius: 0.375rem;
-            text-align: center;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
-          }
-          
-          .primary-button:hover {
-            background: linear-gradient(to right, #4338ca, #7c3aed);
-            transform: translateY(-1px);
-          }
-          
-          .secondary-button {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background-color: rgba(51, 65, 85, 0.8);
-            color: #e2e8f0;
-            font-weight: 500;
-            border-radius: 0.375rem;
-            text-align: center;
-            transition: all 0.2s ease;
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            cursor: pointer;
-          }
-          
-          .secondary-button:hover {
-            background-color: rgba(51, 65, 85, 0.9);
-            transform: translateY(-1px);
-          }
-          
-          /* Document Analysis Styles */
-          .document-review-container {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            gap: 1.5rem;
-          }
-          
-          .document-selector {
-            background-color: rgba(30, 41, 59, 0.5);
-            border-radius: 0.5rem;
-            padding: 1rem;
-          }
-          
-          .document-selector-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #e2e8f0;
-          }
-          
-          .document-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-          
-          .document-item {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem;
-            border-radius: 0.375rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            background-color: rgba(51, 65, 85, 0.4);
-            border: 1px solid transparent;
-          }
-          
-          .document-item:hover {
-            background-color: rgba(51, 65, 85, 0.6);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          }
-          
-          .document-item.selected {
-            background-color: rgba(99, 102, 241, 0.2);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
-          }
-          
-          .document-icon {
-            font-size: 1.25rem;
-            margin-right: 0.75rem;
-          }
-          
-          .document-name {
-            flex: 1;
-            font-size: 0.875rem;
-            color: #e2e8f0;
-          }
-          
-          .document-view-link {
-            font-size: 0.75rem;
-            color: #818cf8;
-            text-decoration: none;
-          }
-          
-          .document-analysis {
-            background-color: rgba(30, 41, 59, 0.5);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-          }
-          
-          .analysis-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: #e2e8f0;
-          }
-          
-          .summary-sections {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-          }
-          
-          .summary-section {
-            background-color: rgba(51, 65, 85, 0.4) !important;
-            border: 1px solid rgba(100, 116, 139, 0.3) !important;
-            border-radius: 0.5rem !important;
-            padding: 1.25rem !important;
-            margin-bottom: 0 !important;
-          }
-          
-          .summary-title {
-            font-size: 1.125rem !important;
-            font-weight: 600 !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .summary-title-green {
-            color: #10b981 !important;
-          }
-          
-          .summary-title-red {
-            color: #ef4444 !important;
-          }
-          
-          .summary-title-blue {
-            color: #3b82f6 !important;
-          }
-          
-          .summary-dot-green, .summary-dot-red, .summary-dot-blue {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 10px;
-            margin-top: 5px;
-          }
-          
-          .summary-dot-green {
-            background-color: #10b981 !important;
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6) !important;
-          }
-          
-          .summary-dot-red {
-            background-color: #ef4444 !important;
-            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6) !important;
-          }
-          
-          .summary-dot-blue {
-            background-color: #3b82f6 !important;
-            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6) !important;
-          }
-          
-          .summary-text {
-            color: #e2e8f0 !important;
-            font-size: 0.875rem !important;
-          }
-          
-          /* Next Steps Styles */
-          .next-steps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.25rem;
-          }
-          
-          .next-step-card {
-            background-color: rgba(30, 41, 59, 0.5);
-            border-radius: 0.5rem;
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-          }
-          
-          .next-step-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-          }
-          
-          .next-step-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-            color: #e2e8f0;
-          }
-          
-          .next-step-description {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            margin-bottom: 1.25rem;
-          }
-          
-          .next-step-button {
-            padding: 0.5rem 1rem;
-            background: linear-gradient(to right, #4f46e5, #8b5cf6);
-            color: white;
-            font-weight: 500;
-            border-radius: 0.375rem;
-            width: 100%;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
-          }
-          
-          .next-step-button:hover {
-            background: linear-gradient(to right, #4338ca, #7c3aed);
-            transform: translateY(-1px);
-          }
-          
-          /* Lawyer Form Styles */
-          .lawyer-form-container {
-            background-color: rgba(30, 41, 59, 0.5);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-top: 2rem;
-          }
-          
-          .lawyer-form-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-            color: #e2e8f0;
-          }
-          
-          .lawyer-form-description {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            margin-bottom: 1.5rem;
-          }
-          
-          .lawyer-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-          }
-          
-          .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-          
-          .form-label {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #cbd5e1;
-          }
-          
-          .form-input, .form-textarea {
-            padding: 0.75rem;
-            background-color: rgba(51, 65, 85, 0.8);
-            border: 1px solid rgba(100, 116, 139, 0.3);
-            border-radius: 0.375rem;
-            color: #e2e8f0;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-          }
-          
-          .form-input:focus, .form-textarea:focus {
-            outline: none;
-            border-color: rgba(99, 102, 241, 0.5);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
-          }
-          
-          .submit-button {
-            padding: 0.75rem;
-            background: linear-gradient(to right, #4f46e5, #8b5cf6);
-            color: white;
-            font-weight: 500;
-            border-radius: 0.375rem;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
-          }
-          
-          .submit-button:hover:not(:disabled) {
-            background: linear-gradient(to right, #4338ca, #7c3aed);
-            transform: translateY(-1px);
-          }
-          
-          .submit-button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-          }
-          
-          /* Matched Lawyer Styles */
-          .matched-lawyer-container {
-            background-color: rgba(30, 41, 59, 0.5);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-top: 2rem;
-          }
-          
-          .matched-lawyer-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: #e2e8f0;
-          }
-          
-          .lawyer-card {
-            background-color: rgba(51, 65, 85, 0.4);
-            border-radius: 0.5rem;
-            padding: 1.25rem;
-          }
-          
-          .lawyer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.25rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(100, 116, 139, 0.3);
-          }
-          
-          .lawyer-name {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #e2e8f0;
-          }
-          
-          .match-score {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          }
-          
-          .match-score-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #10b981;
-          }
-          
-          .match-score-label {
-            font-size: 0.75rem;
-            color: #94a3b8;
-          }
-          
-          .lawyer-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-          }
-          
-          .lawyer-detail {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-          }
-          
-          .lawyer-detail-label {
-            font-size: 0.75rem;
-            color: #94a3b8;
-          }
-          
-          .lawyer-detail-value {
-            font-size: 0.875rem;
-            color: #e2e8f0;
-          }
-          
-          .lawyer-description {
-            margin-bottom: 1.5rem;
-            font-size: 0.875rem;
-            color: #cbd5e1;
-            line-height: 1.5;
-          }
-          
-          .lawyer-actions {
-            display: flex;
-            gap: 1rem;
-          }
-          
-          .contact-button {
-            flex: 1;
-            padding: 0.75rem;
-            background: linear-gradient(to right, #4f46e5, #8b5cf6);
-            color: white;
-            font-weight: 500;
-            border-radius: 0.375rem;
-            text-align: center;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
-          }
-          
-          .contact-button:hover {
-            background: linear-gradient(to right, #4338ca, #7c3aed);
-            transform: translateY(-1px);
-          }
-          
-          .find-another-button {
-            flex: 1;
-            padding: 0.75rem;
-            background-color: rgba(51, 65, 85, 0.8);
-            color: #e2e8f0;
-            font-weight: 500;
-            border-radius: 0.375rem;
-            text-align: center;
-            transition: all 0.2s ease;
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            cursor: pointer;
-          }
-          
-          .find-another-button:hover {
-            background-color: rgba(51, 65, 85, 0.9);
-            transform: translateY(-1px);
-          }
-          
-          /* Responsive Adjustments */
-          @media (max-width: 768px) {
-            .next-steps-content {
-              grid-template-columns: 1fr;
-            }
-            
-            .document-review-container {
-              grid-template-columns: 1fr;
-            }
-            
-            .lawyer-actions {
-              flex-direction: column;
-            }
-          }
-          
-          /* Loading Spinner */
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          
-          .loading-spinner {
-            width: 3rem;
-            height: 3rem;
-            border-radius: 50%;
-            border: 4px solid transparent;
-            border-top-color: #38BDF8;
-            border-right-color: #818CF8; 
-            border-bottom-color: #C084FC;
-            animation: spin 1.5s linear infinite;
-            margin: 2rem auto;
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
-          }
-          
-          /* StatsSection Enhanced Styles */
-          .stats-container {
-            background-color: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-          }
-          
-          .stats-container:hover {
-            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
-            border-color: rgba(168, 85, 247, 0.4);
-          }
-          
-          .stats-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1.5rem;
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(to right, #38BDF8, #818CF8, #C084FC);
-            text-align: center;
-            letter-spacing: -0.025em;
-          }
-          
-          .next-steps-section {
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            background-color: rgba(30, 41, 59, 0.5);
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-          }
-          
-          .next-steps-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.25rem;
-            color: #e2e8f0;
-            text-align: center;
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(to right, #38BDF8, #818CF8);
-          }
-          
-          .next-steps-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-          }
-          
-          .priority-areas, .action-path {
-            padding: 1.25rem;
-            background-color: rgba(51, 65, 85, 0.4);
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(99, 102, 241, 0.15);
-            transition: all 0.3s ease;
-          }
-          
-          .priority-areas:hover, .action-path:hover {
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            border-color: rgba(99, 102, 241, 0.25);
-            transform: translateY(-2px);
-          }
-          
-          .priority-title, .action-path-title {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #a5b4fc;
-            text-align: center;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
-          }
-          
-          .priority-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-          }
-          
-          .priority-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            background-color: rgba(51, 65, 85, 0.3);
-            transition: all 0.2s ease;
-          }
-          
-          .priority-item:hover {
-            background-color: rgba(51, 65, 85, 0.5);
-          }
-          
-          .priority-number {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 2rem;
-            height: 2rem;
-            background: linear-gradient(135deg, rgba(79, 70, 229, 0.4), rgba(139, 92, 246, 0.4));
-            border-radius: 9999px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            color: #e2e8f0;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
-          }
-          
-          .priority-details {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-          }
-          
-          .priority-label {
-            font-weight: 500;
-            color: #e2e8f0;
-            font-size: 0.875rem;
-          }
-          
-          .priority-value {
-            font-size: 0.75rem;
-            color: #94a3b8;
-          }
-          
-          .action-steps {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-          }
-          
-          .action-step {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            background-color: rgba(51, 65, 85, 0.3);
-            transition: all 0.2s ease;
-          }
-          
-          .action-step:hover {
-            background-color: rgba(51, 65, 85, 0.5);
-          }
-          
-          .action-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 2rem;
-            height: 2rem;
-            border-radius: 9999px;
-            background: rgba(51, 65, 85, 0.8);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 0.875rem;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-          }
-          
-          .action-indicator.completed {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
-            border-color: rgba(16, 185, 129, 0.5);
-            color: #10b981;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
-          }
-          
-          .action-indicator.active {
-            background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(139, 92, 246, 0.2));
-            border-color: rgba(99, 102, 241, 0.5);
-            color: #818cf8;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
-          }
-          
-          .action-label {
-            font-size: 0.875rem;
-            color: #cbd5e1;
-            flex: 1;
-          }
-          
-          .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-          }
-          
-          .stats-section {
-            background-color: rgba(30, 41, 59, 0.5);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(99, 102, 241, 0.15);
-            transition: all 0.3s ease;
-          }
-          
-          .stats-section:hover {
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            border-color: rgba(99, 102, 241, 0.25);
-            transform: translateY(-2px);
-          }
-          
-          .stats-section-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 1.25rem;
-            color: #e2e8f0;
-            text-align: center;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
-          }
-          
-          .stats-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            background-color: rgba(51, 65, 85, 0.3);
-            transition: all 0.2s ease;
-          }
-          
-          .stats-item:hover {
-            background-color: rgba(51, 65, 85, 0.5);
-          }
-          
-          .stats-label {
-            font-size: 0.875rem;
-            color: #a5b4fc;
-          }
-          
-        `}</style>
-        <title>Prometheus - Document Review</title>
       </Head>
-
+  
       <BackgroundEffects />
-        
+  
+      {isLoading && <LoadingScreen />}
+  
       <div className="min-h-screen bg-transparent p-6">
-        <div className="max-w-6xl mx-auto pt-12 md:pt-24">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold gradient-text mb-2">Document Review</h1>
-            <p className="text-slate-300">
-              Review the analysis of your documents and get personalized recommendations for your O-1 visa application.
-            </p>
-          </div>
-
-          {isLoading ? (
-            <div className="card p-8 w-full text-center border-primary-500/30">
-              <div className="loading-spinner"></div>
-              <p className="text-slate-300">Loading your document analysis...</p>
+        <div className="max-w-6xl mx-auto pt-12">
+          <h1 className="text-3xl font-bold text-gradient-primary mb-8 text-center md:text-left">O-1 Visa Document Review</h1>
+          
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg mb-6">
+            <div className="p-4 border-b border-slate-700/50">
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setActiveTab('overview')}
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                    activeTab === 'overview' 
+                      ? 'bg-primary-500 text-white' 
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  Overview
+                </button>
+              </div>
             </div>
-          ) : (
-            <>
-              {/* Always display StatsSection with fallback to defaultStats */}
-              <StatsSection stats={fieldStats || defaultStats} filledPdfUrl={filledPdfUrl} apiResponseData={apiResponseData} />
-              
-              <div className="card p-6 w-full border-primary-500/30 mt-8">
-                <h3 className="text-xl font-semibold text-white mb-4">Document Analysis</h3>
+          </div>
+          
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* O-1 Petition Strength Analysis Section */}
+              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
+                <div 
+                  className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-700/30 transition-colors duration-300"
+                  onClick={() => toggleSection('strength-analysis')}
+                >
+                  <h2 className="text-xl font-semibold text-white flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    O-1 Petition Strength Analysis
+                  </h2>
+                  <svg 
+                    className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expandedSections['strength-analysis'] ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
                 
-                {documents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-slate-300 mb-4">No documents found. Please upload your documents first.</p>
-                    <button 
-                      onClick={() => router.push('/document-collection')}
-                      className="primary-button"
-                    >
-                      Upload Documents
-                    </button>
-                  </div>
-                ) : (
-                  <div className="document-review-container">
-                    <div className="document-selector">
-                      <h4 className="document-selector-title">Your Documents</h4>
-                      <ul className="document-list">
-                        {documents.map((doc) => (
-                          <li 
-                            key={doc.fileType}
-                            className={`document-item ${selectedDoc === doc.fileType ? 'selected' : ''}`}
-                            onClick={() => setSelectedDoc(doc.fileType)}
-                          >
-                            <span className="document-icon">
-                              {doc.fileType === 'resume' && '📄'}
-                              {doc.fileType === 'publications' && '📚'}
-                              {doc.fileType === 'awards' && '🏆'}
-                              {doc.fileType === 'recommendation' && '✉️'}
-                              {doc.fileType === 'press' && '📰'}
-                              {doc.fileType === 'salary' && '💰'}
-                              {doc.fileType === 'judging' && '⚖️'}
-                              {doc.fileType === 'membership' && '🏢'}
-                              {doc.fileType === 'contributions' && '💡'}
-                            </span>
-                            <span className="document-name">{doc.fileType.charAt(0).toUpperCase() + doc.fileType.slice(1)}</span>
-                            <a 
-                              href={doc.fileUrl} 
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              className="document-view-link"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              View
-                            </a>
-                          </li>
-                        ))}
-                                  </ul>
+                {expandedSections['strength-analysis'] && (
+                  <div className="p-4 border-t border-slate-700/50 animate-fadeIn">
+                    <StatsSection 
+                      stats={fieldStats || {
+                        total_fields: 0,
+                        user_info_filled: 0,
+                        percent_filled: 0,
+                        N_A_per: 0,
+                        N_A_r: 0,
+                        N_A_rl: 0,
+                        N_A_ar: 0,
+                        N_A_p: 0,
+                        N_A_ss: 0,
+                        N_A_pm: 0,
+                        na_extraordinary: 0,
+                        na_recognition: 0,
+                        na_publications: 0,
+                        na_leadership: 0,
+                        na_contributions: 0,
+                        na_salary: 0,
+                        na_success: 0
+                      }} 
+                      filledPdfUrl={filledPdfUrl} 
+                      apiResponseData={apiResponseData}
+                      personalInfo={personalInfo}
+                    />
+                    <div className="stats-container bg-transparent border-none shadow-none">
+                      <div className="next-steps-section bg-gradient-to-br from-slate-800/60 to-slate-900/80 backdrop-blur-sm border border-slate-700/50 p-6 rounded-xl">
+                        <h4 className="text-xl font-semibold text-white mb-4 flex items-center">
+                          <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                          </svg>
+                          O-1 Petition Roadmap
+                        </h4>
+                        
+                        <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300">
+                          <div className="space-y-4">
+                            {[
+                              { label: 'Initial Qualification Analysis', completed: true, description: 'AI review of your qualifications against O-1 visa criteria' },
+                              { label: 'Strengthen Evidence', active: true, description: 'Upload supporting documents to bolster your extraordinary ability case' },
+                              { label: 'Immigration Expert Review', active: false, description: 'Professional legal review of your application package' },
+                              { label: 'USCIS Submission', active: false, description: 'Filing your completed O-1 petition with USCIS' }
+                            ].map((step, index) => (
+                              <div key={index} className="flex items-start gap-4 p-3 bg-slate-700/20 rounded-lg hover:bg-slate-700/30 transition-all duration-300">
+                                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                                  step.completed ? 'bg-emerald-500/20 text-emerald-400 ring-2 ring-emerald-400/30' : 
+                                  step.active ? 'bg-primary-500/20 text-primary-400 ring-2 ring-primary-400/30' : 
+                                  'bg-slate-700/30 text-slate-400 ring-2 ring-slate-500/20'
+                                }`}>
+                                  {step.completed ? (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  ) : (
+                                    <span className="text-sm font-semibold">{index + 1}</span>
+                                  )}
                                 </div>
-                    
-                    <div className="document-analysis">
-                      {selectedDoc ? (
-                        <>
-                          <h4 className="analysis-title">
-                            Analysis: {selectedDoc.charAt(0).toUpperCase() + selectedDoc.slice(1)}
-                          </h4>
-                          
-                          <div className="summary-sections">
-                            <SummarySection 
-                              title="Strengths" 
-                              items={parsedSummary.strengths}
-                              colorClass="green"
-                            />
-                            <SummarySection 
-                              title="Weaknesses" 
-                              items={parsedSummary.weaknesses}
-                              colorClass="red"
-                            />
-                            <SummarySection 
-                              title="Recommendations" 
-                              items={parsedSummary.recommendations}
-                              colorClass="blue"
-                            />
+                                <div className="flex-grow">
+                                  <h5 className={`font-medium mb-1 ${
+                                    step.completed ? 'text-emerald-400' :
+                                    step.active ? 'text-primary-300' : 'text-slate-300'
+                                  }`}>{step.label}</h5>
+                                  <p className="text-xs text-slate-400">{step.description}</p>
+                                  
+                                  {step.active && (
+                                    <div className="mt-2 py-2 px-3 bg-primary-500/10 border border-primary-500/20 rounded text-xs text-primary-300">
+                                      <span className="font-medium">Current focus:</span> Upload your supporting documents to strengthen your O-1 petition
+                                    </div>
+                                  )}
+                                  
+                                  {step.completed && (
+                                    <div className="mt-2 flex items-center">
+                                      <svg className="w-4 h-4 text-emerald-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                      <span className="text-xs text-emerald-400">Completed</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-8">
-                          <p className="text-slate-300">Select a document to view its analysis.</p>
+
+                          <div className="mt-6 pt-4 border-t border-slate-700/30">
+                            <div className="flex items-center gap-2 text-sm text-slate-400">
+                              <svg className="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <p>Complete each step to maximize your chances of O-1 visa approval</p>
+                            </div>
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
               
-              <div className="card p-6 w-full border-primary-500/30 mt-8">
-                <h3 className="text-xl font-semibold text-white mb-4">Next Steps</h3>
-                
-                <div className="next-steps-grid">
-                  <div className="next-step-card">
-                    <div className="next-step-icon">📝</div>
-                    <h4 className="next-step-title">Strengthen Your Evidence</h4>
-                    <p className="next-step-description">
-                      Based on our analysis, focus on gathering additional evidence in your priority areas.
-                    </p>
-                  <button 
-                      onClick={() => router.push('/document-collection')}
-                      className="next-step-button"
-                    >
-                      Upload More Documents
-                    </button>
-                  </div>
-                  
-                  <div className="next-step-card">
-                    <div className="next-step-icon">⚖️</div>
-                    <h4 className="next-step-title">Find an Immigration Lawyer</h4>
-                    <p className="next-step-description">
-                      Connect with an experienced immigration lawyer who specializes in O-1 visas.
-                    </p>
-                    <button 
-                      onClick={() => router.push('/lawyer-search')}
-                      className="next-step-button"
-                    >
-                      Find My Lawyer
-                  </button>
-                  </div>
-                  
-                  <div className="next-step-card">
-                    <div className="next-step-icon">📊</div>
-                    <h4 className="next-step-title">Track Your Progress</h4>
-                    <p className="next-step-description">
-                      Monitor your application's completeness and track improvements over time.
-                    </p>
-                    <button 
-                      onClick={() => router.push('/dashboard')}
-                      className="next-step-button"
-                    >
-                      View Dashboard
-                    </button>
-                    </div>
+              {/* Document Summaries Section */}
+              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
+                <div 
+                  className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-700/30 transition-colors duration-300"
+                  onClick={() => toggleSection('document-summaries')}
+                >
+                  <h2 className="text-xl font-semibold text-white flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Document Summaries
+                  </h2>
+                  <svg 
+                    className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expandedSections['document-summaries'] ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
-            </div>
+                
+                {expandedSections['document-summaries'] && (
+                  <div className="p-4 border-t border-slate-700/50 animate-fadeIn">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(documentSummaries).map(([docType, summary]) => (
+                        <div key={docType} className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
+                          <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-lg font-medium text-white flex items-center">
+                              <svg className="w-4 h-4 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              {docType}
+                            </h3>
+                            <span className="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded-full">{summary.pages} pages</span>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {summary.strengths.length > 0 && (
+                              <SummarySection 
+                                title="Strengths" 
+                                items={summary.strengths} 
+                                colorClass="green" 
+                              />
+                            )}
+                            
+                            {summary.weaknesses.length > 0 && (
+                              <SummarySection 
+                                title="Areas for Improvement" 
+                                items={summary.weaknesses} 
+                                colorClass="red" 
+                              />
+                            )}
+                            
+                            {summary.recommendations.length > 0 && (
+                              <SummarySection 
+                                title="Recommendations" 
+                                items={summary.recommendations} 
+                                colorClass="blue" 
+                              />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               
-              {showLawyerForm && renderLawyerForm()}
-              {matchedLawyer && !showLawyerForm && renderMatchedLawyer()}
-            </>
+              {/* Next Steps Section */}
+              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
+                <div 
+                  className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-700/30 transition-colors duration-300"
+                  onClick={() => toggleSection('next-steps')}
+                >
+                  <h2 className="text-xl font-semibold text-white flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    Next Steps
+                  </h2>
+                  <svg 
+                    className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expandedSections['next-steps'] ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                
+                {expandedSections['next-steps'] && (
+                  <div className="p-4 border-t border-slate-700/50 animate-fadeIn">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
+                        <h4 className="text-lg font-medium text-white mb-4 flex items-center">
+                          <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          Connect with an Immigration Expert
+                        </h4>
+                        <p className="text-slate-300 mb-4">Get personalized guidance from an experienced immigration attorney who specializes in O-1 visas.</p>
+                        <button 
+                          onClick={() => router.push('/lawyer-search')}
+                          className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          Find a Lawyer
+                        </button>
+                      </div>
+                      
+                      <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
+                        <h4 className="text-lg font-medium text-white mb-4 flex items-center">
+                          <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          View Portfolio
+                        </h4>
+                        <p className="text-slate-300 mb-4">Showcase your achievements and expertise to potential employers and immigration officers.</p>
+                        <button 
+                          onClick={() => {/* Portfolio page navigation will be added later */}}
+                          className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Go to Portfolio
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
+
+          {showLawyerForm && !matchedLawyer && renderLawyerForm()}
+          {matchedLawyer && renderMatchedLawyer()}
         </div>
       </div>
     </div>

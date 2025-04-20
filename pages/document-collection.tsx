@@ -34,6 +34,13 @@ interface UploadedDocument {
   uploadedAt: Date;
 }
 
+interface PersonalInfo {
+  name: string;
+  phone: string;
+  address: string;
+  extraInfo: string;
+}
+
 // Function to extract text from PDF
 async function extractTextFromPdf(file: File): Promise<string> {
   // Ensure we're in the browser environment
@@ -193,6 +200,12 @@ export default function DocumentCollection() {
   const [documentSummaries, setDocumentSummaries] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
   const [showAllDocuments, setShowAllDocuments] = useState(false);
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
+    name: '',
+    phone: '',
+    address: '',
+    extraInfo: ''
+  });
   
   const documentTypes: DocumentType[] = [
     {
@@ -365,6 +378,20 @@ export default function DocumentCollection() {
     console.log('Resume uploaded?', hasDocType('resume'));
   }, [uploadedDocs]);
 
+  const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setPersonalInfo(prevInfo => ({
+      ...prevInfo,
+      [name]: value
+    }));
+  };
+
+  const isPersonalInfoComplete = () => {
+    return personalInfo.name.trim() !== '' && 
+           personalInfo.phone.trim() !== '' && 
+           personalInfo.address.trim() !== '';
+  };
+
   const handleContinueToDashboard = async () => {
     try {
       // Prevent multiple submissions
@@ -385,13 +412,22 @@ export default function DocumentCollection() {
         throw new Error('Please upload your resume before proceeding');
       }
 
+      // Check if required personal info is complete
+      if (!isPersonalInfoComplete()) {
+        throw new Error('Please complete all required personal information fields');
+      }
+
       // Prepare documents object for processing
       const documentsObject = {};
       documentTypes.forEach(doc => {
         documentsObject[doc.id] = hasDocType(doc.id);
       });
 
+      // Store personal info in localStorage for use in document-review
+      localStorage.setItem('personalInfo', JSON.stringify(personalInfo));
+
       console.log('Submitting documents for processing:', documentsObject);
+      console.log('Personal info:', personalInfo);
 
       // Use replace instead of push to prevent back button from returning to this page
       router.replace({
@@ -408,11 +444,84 @@ export default function DocumentCollection() {
   // Simplified resume-only view
   const renderSimpleUpload = () => (
     <div className="max-w-xl mx-auto pt-12 md:pt-24">
-      <div className="text-center mb-8">
+      <div className="text-center mb-8 relative">
         <h1 className="text-3xl font-bold gradient-text mb-2">Get Started with Your O-1 Analysis</h1>
         <p className="text-slate-300">
           Upload your resume and Prometheus AI will analyze your qualifications for an O-1 extraordinary ability visa.
         </p>
+      </div>
+
+      {/* Personal Information Section */}
+      <div className="card p-5 md:p-6 w-full border-primary-500/30 mb-8">
+        <div className="flex flex-col items-center gap-6">
+          <div className="space-y-2 text-center">
+            <h2 className="text-xl font-semibold gradient-text">Personal Information</h2>
+            <p className="text-sm text-slate-400 max-w-lg mx-auto">
+              Please provide your contact information to help us personalize your O-1 visa application.
+            </p>
+          </div>
+          
+          <div className="w-full space-y-4">
+            <div className="space-y-1">
+              <label htmlFor="name" className="block text-sm font-medium text-slate-300">Full Name *</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={personalInfo.name}
+                onChange={handlePersonalInfoChange}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="John Doe"
+                required
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <label htmlFor="phone" className="block text-sm font-medium text-slate-300">Phone Number *</label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={personalInfo.phone}
+                onChange={handlePersonalInfoChange}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="+1 123 456 7890"
+                required
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <label htmlFor="address" className="block text-sm font-medium text-slate-300">Address *</label>
+              <input
+                type="text"
+                id="address"
+                name="address"
+                value={personalInfo.address}
+                onChange={handlePersonalInfoChange}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="123 Main St, City, State, ZIP"
+                required
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <label htmlFor="extraInfo" className="block text-sm font-medium text-slate-300">Additional Information</label>
+              <textarea
+                id="extraInfo"
+                name="extraInfo"
+                value={personalInfo.extraInfo}
+                onChange={handlePersonalInfoChange}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="Any additional information you'd like to share"
+                rows={3}
+              />
+            </div>
+            
+            <div className="text-xs text-slate-500">
+              <p>* Required fields</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="card p-5 md:p-6 w-full border-primary-500/30 mb-8">
@@ -518,7 +627,7 @@ export default function DocumentCollection() {
 
   // Full document collection view
   const renderFullDocumentCollection = () => (
-    <div className="max-w-3xl mx-auto pt-12 md:pt-24">
+    <div className="max-w-xl mx-auto pt-12 md:pt-24">
       <div className="text-center mb-8 relative">
         <button 
           onClick={() => setShowAllDocuments(false)}
@@ -533,6 +642,82 @@ export default function DocumentCollection() {
         <p className="text-slate-300">
           Upload supporting documents to strengthen your O-1 visa case and improve your qualification score.
         </p>
+      </div>
+
+      {/* Personal Information Section */}
+      <div className="card p-5 md:p-6 w-full border-primary-500/30 mb-8 border-l-4 border-l-primary-500">
+        <div className="flex flex-col gap-4">
+          <div className="space-y-2 text-center">
+            <h2 className="text-lg font-semibold gradient-text flex flex-wrap items-center justify-center gap-2">
+              Personal Information
+              <span className="text-xs font-medium px-2 py-0.5 bg-primary-500/20 rounded-full text-primary-400">Required</span>
+            </h2>
+            <p className="text-sm text-slate-400 max-w-lg mx-auto">
+              Please provide your contact information to help us personalize your O-1 visa application.
+            </p>
+          </div>
+          
+          <div className="w-full space-y-4">
+            <div className="space-y-1">
+              <label htmlFor="name-full" className="block text-sm font-medium text-slate-300">Full Name *</label>
+              <input
+                type="text"
+                id="name-full"
+                name="name"
+                value={personalInfo.name}
+                onChange={handlePersonalInfoChange}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="John Doe"
+                required
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <label htmlFor="phone-full" className="block text-sm font-medium text-slate-300">Phone Number *</label>
+              <input
+                type="tel"
+                id="phone-full"
+                name="phone"
+                value={personalInfo.phone}
+                onChange={handlePersonalInfoChange}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="+1 123 456 7890"
+                required
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <label htmlFor="address-full" className="block text-sm font-medium text-slate-300">Address *</label>
+              <input
+                type="text"
+                id="address-full"
+                name="address"
+                value={personalInfo.address}
+                onChange={handlePersonalInfoChange}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="123 Main St, City, State, ZIP"
+                required
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <label htmlFor="extraInfo-full" className="block text-sm font-medium text-slate-300">Additional Information</label>
+              <textarea
+                id="extraInfo-full"
+                name="extraInfo"
+                value={personalInfo.extraInfo}
+                onChange={handlePersonalInfoChange}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="Any additional information you'd like to share"
+                rows={3}
+              />
+            </div>
+            
+            <div className="text-xs text-slate-500">
+              <p>* Required fields</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="card p-5 md:p-6 w-full text-center border-primary-500/30 mb-8">

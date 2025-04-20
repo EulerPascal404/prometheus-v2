@@ -1,12 +1,12 @@
 {
-  "user_info_filled": 13,
-  "N/A_per": 8,
-  "N/A_r": 0,
-  "N/A_rl": 0,
-  "N/A_ar": 0,
-  "N/A_p": 1,
-  "N/A_ss": 0,
-  "N/A_pm": 0,
+  "user_info_filled": 14,
+  "N_A_per": 0,
+  "N_A_r": 7,
+  "N_A_rl": 0,
+  "N_A_ar": 0,
+  "N_A_p": 1,
+  "N_A_ss": 0,
+  "N_A_pm": 0,
   "total_fields": 23,
-  "percent_filled": 56.52
+  "percent_filled": 60.87
 }

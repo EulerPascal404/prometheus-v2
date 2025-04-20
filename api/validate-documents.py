@@ -437,13 +437,13 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
     # Create field stats dictionary to track filled fields
     field_stats = {
         "user_info_filled": 0,
-        "N/A_per": 0,  # personal info needed
-        "N/A_r": 0,    # resume info needed
-        "N/A_rl": 0,   # recommendation letters needed
-        "N/A_ar": 0,   # awards/recognition info needed
-        "N/A_p": 0,    # publications info needed
-        "N/A_ss": 0,   # salary/success info needed
-        "N/A_pm": 0,   # professional membership info needed
+        "N_A_per": 0,  # personal info needed
+        "N_A_r": 0,    # resume info needed
+        "N_A_rl": 0,   # recommendation letters needed
+        "N_A_ar": 0,   # awards/recognition info needed
+        "N_A_p": 0,    # publications info needed
+        "N_A_ss": 0,   # salary/success info needed
+        "N_A_pm": 0,   # professional membership info needed
         "total_fields": 0
     }
     
@@ -474,6 +474,9 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
 
                     # Check if we have a response for this field
                     if original_name and original_name in response_dict:
+
+                        print(f"Processing field: {original_name}")
+
                         field_value = response_dict[original_name]
                         
                         # Check for NA field types in the value
@@ -481,19 +484,19 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                         
                         # Classify the field value
                         if "n/a_per" in value_str:
-                            field_stats["N/A_per"] += 1
+                            field_stats["N_A_per"] += 1
                         elif "n/a_r" in value_str:
-                            field_stats["N/A_r"] += 1
+                            field_stats["N_A_r"] += 1
                         elif "n/a_rl" in value_str:
-                            field_stats["N/A_rl"] += 1
+                            field_stats["N_A_rl"] += 1
                         elif "n/a_ar" in value_str:
-                            field_stats["N/A_ar"] += 1
+                            field_stats["N_A_ar"] += 1
                         elif "n/a_p" in value_str:
-                            field_stats["N/A_p"] += 1
+                            field_stats["N_A_p"] += 1
                         elif "n/a_ss" in value_str:
-                            field_stats["N/A_ss"] += 1
+                            field_stats["N_A_ss"] += 1
                         elif "n/a_pm" in value_str:
-                            field_stats["N/A_pm"] += 1
+                            field_stats["N_A_pm"] += 1
                         elif value_str and value_str != "n/a" and value_str != "":
                             # Count as user info filled if it's not empty and not an N/A type
                             field_stats["user_info_filled"] += 1
@@ -769,7 +772,7 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
             
             # Update status to show page processing progress if Supabase is available
             for page_num, page in enumerate(pdf_reader.pages):
-                print(f"Processing page {page_num + 1} of {total_pages}")
+                
                 # Update processing status with page progress (only if Supabase is available)
                 if supabase and user_id:
                     try:
@@ -798,12 +801,9 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
         # Clean up temporary file
         os.unlink(tmp_path)
 
-        print("RUNNING RAG GENERATION")
-
         # Join all text content and ensure it's a string
-        # This is ONLY the text from the CURRENT uploaded document, not all documents in Supabase
         full_text = "\n".join(text_content) if text_content else ""
-        print("Extracted text from current document:", full_text[:100] if full_text else "No text extracted")
+        print(f"Extracted text from {doc_type} document:", full_text[:100] if full_text else "No text extracted")
 
         # Update status to show we're running RAG generation (only if Supabase is available)
         if supabase and user_id:
@@ -826,7 +826,8 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
                 "openai_available": False,
                 "strengths": ["OpenAI analysis not available - API key missing"],
                 "weaknesses": ["Cannot analyze document without OpenAI access"],
-                "recommendations": ["Please ensure OpenAI API key is properly configured"]
+                "recommendations": ["Please ensure OpenAI API key is properly configured"],
+                "extracted_text": full_text  # Return the full text for later consolidation
             }
         
         try:
@@ -851,12 +852,6 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
             
             # Parse the summary into structured arrays
             strengths, weaknesses, recommendations = parse_summary(summary_text)
-
-            # Process ONLY this uploaded document for PDF filling
-            # We're only using the text from the current uploaded document
-            num_pages, field_stats = run(full_text, doc_type, user_id, supabase)
-
-            print(f"Field stats for {doc_type}: {field_stats}")
             
             # Return the structured results
             return {
@@ -868,7 +863,7 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
                 "strengths": strengths,
                 "weaknesses": weaknesses,
                 "recommendations": recommendations,
-                "field_stats" : field_stats,
+                "extracted_text": full_text  # Return the full text for later consolidation
             }
         except Exception as e:
             logger.error(f"Error generating OpenAI summary: {str(e)}")
@@ -882,7 +877,8 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
                 "openai_available": True,  # It was available but had an error
                 "strengths": ["Error generating AI analysis"],
                 "weaknesses": [f"Document analysis failed: {str(e)}"],
-                "recommendations": ["Try uploading the document again or contact support"]
+                "recommendations": ["Try uploading the document again or contact support"],
+                "extracted_text": full_text  # Return the full text for later consolidation
             }
     except Exception as e:
         logger.error(f"Error processing PDF: {str(e)}")
@@ -893,7 +889,8 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
             "openai_available": openai_available,
             "strengths": ["Error processing document"],
             "weaknesses": [f"Document analysis failed: {str(e)}"],
-            "recommendations": ["Try uploading the document again or contact support"]
+            "recommendations": ["Try uploading the document again or contact support"],
+            "extracted_text": ""  # Empty string for consolidation
         }
 
 class handler(BaseHTTPRequestHandler):
@@ -1134,6 +1131,7 @@ class handler(BaseHTTPRequestHandler):
                 response = None
                 
             document_summaries = {}
+            all_extracted_text = []  # Collector for all document text
             
             # Process uploaded documents - ONLY the ones explicitly in the uploaded_documents parameter
             if uploaded_documents:
@@ -1156,7 +1154,6 @@ class handler(BaseHTTPRequestHandler):
                             if supabase:
                                 try:
                                     # Look for the most recent document of this type
-                                    # This reflects the document that was just uploaded in document-collection
                                     results = supabase.storage.from_('documents').list(f"{user_id}/{doc_type}")
                                     if results and len(results) > 0:
                                         # Sort by created_at to get the most recent
@@ -1178,6 +1175,9 @@ class handler(BaseHTTPRequestHandler):
                             if file_response:
                                 summary = process_pdf_content(file_response, doc_type, user_id, supabase)
                                 document_summaries[doc_type] = summary
+                                # Add extracted text to our collector
+                                if "extracted_text" in summary and summary["extracted_text"]:
+                                    all_extracted_text.append(f"--- BEGIN {doc_type.upper()} DOCUMENT ---\n{summary['extracted_text']}\n--- END {doc_type.upper()} DOCUMENT ---")
                             else:
                                 logger.error(f"No file content available for {doc_type}")
                                 document_summaries[doc_type] = {
@@ -1230,6 +1230,9 @@ class handler(BaseHTTPRequestHandler):
                         # Process the document content - THIS IS A DIRECTLY UPLOADED DOCUMENT
                         summary = process_pdf_content(content, doc_type, user_id, supabase)
                         document_summaries[doc_type] = summary
+                        # Add extracted text to our collector
+                        if "extracted_text" in summary and summary["extracted_text"]:
+                            all_extracted_text.append(f"--- BEGIN {doc_type.upper()} DOCUMENT ---\n{summary['extracted_text']}\n--- END {doc_type.upper()} DOCUMENT ---")
                     
                     except Exception as e:
                         logger.error(f"Error processing {doc_type} from direct data: {str(e)}")
@@ -1237,6 +1240,31 @@ class handler(BaseHTTPRequestHandler):
                             "error": str(e),
                             "processed": False
                         }
+            
+            # Now, we have all document texts - run the RAG processing ONCE with all documents combined
+            if all_extracted_text:
+                combined_text = "\n\n".join(all_extracted_text)
+                
+                # Update status for RAG processing
+                if supabase and user_id:
+                    try:
+                        supabase.table("user_documents").update({
+                            "processing_status": "generating_consolidated_rag_responses"
+                        }).eq("user_id", user_id).execute()
+                        logger.info("Updated status: generating_consolidated_rag_responses")
+                    except Exception as e:
+                        logger.error(f"Error updating RAG progress: {str(e)}")
+                
+                # Call run() function ONCE with all the combined text
+                logger.info("Running RAG generation with combined text from all documents")
+                num_pages, field_stats = run(combined_text, "combined", user_id, supabase)
+                logger.info(f"Consolidated RAG processing complete. Field stats: {field_stats}")
+                
+                # Store the field stats to return in the response
+                consolidated_field_stats = field_stats
+            else:
+                logger.warning("No extracted text available from any document")
+                consolidated_field_stats = {}
 
             # Update Supabase if available
             if supabase:
@@ -1244,7 +1272,8 @@ class handler(BaseHTTPRequestHandler):
                     # Create update data
                     update_data = {
                         "processing_status": "completed",
-                        "document_summaries": document_summaries
+                        "document_summaries": document_summaries,
+                        "field_stats": consolidated_field_stats
                     }
                     
                     if not response or not response.data:
@@ -1254,7 +1283,8 @@ class handler(BaseHTTPRequestHandler):
                             "processing_status": "completed",
                             "completion_score": 0,
                             **(uploaded_documents or {}),
-                            "document_summaries": document_summaries
+                            "document_summaries": document_summaries,
+                            "field_stats": consolidated_field_stats
                         }
                         
                         insert_response = supabase.table("user_documents").insert(insert_data).execute()
@@ -1281,7 +1311,7 @@ class handler(BaseHTTPRequestHandler):
                         "message": f"Documents validated successfully. Your profile is {completion_score}% complete.",
                         "can_proceed": True,
                         "document_summaries": document_summaries,
-                        "field_stats": document_summaries.get("resume", {}).get("field_stats", {})
+                        "field_stats": consolidated_field_stats  # Return the consolidated field stats
                     })
                 except Exception as e:
                     logger.error(f"Error updating database: {str(e)}")
@@ -1290,7 +1320,8 @@ class handler(BaseHTTPRequestHandler):
                         "status": "partial",
                         "message": f"Documents processed but database update failed: {str(e)}",
                         "can_proceed": True,
-                        "document_summaries": document_summaries
+                        "document_summaries": document_summaries,
+                        "field_stats": consolidated_field_stats  # Return the consolidated field stats
                     })
             else:
                 # Supabase not available, just return the summaries
@@ -1298,7 +1329,8 @@ class handler(BaseHTTPRequestHandler):
                     "status": "success_no_db",
                     "message": "Documents processed successfully (database not updated)",
                     "can_proceed": True,
-                    "document_summaries": document_summaries
+                    "document_summaries": document_summaries,
+                    "field_stats": consolidated_field_stats  # Return the consolidated field stats
                 })
             
         except Exception as e:
