@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../config/supabase';
 import Head from 'next/head';
@@ -39,6 +39,12 @@ interface PersonalInfo {
   phone: string;
   address: string;
   extraInfo: string;
+}
+
+// Add this interface extension after the PersonalInfo interface
+interface Window {
+  google: any; // Using any to avoid type conflicts
+  initializeGooglePlaces: () => void;
 }
 
 // Function to extract text from PDF
@@ -206,6 +212,10 @@ export default function DocumentCollection() {
     address: '',
     extraInfo: ''
   });
+  
+  // Add these refs for Google Maps autocomplete
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   
   const documentTypes: DocumentType[] = [
     {
@@ -441,6 +451,51 @@ export default function DocumentCollection() {
     }
   };
 
+  // Add this function for initializing Google Maps autocomplete
+  const initializeAutocomplete = () => {
+    if (typeof window !== 'undefined' && window.google && addressInputRef.current) {
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components', 'formatted_address'],
+      });
+
+      if (autocompleteRef.current) {
+        autocompleteRef.current.addListener('place_changed', () => {
+          if (autocompleteRef.current) {
+            const place = autocompleteRef.current.getPlace();
+            if (place.formatted_address) {
+              setPersonalInfo(prevInfo => ({
+                ...prevInfo,
+                address: place.formatted_address || ''
+              }));
+            }
+          }
+        });
+      }
+    }
+  };
+
+  // Add this useEffect for loading Google Maps script
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.google) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        window.initializeGooglePlaces = initializeAutocomplete;
+        window.initializeGooglePlaces();
+      };
+      document.head.appendChild(script);
+    } else if (typeof window !== 'undefined' && window.google) {
+      initializeAutocomplete();
+    }
+    
+    return () => {
+      // Clean up if needed
+    };
+  }, []);
+
   // Simplified resume-only view
   const renderSimpleUpload = () => (
     <div className="max-w-xl mx-auto pt-12 md:pt-24">
@@ -490,18 +545,33 @@ export default function DocumentCollection() {
               />
             </div>
             
-            <div className="space-y-1">
-              <label htmlFor="address" className="block text-sm font-medium text-slate-300">Address *</label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={personalInfo.address}
-                onChange={handlePersonalInfoChange}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="123 Main St, City, State, ZIP"
-                required
-              />
+            <div className="form-group">
+              <label htmlFor="address" className="block text-sm font-medium text-slate-300 mb-1">Your Address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                  </svg>
+                </div>
+                <input
+                  ref={addressInputRef}
+                  type="text"
+                  id="address"
+                  name="address"
+                  className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent pl-10"
+                  placeholder="Enter your full address"
+                  value={personalInfo.address}
+                  onChange={handlePersonalInfoChange}
+                  required
+                />
+              </div>
+              <p className="text-xs text-slate-400 mt-1 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 mr-1">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                Powered by Google Places autocomplete
+              </p>
             </div>
             
             <div className="space-y-1">

@@ -1,0 +1,148 @@
+============================================================
+LAWYER MATCHING REQUEST METADATA
+============================================================
+Timestamp: 2025-04-21T22:02:27.070391
+Request ID: ec3248f3
+User ID: 5f2430f4
+Client IP: 127.0.0.1
+Client Hostname: DESKTOP-9BPBDO7
+
+REQUEST HEADERS:
+  Host: 127.0.0.1:8000
+  Connection: close
+  Content-Length: 36321
+  Sec-Ch-Ua-Platform: "Windows"
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6IlAyRnNtdXhwRmI2YXBMUWgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2tlaHJsaGV5bnhwYnRxenhkanV5LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI1ZjI0MzBmNC00NGQ2LTQ4NTItYmEwNy1mNTUwYmYyNmRiMDEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQ1MjkzODIwLCJpYXQiOjE3NDUyOTAyMjAsImVtYWlsIjoicnlhbmJhcnJldHRvNzBAZ21haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCIsImdvb2dsZSJdfSwidXNlcl9tZXRhZGF0YSI6eyJhdmF0YXJfdXJsIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTFJUdDV2c1hwVmI4WkpEcEZRcnFXZWdyeFhCVS14VTNWYlFRcEI5REtyZ0dyUGh3PXM5Ni1jIiwiZW1haWwiOiJyeWFuYmFycmV0dG83MEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZnVsbF9uYW1lIjoiUnlhbiBCYXJyZXR0byIsImlzcyI6Imh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbSIsIm5hbWUiOiJSeWFuIEJhcnJldHRvIiwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTFJUdDV2c1hwVmI4WkpEcEZRcnFXZWdyeFhCVS14VTNWYlFRcEI5REtyZ0dyUGh3PXM5Ni1jIiwicHJvdmlkZXJfaWQiOiIxMDc2MjMxMzcyNzAwMzM4NDI2MDEiLCJzdWIiOiIxMDc2MjMxMzcyNzAwMzM4NDI2MDEifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJvYXV0aCIsInRpbWVzdGFtcCI6MTc0NTI4MTkyOH1dLCJzZXNzaW9uX2lkIjoiZDI0NWI4MDQtMTBmZS00YTU4LWJkYjYtNDFjYzVkMmFkY2FhIiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.V7nIlq_RDEH5NBshMCOZ2lhEOHtIw3T6UXIq8CPPPy0
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36
+  Sec-Ch-Ua: "Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"
+  Content-Type: application/json
+  Sec-Ch-Ua-Mobile: ?0
+  Accept: */*
+  Origin: http://localhost:3000
+  Sec-Fetch-Site: same-origin
+  Sec-Fetch-Mode: cors
+  Sec-Fetch-Dest: empty
+  Referer: http://localhost:3000/lawyer-search
+  Accept-Encoding: gzip, deflate, br, zstd
+  Accept-Language: en-US,en;q=0.9
+  X-Real-Ip: ::1
+  X-Vercel-Deployment-Url: localhost:3000
+  X-Vercel-Forwarded-For: ::1
+  X-Vercel-Id: dev1::ihmko-1745290946762-e7f03df613ad
+  X-Forwarded-For: ::1
+  X-Forwarded-Port: 3000
+  X-Forwarded-Proto: http
+  X-Forwarded-Host: [::1]:49840
+============================================================
+
+
+========================================
+   DOCUMENT SUMMARIES (UPLOADED DOCUMENTS)   
+========================================
+
+
+--- PUBLICATIONS DOCUMENT ---
+
+STRENGTHS:
+  • You're highly knowledgeable about the subject matter
+  • Your document is well-organized and comprehensive, with the inclusion of detailed analyses and interpretations of findings
+  • The data and research findings presented in the document are robust and critical to the O1 application
+  • You've demonstrated clear potential in improving the modeling of textual data using keystroke based features
+  • The document contains several high-quality research studies to support your claims
+  • The time and resource efficiency aspects of your proposition strengthen your application.
+
+WEAKNESSES:
+  • The level of complexity in some sections of your document may be difficult for non-expert reviewers to understand
+  • The application lacks concrete evidence of the exceptional ability in your field
+  • It is slightly unclear how exactly your work will advance U.S. interests
+  • You've provided limited evidence of peer recognition. Beyond your publication, there is not much indication of industry recognition of your work.
+  • It is not evident how your work has influenced other work in your field.
+
+RECOMMENDATIONS:
+  • Consider including evidence of awards, recognitions, or high rankings in the field which validate your exceptional ability
+  • Include clear examples of your work's influence or contributions to others in the field
+  • Outline how exactly your work can advance U.S interests in O1 application to build a stronger case
+  • Expand on the practical implications of your research and its potential impacts on society
+  • Select more comprehensive expert letters that clearly delineate your key achievements and standing within your field to augment your application
+  • Try to simplify technical information for a wider audience to understand your contributions better.
+
+SUMMARY:
+Strengths: 
+[SEP] You're highly knowledgeable about the subject matter
+[SEP] Your document is well-organized and comprehensive, with the inclusion of detailed analyses and interpretations of findings
+[SEP] The data and research findings presented in the document are robust and critical to the O1 application
+[SEP] You've demonstrated clear potential in improving the modeling of textual data using keystroke based features
+[SEP] The document contains several high-quality research studies to support your claims
+[SEP] The time and resource efficiency aspects of your proposition strengthen your application.
+
+Weaknesses: 
+[SEP] The level of complexity in some sections of your document may be difficult for non-expert reviewers to understand
+[SEP] The application lacks concrete evidence of the exceptional ability in your field
+[SEP] It is slightly unclear how exactly your work will advance U.S. interests
+[SEP] You've provided limited evidence of peer recognition. Beyond your publication, there is not much indication of industry recognition of your work.
+[SEP] It is not evident how your work has influenced other work in your field.
+
+Recommendations: 
+[SEP] Consider including evidence of awards, recognitions, or high rankings in the field which validate your exceptional ability
+[SEP] Include clear examples of your work's influence or contributions to others in the field 
+[SEP] Outline how exactly your work can advance U.S interests in O1 application to build a stronger case
+[SEP] Expand on the practical implications of your research and its potential impacts on society 
+[SEP] Select more comprehensive expert letters that clearly delineate your key achievements and standing within your field to augment your application
+[SEP] Try to simplify technical information for a wider audience to understand your contributions better.
+
+--- RESUME DOCUMENT ---
+
+STRENGTHS:
+  • Excellent academic background with high Unweighted and Weighted GPA and substantial number of AP classes.
+  • Demonstrated work experience, notably in Machine Learning and Artificial Intelligence.
+  • Broad range of awards and commendations demonstrating academic and professional prowess.
+  • Strong record of leadership in clubs and workshops related to the field of work.
+  • Proficient with industry-relevant tools, languages and frameworks like Python, Pytorch, Tensorflow, and Transformers.
+  • Applicant has published works and completed independent projects showcasing initiative and deep understanding of the field.
+
+WEAKNESSES:
+  • Limited work experience due to recent completion of education.
+  • Lack of international or cross-cultural experiences which may improve adaptability and versatility.
+  • Limited details on individual contribution in teamwork settings.
+  • The role and impact of leadership experiences are not well defined.
+
+RECOMMENDATIONS:
+  • Try to gain more work experience or internships in your field, especially with well-known or international companies.
+  • Try to participate in international events or cross-cultural experiences to demonstrate versatility and adaptability.
+  • Provide more details about your role and achievements in team projects or during your leadership in clubs and workshops.
+  • Flesh out the description of your leadership roles to better display your management and team leading skills.
+  • Consider including references or referees who can validate your skills, experiences and the claims you make in your application.
+
+SUMMARY:
+Strengths: 
+
+[SEP] Excellent academic background with high Unweighted and Weighted GPA and substantial number of AP classes. [SEP] Demonstrated work experience, notably in Machine Learning and Artificial Intelligence. [SEP] Broad range of awards and commendations demonstrating academic and professional prowess. [SEP] Strong record of leadership in clubs and workshops related to the field of work. [SEP] Proficient with industry-relevant tools, languages and frameworks like Python, Pytorch, Tensorflow, and Transformers. [SEP] Applicant has published works and completed independent projects showcasing initiative and deep understanding of the field.
+
+Weaknesses: 
+
+[SEP] Limited work experience due to recent completion of education. [SEP] Lack of international or cross-cultural experiences which may improve adaptability and versatility. [SEP] Limited details on individual contribution in teamwork settings. [SEP] The role and impact of leadership experiences are not well defined. 
+
+Recommendations: 
+
+[SEP] Try to gain more work experience or internships in your field, especially with well-known or international companies. [SEP] Try to participate in international events or cross-cultural experiences to demonstrate versatility and adaptability. [SEP] Provide more details about your role and achievements in team projects or during your leadership in clubs and workshops. [SEP] Flesh out the description of your leadership roles to better display your management and team leading skills. [SEP] Consider including references or referees who can validate your skills, experiences and the claims you make in your application.
+
+========================================
+   UPLOADED DOCUMENTS STATUS   
+========================================
+
+  • resume: UPLOADED
+  • publications: UPLOADED
+  • awards: NOT UPLOADED
+  • recommendation: NOT UPLOADED
+  • press: NOT UPLOADED
+  • salary: NOT UPLOADED
+  • judging: NOT UPLOADED
+  • membership: NOT UPLOADED
+  • contributions: NOT UPLOADED
+
+========================================
+   USER INFORMATION   
+========================================
+
+User ID: 5f2430f4-44d6-4852-ba07-f550bf26db01
+Address: Cannery Row, Monterey, CA 93940, USA

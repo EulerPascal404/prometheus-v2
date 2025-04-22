@@ -210,15 +210,15 @@ function SummarySection({ title, items, colorClass }: {
               'text-primary-400'
             }`}>
               {colorClass === 'green' ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
                 </svg>
               ) : colorClass === 'red' ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
                 </svg>
               ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01" />
                 </svg>
               )}
@@ -332,19 +332,19 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 strokeLinecap="round"
               />
               {/* Dynamic gradient definition */}
-              <defs>
+            <defs>
                 <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor={scoreColors.start} />
                   <stop offset="100%" stopColor={scoreColors.end} />
-                </linearGradient>
-              </defs>
+              </linearGradient>
+            </defs>
             </svg>
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
               <div className="text-3xl font-bold text-white">{applicationScore}</div>
               <div className="text-sm text-slate-400">out of 10</div>
-            </div>
-          </div>
-          
+        </div>
+      </div>
+
           <div className="w-full md:w-3/5 bg-slate-800/40 rounded-lg p-4 border border-slate-700/30">
             <h5 className="text-primary-300 font-medium mb-3 flex items-center">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,17 +356,77 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/30">
               {/* Missing fields indicators with visual status indicators */}
               {[
-                { label: 'Personal Information', value: safeStats.N_A_per, icon: '👤' },
-                { label: 'Resume Details', value: safeStats.N_A_r, icon: '📄' },
-                { label: 'Recommendation Letters', value: safeStats.N_A_rl, icon: '✉️' },
-                { label: 'Awards & Recognition', value: safeStats.N_A_ar, icon: '🏆' },
-                { label: 'Publications', value: safeStats.N_A_p, icon: '📚' },
-                { label: 'Salary & Success', value: safeStats.N_A_ss, icon: '💰' },
-                { label: 'Professional Membership', value: safeStats.N_A_pm, icon: '🔖' }
+                { 
+                  label: 'Personal Information', 
+                  value: safeStats.N_A_per, 
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  )
+                },
+                { 
+                  label: 'Resume Details', 
+                  value: safeStats.N_A_r, 
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  )
+                },
+                { 
+                  label: 'Recommendation Letters', 
+                  value: safeStats.N_A_rl, 
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  )
+                },
+                { 
+                  label: 'Awards & Recognition', 
+                  value: safeStats.N_A_ar, 
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                  )
+                },
+                { 
+                  label: 'Publications', 
+                  value: safeStats.N_A_p, 
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  )
+                },
+                { 
+                  label: 'Salary & Success', 
+                  value: safeStats.N_A_ss, 
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )
+                },
+                { 
+                  label: 'Professional Membership', 
+                  value: safeStats.N_A_pm, 
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  )
+                }
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between py-1.5 px-3 rounded-lg hover:bg-slate-700/30 transition-colors duration-200">
                   <div className="flex items-center">
-                    <span className="mr-2 text-lg">{item.icon}</span>
+                    <span className={`mr-2 ${
+                      item.value > 3 ? 'text-red-400' : 
+                      item.value > 0 ? 'text-amber-400' : 
+                      'text-green-400'
+                    }`}>{item.icon}</span>
                     <span className="text-slate-300">{item.label}</span>
                   </div>
                   <div className="flex items-center">
@@ -395,7 +455,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
           </div>
         </div>
       </div>
-
+      
       {/* New Critical Issues Section */}
       {totalMissingFields > 0 && (
         <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 mb-6">
@@ -506,9 +566,9 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   You've addressed all the most critical sections for your O-1 petition!
                 </p>
               </div>
-            )}
-          </div>
-        </div>
+                  )}
+                </div>
+              </div>
       )}
 
       {/* New Document Upload Section to Address Missing Fields */}
@@ -518,7 +578,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
           <h4 className="text-xl font-semibold text-white">Upload Supporting Documents</h4>
-        </div>
+            </div>
         
         <div className="space-y-6">
           <p className="text-slate-300 text-sm">
@@ -539,9 +599,9 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   )}
                 </h5>
                 <p className="text-slate-400 text-sm mt-1">Your contact details for the O-1 application</p>
-              </div>
-            </div>
-            
+        </div>
+      </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/50 p-4 rounded-lg">
               <div>
                 <h6 className="text-sm font-medium text-slate-400 mb-1">Full Name</h6>
@@ -589,43 +649,67 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 type: 'awards',
                 label: 'Awards & Recognition',
                 description: 'Upload certificates, awards, or press mentions',
-                icon: '🏆',
-                status: safeStats.N_A_ar > 2 ? 'critical' : safeStats.N_A_ar > 0 ? 'warning' : 'complete'
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                ),
+                status: safeStats.N_A_ar > 3 ? 'critical' : safeStats.N_A_ar > 0 ? 'warning' : 'complete'
               },
               {
                 type: 'publications',
                 label: 'Publications',
                 description: 'Upload published articles or papers',
-                icon: '📚',
-                status: safeStats.N_A_p > 2 ? 'critical' : safeStats.N_A_p > 0 ? 'warning' : 'complete'
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                ),
+                status: safeStats.N_A_p > 3 ? 'critical' : safeStats.N_A_p > 0 ? 'warning' : 'complete'
               },
               {
                 type: 'recommendation',
                 label: 'Recommendation Letters',
                 description: 'Upload letters from experts in your field',
-                icon: '✉️',
-                status: safeStats.N_A_rl > 0 ? 'warning' : 'complete'
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                ),
+                status: safeStats.N_A_rl > 3 ? 'critical' : safeStats.N_A_rl > 0 ? 'warning' : 'complete'
               },
               {
                 type: 'resume',
                 label: 'Resume/CV',
                 description: 'Upload your detailed curriculum vitae',
-                icon: '📄',
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                ),
                 status: safeStats.N_A_r > 3 ? 'critical' : safeStats.N_A_r > 0 ? 'warning' : 'complete'
               },
               {
                 type: 'salary',
                 label: 'Salary Evidence',
                 description: 'Upload salary slips or contracts',
-                icon: '💰',
-                status: safeStats.N_A_ss > 2 ? 'critical' : safeStats.N_A_ss > 0 ? 'warning' : 'complete'
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ),
+                status: safeStats.N_A_ss > 3 ? 'critical' : safeStats.N_A_ss > 0 ? 'warning' : 'complete'
               },
               {
                 type: 'membership',
                 label: 'Professional Memberships',
                 description: 'Upload proof of membership in professional organizations',
-                icon: '🔖',
-                status: safeStats.N_A_pm > 2 ? 'critical' : safeStats.N_A_pm > 0 ? 'warning' : 'complete'
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                ),
+                status: safeStats.N_A_pm > 3 ? 'critical' : safeStats.N_A_pm > 0 ? 'warning' : 'complete'
               }
             ].map((doc) => (
               <div 
@@ -639,15 +723,15 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 }`}
               >
                 <div className="flex items-start mb-3">
-                  <div className={`flex-shrink-0 rounded-full p-2 mr-3 text-xl ${
+                  <div className={`flex-shrink-0 rounded-full p-2 mr-3 ${
                     doc.status === 'critical' 
-                      ? 'bg-red-500/20' 
+                      ? 'bg-red-500/20 text-red-400' 
                       : doc.status === 'warning'
-                        ? 'bg-amber-500/20'
-                        : 'bg-green-500/20'
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'bg-green-500/20 text-green-400'
                   }`}>
                     {doc.icon}
-                  </div>
+              </div>
                   <div>
                     <h5 className={`font-medium ${
                       doc.status === 'critical' 
@@ -659,8 +743,8 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                       {doc.label}
                     </h5>
                     <p className="text-slate-400 text-sm mt-1">{doc.description}</p>
-                  </div>
-                </div>
+            </div>
+        </div>
                 
                 <label 
                   className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
@@ -690,7 +774,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                       <span className="font-semibold">Click to upload</span> or drag and drop
                     </p>
                     <p className="text-xs text-slate-500">PDF, DOC, DOCX (MAX. 10MB)</p>
-                  </div>
+      </div>
                   <input 
                     type="file" 
                     className="hidden" 
@@ -874,6 +958,7 @@ export default function DocumentReview() {
     { key: 'expertise', label: 'Expertise Demonstration', value: 4 }
   ]);
   const [documentSummaries, setDocumentSummaries] = useState<DocumentSummaries>({});
+  const [currentDocIndex, setCurrentDocIndex] = useState(0);
   
   // Default mock stats to use when no data is available
   const defaultStats: FieldStats = {
@@ -999,7 +1084,7 @@ export default function DocumentReview() {
           try {
             const summaries = JSON.parse(documentSummariesStr);
             setDocumentSummaries(summaries);
-          } catch (error) {
+      } catch (error) {
             console.error("Error parsing document summaries from localStorage:", error);
             
             // Fallback to the API response
@@ -1049,7 +1134,7 @@ export default function DocumentReview() {
           if (autocompleteRef.current) {
             const place = autocompleteRef.current.getPlace();
             if (place.formatted_address) {
-              setAddress(place.formatted_address);
+              setAddress(place.formatted_address || '');
             }
           }
         });
@@ -1444,7 +1529,7 @@ export default function DocumentReview() {
       </Head>
   
       <BackgroundEffects />
-  
+      
       {isLoading && <LoadingScreen />}
   
       <div className="min-h-screen bg-transparent p-6">
@@ -1454,78 +1539,78 @@ export default function DocumentReview() {
           <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg mb-6">
             <div className="p-4 border-b border-slate-700/50">
               <div className="flex gap-3">
-                <button 
-                  onClick={() => setActiveTab('overview')}
-                  className={`px-4 py-2 rounded-lg transition-all duration-300 ${
-                    activeTab === 'overview' 
-                      ? 'bg-primary-500 text-white' 
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  }`}
-                >
-                  Overview
-                </button>
+            <button 
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                activeTab === 'overview' 
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              Overview
+            </button>
               </div>
-            </div>
           </div>
-          
-          {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {/* O-1 Petition Strength Analysis Section */}
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
-                <div 
-                  className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-700/30 transition-colors duration-300"
-                  onClick={() => toggleSection('strength-analysis')}
-                >
-                  <h2 className="text-xl font-semibold text-white flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    O-1 Petition Strength Analysis
-                  </h2>
-                  <svg 
-                    className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expandedSections['strength-analysis'] ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </div>
+        
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* O-1 Petition Strength Analysis Section */}
+            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
+              <div 
+                className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-700/30 transition-colors duration-300"
+                onClick={() => toggleSection('strength-analysis')}
+              >
+                <h2 className="text-xl font-semibold text-white flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                </div>
-                
-                {expandedSections['strength-analysis'] && (
-                  <div className="p-4 border-t border-slate-700/50 animate-fadeIn">
-                    <StatsSection 
-                      stats={fieldStats || {
-                        total_fields: 0,
-                        user_info_filled: 0,
-                        percent_filled: 0,
-                        N_A_per: 0,
-                        N_A_r: 0,
-                        N_A_rl: 0,
-                        N_A_ar: 0,
-                        N_A_p: 0,
-                        N_A_ss: 0,
-                        N_A_pm: 0,
-                        na_extraordinary: 0,
-                        na_recognition: 0,
-                        na_publications: 0,
-                        na_leadership: 0,
-                        na_contributions: 0,
-                        na_salary: 0,
-                        na_success: 0
-                      }} 
-                      filledPdfUrl={filledPdfUrl} 
-                      apiResponseData={apiResponseData}
+                  O-1 Petition Strength Analysis
+                </h2>
+                <svg 
+                  className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expandedSections['strength-analysis'] ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              
+              {expandedSections['strength-analysis'] && (
+                <div className="p-4 border-t border-slate-700/50 animate-fadeIn">
+                  <StatsSection 
+                    stats={fieldStats || {
+                      total_fields: 0,
+                      user_info_filled: 0,
+                      percent_filled: 0,
+                      N_A_per: 0,
+                      N_A_r: 0,
+                      N_A_rl: 0,
+                      N_A_ar: 0,
+                      N_A_p: 0,
+                      N_A_ss: 0,
+                      N_A_pm: 0,
+                      na_extraordinary: 0,
+                      na_recognition: 0,
+                      na_publications: 0,
+                      na_leadership: 0,
+                      na_contributions: 0,
+                      na_salary: 0,
+                      na_success: 0
+                    }} 
+                    filledPdfUrl={filledPdfUrl} 
+                    apiResponseData={apiResponseData} 
                       personalInfo={personalInfo}
-                    />
-                    <div className="stats-container bg-transparent border-none shadow-none">
+                  />
+                  <div className="stats-container bg-transparent border-none shadow-none">
                       <div className="next-steps-section bg-gradient-to-br from-slate-800/60 to-slate-900/80 backdrop-blur-sm border border-slate-700/50 p-6 rounded-xl">
                         <h4 className="text-xl font-semibold text-white mb-4 flex items-center">
                           <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                          </svg>
+                        </svg>
                           O-1 Petition Roadmap
-                        </h4>
+                      </h4>
                         
                         <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300">
                           <div className="space-y-4">
@@ -1544,7 +1629,7 @@ export default function DocumentReview() {
                                   {step.completed ? (
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
+                            </svg>
                                   ) : (
                                     <span className="text-sm font-semibold">{index + 1}</span>
                                   )}
@@ -1559,21 +1644,21 @@ export default function DocumentReview() {
                                   {step.active && (
                                     <div className="mt-2 py-2 px-3 bg-primary-500/10 border border-primary-500/20 rounded text-xs text-primary-300">
                                       <span className="font-medium">Current focus:</span> Upload your supporting documents to strengthen your O-1 petition
-                                    </div>
+                                </div>
                                   )}
                                   
                                   {step.completed && (
                                     <div className="mt-2 flex items-center">
                                       <svg className="w-4 h-4 text-emerald-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                      </svg>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
                                       <span className="text-xs text-emerald-400">Completed</span>
-                                    </div>
+                              </div>
                                   )}
-                                </div>
+                            </div>
                               </div>
                             ))}
-                          </div>
+                            </div>
 
                           <div className="mt-6 pt-4 border-t border-slate-700/30">
                             <div className="flex items-center gap-2 text-sm text-slate-400">
@@ -1581,156 +1666,233 @@ export default function DocumentReview() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                               <p>Complete each step to maximize your chances of O-1 visa approval</p>
+                              </div>
                             </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+            
+            {/* Document Summaries Section */}
+            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
+              <div 
+                className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-700/30 transition-colors duration-300"
+                onClick={() => toggleSection('document-summaries')}
+              >
+                <h2 className="text-xl font-semibold text-white flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Document Summaries
+                </h2>
+                <svg 
+                  className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expandedSections['document-summaries'] ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </div>
               
-              {/* Document Summaries Section */}
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
-                <div 
-                  className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-700/30 transition-colors duration-300"
-                  onClick={() => toggleSection('document-summaries')}
-                >
-                  <h2 className="text-xl font-semibold text-white flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Document Summaries
-                  </h2>
-                  <svg 
-                    className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expandedSections['document-summaries'] ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-                
-                {expandedSections['document-summaries'] && (
-                  <div className="p-4 border-t border-slate-700/50 animate-fadeIn">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(documentSummaries).map(([docType, summary]) => (
-                        <div key={docType} className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
-                          <div className="flex justify-between items-center mb-3">
-                            <h3 className="text-lg font-medium text-white flex items-center">
-                              <svg className="w-4 h-4 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {expandedSections['document-summaries'] && (
+                <div className="p-4 border-t border-slate-700/50 animate-fadeIn">
+                  {Object.keys(documentSummaries).length > 0 ? (
+                    <div className="relative">
+                      {/* Navigation controls */}
+                      <div className="flex justify-between items-center mb-4">
+                        <button 
+                          onClick={() => setCurrentDocIndex(prev => 
+                            prev > 0 ? prev - 1 : Object.keys(documentSummaries).length - 1
+                          )}
+                          className="bg-slate-800/60 hover:bg-slate-700/60 text-white p-2 rounded-full transition-colors duration-300"
+                          aria-label="Previous document"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+
+                        <div className="text-center">
+                          <span className="text-primary-400 font-medium">
+                            {currentDocIndex + 1} / {Object.keys(documentSummaries).length}
+                          </span>
+                        </div>
+                        
+                        <button 
+                          onClick={() => setCurrentDocIndex(prev => 
+                            prev < Object.keys(documentSummaries).length - 1 ? prev + 1 : 0
+                          )}
+                          className="bg-slate-800/60 hover:bg-slate-700/60 text-white p-2 rounded-full transition-colors duration-300"
+                          aria-label="Next document"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      {/* Document display */}
+                      {Object.entries(documentSummaries).length > currentDocIndex && (
+                        <div className="bg-slate-800/40 p-6 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-medium text-white flex items-center">
+                              <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                               </svg>
-                              {docType}
+                              {Object.keys(documentSummaries)[currentDocIndex].charAt(0).toUpperCase() + 
+                               Object.keys(documentSummaries)[currentDocIndex].slice(1)}
                             </h3>
-                            <span className="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded-full">{summary.pages} pages</span>
+                            <span className="text-sm text-slate-400 bg-slate-700/50 px-3 py-1 rounded-full">
+                              {Object.values(documentSummaries)[currentDocIndex].pages} pages
+                            </span>
                           </div>
                           
-                          <div className="space-y-3">
-                            {summary.strengths.length > 0 && (
+                          <div className="space-y-6">
+                            {Object.values(documentSummaries)[currentDocIndex].strengths.length > 0 && (
                               <SummarySection 
                                 title="Strengths" 
-                                items={summary.strengths} 
+                                items={Object.values(documentSummaries)[currentDocIndex].strengths} 
                                 colorClass="green" 
                               />
                             )}
                             
-                            {summary.weaknesses.length > 0 && (
+                            {Object.values(documentSummaries)[currentDocIndex].weaknesses.length > 0 && (
                               <SummarySection 
                                 title="Areas for Improvement" 
-                                items={summary.weaknesses} 
+                                items={Object.values(documentSummaries)[currentDocIndex].weaknesses} 
                                 colorClass="red" 
                               />
                             )}
                             
-                            {summary.recommendations.length > 0 && (
+                            {Object.values(documentSummaries)[currentDocIndex].recommendations.length > 0 && (
                               <SummarySection 
                                 title="Recommendations" 
-                                items={summary.recommendations} 
+                                items={Object.values(documentSummaries)[currentDocIndex].recommendations} 
                                 colorClass="blue" 
                               />
                             )}
+                            
+                            {/* If no summaries available */}
+                            {!Object.values(documentSummaries)[currentDocIndex].strengths.length && 
+                             !Object.values(documentSummaries)[currentDocIndex].weaknesses.length && 
+                             !Object.values(documentSummaries)[currentDocIndex].recommendations.length && (
+                              <div className="text-center py-8">
+                                <svg className="w-12 h-12 mx-auto text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p className="text-slate-400">No detailed analysis available for this document.</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Document pagination indicators */}
+                          <div className="flex justify-center mt-6 space-x-1">
+                            {Object.keys(documentSummaries).map((_, index) => (
+                              <button 
+                                key={index}
+                                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                  index === currentDocIndex 
+                                    ? 'bg-primary-400 w-4' 
+                                    : 'bg-slate-600 hover:bg-slate-500'
+                                }`}
+                                onClick={() => setCurrentDocIndex(index)}
+                                aria-label={`Go to document ${index + 1}`}
+                              />
+                            ))}
                           </div>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-center py-12 bg-slate-800/40 rounded-lg border border-slate-700/30">
+                      <svg className="w-12 h-12 mx-auto text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <h3 className="text-xl font-medium text-white mb-2">No Documents Found</h3>
+                      <p className="text-slate-400 max-w-md mx-auto">
+                        You haven't uploaded any documents yet or document analysis is not available.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Next Steps Section */}
+            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
+              <div 
+                className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-700/30 transition-colors duration-300"
+                onClick={() => toggleSection('next-steps')}
+              >
+                <h2 className="text-xl font-semibold text-white flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  Next Steps
+                </h2>
+                <svg 
+                  className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expandedSections['next-steps'] ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </div>
               
-              {/* Next Steps Section */}
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
-                <div 
-                  className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-700/30 transition-colors duration-300"
-                  onClick={() => toggleSection('next-steps')}
-                >
-                  <h2 className="text-xl font-semibold text-white flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                    Next Steps
-                  </h2>
-                  <svg 
-                    className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expandedSections['next-steps'] ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-                
-                {expandedSections['next-steps'] && (
-                  <div className="p-4 border-t border-slate-700/50 animate-fadeIn">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
-                        <h4 className="text-lg font-medium text-white mb-4 flex items-center">
-                          <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                          Connect with an Immigration Expert
-                        </h4>
-                        <p className="text-slate-300 mb-4">Get personalized guidance from an experienced immigration attorney who specializes in O-1 visas.</p>
-                        <button 
+              {expandedSections['next-steps'] && (
+                <div className="p-4 border-t border-slate-700/50 animate-fadeIn">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
+                      <h4 className="text-lg font-medium text-white mb-4 flex items-center">
+                        <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        Connect with an Immigration Expert
+                      </h4>
+                      <p className="text-slate-300 mb-4">Get personalized guidance from an experienced immigration attorney who specializes in O-1 visas.</p>
+                      <button 
                           onClick={() => router.push('/lawyer-search')}
-                          className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                          Find a Lawyer
-                        </button>
-                      </div>
-                      
-                      <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
-                        <h4 className="text-lg font-medium text-white mb-4 flex items-center">
-                          <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        Find a Lawyer
+                      </button>
+                    </div>
+                    
+                    <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
+                      <h4 className="text-lg font-medium text-white mb-4 flex items-center">
+                        <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
+                        </svg>
                           View Portfolio
-                        </h4>
+                      </h4>
                         <p className="text-slate-300 mb-4">Showcase your achievements and expertise to potential employers and immigration officers.</p>
-                        <button 
+                      <button 
                           onClick={() => {/* Portfolio page navigation will be added later */}}
-                          className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
+                        </svg>
                           Go to Portfolio
-                        </button>
-                      </div>
+                      </button>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          )}
-
+          </div>
+        )}
+        
           {showLawyerForm && !matchedLawyer && renderLawyerForm()}
           {matchedLawyer && renderMatchedLawyer()}
-        </div>
+              </div>
       </div>
     </div>
   );

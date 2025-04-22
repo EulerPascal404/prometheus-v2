@@ -397,7 +397,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
 
             try:
                 response = client.chat.completions.create(
-                    model="gpt-4",
+                    model="o4-mini-2025-04-16",
                     messages=[
                         {"role": "system", "content": "You have been given a text file containing a form and a dictionary containing keys and possible options. You have also been given information about a user. Output the same dictionary but filled with the responses for an application for the user. It is very important that in the outputed dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```. Make sure that in python, eval(output) would return a dictionary with the same keys as the original dictionary." + extra_info},
                         {"role": "user", "content": text_prompt}

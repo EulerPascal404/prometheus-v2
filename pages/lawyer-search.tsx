@@ -758,7 +758,7 @@ export default function LawyerSearch() {
                 ref={addressInputRef}
                 type="text"
                 id="address"
-                className="w-full pl-10 pr-3 py-2 bg-slate-800/50 border border-slate-700 focus:border-primary-500/50 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500/30 text-white"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent pl-10"
                 placeholder="Enter your full address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
@@ -783,7 +783,7 @@ export default function LawyerSearch() {
               </div>
               <textarea
                 id="additionalComments"
-                className="w-full pl-10 pr-3 py-2 bg-slate-800/50 border border-slate-700 focus:border-primary-500/50 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500/30 text-white"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent pl-10"
                 placeholder="Any specific requirements or preferences for your immigration lawyer"
                 value={additionalComments}
                 onChange={(e) => setAdditionalComments(e.target.value)}
@@ -831,16 +831,30 @@ export default function LawyerSearch() {
         <form onSubmit={handleLawyerSearch} className="w-full max-w-md space-y-4">
           <div className="form-group">
             <label htmlFor="address" className="block text-sm font-medium text-slate-300 mb-1">Your Address</label>
-            <input
-              ref={addressInputRef}
-              type="text"
-              id="address"
-              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500/50 text-white"
-              placeholder="Enter your address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+              </div>
+              <input
+                ref={addressInputRef}
+                type="text"
+                id="address"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent pl-10"
+                placeholder="Enter your full address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                required
+              />
+            </div>
+            <p className="text-xs text-slate-400 mt-1 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 mr-1">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+              </svg>
+              Powered by Google Places autocomplete
+            </p>
           </div>
 
           <div className="form-group">
@@ -853,7 +867,7 @@ export default function LawyerSearch() {
               </div>
               <textarea
                 id="additionalComments"
-                className="w-full pl-10 pr-3 py-2 bg-slate-800/50 border border-slate-700 focus:border-primary-500/50 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500/30 text-white"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent pl-10"
                 placeholder="Any specific requirements or preferences for your immigration lawyer"
                 value={additionalComments}
                 onChange={(e) => setAdditionalComments(e.target.value)}
@@ -864,10 +878,33 @@ export default function LawyerSearch() {
           
           <button
             type="submit"
-            className="gradient-button px-6 py-2.5 text-base w-full"
-            disabled={isSearching}
+            className="gradient-button px-6 py-2.5 text-base w-full flex items-center justify-center"
+            disabled={isSearching || !googleMapsReady}
           >
-            {isSearching ? 'Finding Your Match...' : 'Find My Immigration Lawyer'}
+            {!googleMapsReady ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading Maps...
+              </>
+            ) : isSearching ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Finding Your Match...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+                Find My Immigration Lawyer
+              </>
+            )}
           </button>
         </form>
       </div>
