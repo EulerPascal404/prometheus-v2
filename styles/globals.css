@@ -57,7 +57,7 @@
   }
 
   .step-card {
-    @apply bg-slate-800/30 p-6 rounded-xl border border-slate-700/50 backdrop-blur-sm shadow-lg relative overflow-hidden;
+    @apply bg-slate-800/30 p-6 rounded-xl border border-slate-700/50 backdrop-blur-sm shadow-lg relative overflow-hidden transition-all duration-300 hover:border-primary-500/30 hover:shadow-xl;
   }
 
   .step-number {

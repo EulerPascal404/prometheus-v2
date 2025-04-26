@@ -252,10 +252,10 @@ const HomePage: FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Step 1 */}
               <div className="relative group">
-                <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:scale-110 transition-transform duration-300">
+                <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold z-10 group-hover:scale-110 transition-transform duration-300">
                   1
                 </div>
-                <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30 h-full group-hover:border-blue-500/30 transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/10">
+                <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30 h-full group-hover:border-blue-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
                   <h3 className="text-xl font-semibold text-white mb-4 font-outfit">Upload</h3>
                   <p className="text-slate-300 mb-6 font-outfit">
                     Upload your credentials and evidence.
@@ -277,10 +277,10 @@ const HomePage: FC = () => {
               
               {/* Step 2 */}
               <div className="relative group">
-                <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:scale-110 transition-transform duration-300">
+                <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold z-10 group-hover:scale-110 transition-transform duration-300">
                   2
                 </div>
-                <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30 h-full group-hover:border-blue-500/30 transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/10">
+                <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30 h-full group-hover:border-blue-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
                   <h3 className="text-xl font-semibold text-white mb-4 font-outfit">Analyze</h3>
                   <p className="text-slate-300 mb-6 font-outfit">
                     AI identifies your strongest qualifications.
@@ -302,10 +302,10 @@ const HomePage: FC = () => {
               
               {/* Step 3 */}
               <div className="relative group">
-                <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:scale-110 transition-transform duration-300">
+                <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold z-10 group-hover:scale-110 transition-transform duration-300">
                   3
                 </div>
-                <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30 h-full group-hover:border-blue-500/30 transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/10">
+                <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30 h-full group-hover:border-blue-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
                   <h3 className="text-xl font-semibold text-white mb-4 font-outfit">Submit</h3>
                   <p className="text-slate-300 mb-6 font-outfit">
                     Expert review and USCIS submission.
