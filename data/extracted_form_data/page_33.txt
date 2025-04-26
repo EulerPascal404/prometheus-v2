@@ -1,72 +1,36 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/1339/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/13310/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/13311/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Position1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Summary1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Position2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Summary2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Position3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Summary3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Position4/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Summary4/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Position5/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Summary5/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Position6/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Summary6/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/13312/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/13313/135)
 Available Options: Text input
---------------------------------------------------

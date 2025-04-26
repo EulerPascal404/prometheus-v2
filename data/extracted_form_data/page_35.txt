@@ -1,60 +1,30 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (R1Sec1Line10a1/137Explanation/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (R1Sec1Line11a1/137Explanation/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (R1Sec1Line12a1/137Explanation/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (R1Sec1Line10a/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (R1Sec1Line10a/1331/135)
 Available Options: ['/N', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (R1Sec1Line11a/137Yes/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (R1Sec1Line11a/137No/1330/135)
 Available Options: ['/N', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (R1Sec1Line12a/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (R1Sec1Line12a/1331/135)
 Available Options: ['/N', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137DateofSignature/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137PreparerPrintedName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line5/137JobTitle/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137FirmName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5/137Line6a/137SignatureofApplicant/1336/135)
 Available Options: Text input
---------------------------------------------------

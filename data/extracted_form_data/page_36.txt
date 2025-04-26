@@ -1,120 +1,60 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137City/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line2/137State/1330/135)
 Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137ZipCode/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137StreetName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sec1/137AptSteFlrNumber/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sec1/137Unit/1330/135)
 Available Options: ['/ FLR ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Sec1/137Unit/1331/135)
 Available Options: ['/ STE ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Sec1/137Unit/1332/135)
 Available Options: ['/ APT ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137EmailAddress/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (EmployingOrgName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (NameOfReligiousDenomination/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137DateofSignature/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (PreparerSignature/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137City/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line2/137State/1331/135)
 Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137ZipCode/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137StreetName/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Attest/137AptSteFlrNumber/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Attest/137Unit/1330/135)
 Available Options: ['/ FLR ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Attest/137Unit/1331/135)
 Available Options: ['/ STE ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Attest/137Unit/1332/135)
 Available Options: ['/ APT ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137FirmName/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137EmailAddress/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part14/137PreparerPrintedName/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line5/137JobTitle/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Preparer/137DaytimePhoneNumber1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Preparers/137FaxPhoneNumber1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Preparers/137FaxPhoneNumber1/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Preparer/137DaytimePhoneNumber1/1331/135)
 Available Options: Text input
---------------------------------------------------

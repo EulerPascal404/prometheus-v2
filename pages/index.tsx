@@ -66,8 +66,10 @@ const HomePage: FC = () => {
         className="fixed w-64 h-64 rounded-full pointer-events-none z-10 opacity-20 mix-blend-screen"
         style={{
           background: 'radial-gradient(circle, rgba(96, 165, 250, 0.4) 0%, rgba(168, 85, 247, 0.2) 50%, transparent 70%)',
-          transform: `translate(${mousePosition.x - 128}px, ${mousePosition.y - 128}px)`,
-          transition: 'transform 0.1s ease-out'
+          left: '0',
+          top: '0',
+          transform: `translate(calc(${mousePosition.x}px - 50%), calc(${mousePosition.y}px - 50%))`,
+          transition: 'transform 0.05s ease-out'
         }}
       />
       
@@ -94,7 +96,7 @@ const HomePage: FC = () => {
                   Process
                 </Link>
                 <Link 
-                  href="/document-collection" 
+                  href="/apply" 
                   className="text-slate-300 hover:text-white transition-colors font-outfit"
                 >
                   Apply
@@ -109,7 +111,7 @@ const HomePage: FC = () => {
                   Sign In
                 </Link>
                 <Link 
-                  href="/document-collection" 
+                  href="/apply" 
                   className="px-4 py-2 rounded-md bg-white text-slate-900 font-medium hover:bg-slate-100 transition-all duration-300 transform hover:scale-105 font-outfit"
                 >
                   Get Started
@@ -158,7 +160,7 @@ const HomePage: FC = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
                   <Link 
-                    href="/document-collection" 
+                    href="/apply" 
                 className="px-8 py-4 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium text-center hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/20 font-outfit relative overflow-hidden group"
               >
                 <span className="relative z-10">Start Your Application</span>
@@ -168,19 +170,11 @@ const HomePage: FC = () => {
                 </div>
                 
             <div className="flex items-center justify-center space-x-4">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div 
-                        key={i} 
-                        className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold border-2 border-slate-900 transform hover:scale-110 transition-transform duration-300"
-                      >
-                        {i}
-                      </div>
-                    ))}
-                  </div>
-              <p className="text-slate-300 font-outfit">
-                <span className="text-white font-semibold">500+</span> successful applications
-              </p>
+              <div className="bg-slate-800/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-slate-700/30">
+                <p className="text-slate-300 font-outfit">
+                  <span className="text-white font-semibold">Prototype</span> • Full Functionality Coming Soon
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -334,7 +328,7 @@ const HomePage: FC = () => {
             
             <div className="mt-12 text-center">
               <Link 
-                href="/document-collection" 
+                href="/apply" 
                 className="inline-block px-8 py-4 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/20 font-outfit"
               >
                 Start Now
@@ -354,7 +348,7 @@ const HomePage: FC = () => {
               </h2>
                   <div className="flex flex-col sm:flex-row gap-4 mt-8">
                     <Link 
-                      href="/document-collection" 
+                      href="/apply" 
                       className="px-8 py-4 rounded-md bg-white text-slate-900 font-medium text-center hover:bg-slate-100 transition-all duration-300 transform hover:scale-105 hover:shadow-lg font-outfit"
                     >
                       Start Now
@@ -408,8 +402,8 @@ const HomePage: FC = () => {
               <div>
                 <h4 className="text-sm font-semibold text-slate-300 mb-4 font-outfit">SERVICES</h4>
                 <ul className="space-y-2">
-                  <li><Link href="/document-collection" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">O-1A</Link></li>
-                  <li><Link href="/document-collection" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">O-1B</Link></li>
+                  <li><Link href="/apply" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">O-1A</Link></li>
+                  <li><Link href="/apply" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">O-1B</Link></li>
                   <li><Link href="/lawyer-search" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">Experts</Link></li>
                 </ul>
               </div>
@@ -431,7 +425,7 @@ const HomePage: FC = () => {
               </div>
             </div>
             <div className="mt-8 pt-8 border-t border-slate-800/50 flex flex-col md:flex-row justify-between items-center">
-              <p className="text-slate-500 text-sm font-outfit">© 2023 Prometheus. All rights reserved.</p>
+              <p className="text-slate-500 text-sm font-outfit">© 2025 Prometheus. All rights reserved.</p>
               <div className="flex space-x-4 mt-4 md:mt-0">
                 <Link href="#" className="text-slate-500 hover:text-blue-400 transition-colors transform hover:scale-110">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -468,9 +462,9 @@ const HomePage: FC = () => {
         
         @keyframes float {
           0% { transform: translateY(0) translateX(0); }
-          25% { transform: translateY(-10px) translateX(5px); }
-          50% { transform: translateY(0) translateX(10px); }
-          75% { transform: translateY(10px) translateX(5px); }
+          25% { transform: translateY(-5px) translateX(2px); }
+          50% { transform: translateY(0) translateX(4px); }
+          75% { transform: translateY(5px) translateX(2px); }
           100% { transform: translateY(0) translateX(0); }
         }
         

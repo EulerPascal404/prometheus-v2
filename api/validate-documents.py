@@ -167,7 +167,7 @@ def parse_summary(summary_text: str) -> Tuple[List[str], List[str], List[str]]:
     logger.info(f"Parsed {len(strengths)} strengths, {len(weaknesses)} weaknesses, {len(recommendations)} recommendations")
     return strengths, weaknesses, recommendations
 
-NUM_PAGES = 2
+NUM_PAGES = 4
 
 # Configure logging
 logging.basicConfig(
@@ -323,11 +323,10 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     except Exception as e:
         print(f"Warning: Could not create/clear history file: {str(e)}")
 
-    output_text = ""
-
-    response_dict = {}
+    # Compile all text information in a single pass
+    all_text_content = ""
     
-    # Process each page with progress updates
+    # Process each page to collect text
     for idx, page_num in enumerate(pages):
         # Update progress before processing each page
         if supabase and user_id:
@@ -389,41 +388,57 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
                 print(f"Warning: Error reading page text: {str(e)}")
                 page_text = "Error reading page text"
             
-            # Use both texts, handling empty cases
-            text_prompt = (form_data + "\n" + page_text).strip()
-            print(text_prompt)
-            if not text_prompt:
-                text_prompt = "No text content available for analysis"
-
-            try:
-                response = client.chat.completions.create(
-                    model="o4-mini-2025-04-16",
-                    messages=[
-                        {"role": "system", "content": "You have been given a text file containing a form and a dictionary containing keys and possible options. You have also been given information about a user. Output the same dictionary but filled with the responses for an application for the user. It is very important that in the outputed dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```. Make sure that in python, eval(output) would return a dictionary with the same keys as the original dictionary." + extra_info},
-                        {"role": "user", "content": text_prompt}
-                    ]
-                )
-
-                # Check if the response output exists and has the expected structure
-                print(f"Processing page {page_num}: Response received")
-                if response and hasattr(response, 'choices') and len(response.choices) > 0:
-                    response_text = response.choices[0].message.content
-                    response_dict = merge_dicts(response_dict, eval(response_text))
-
-            except Exception as e:
-                print(f"Error getting OpenAI response: {str(e)}")
-                output_text += f"Error processing page {page_num}: {str(e)}\n\n"
-                continue
-
+            # Add page content to the compiled text with clear page separator
+            page_content = form_data.strip() + "\n" + page_text.strip()
+            all_text_content += page_content
+            
         except Exception as e:
             print(f"Error processing page {page_num}: {e}")
-            output_text += f"Error processing page {page_num}: {str(e)}\n\n"
+            all_text_content += f"\n\n=== PAGE {page_num} ===\nError processing page: {str(e)}"
             continue
 
         # Add progress update after each page is processed
         if supabase and user_id and (idx % 3 == 0 or idx == len(pages) - 1):  # Update every 3 pages or on the last page
             log_page_progress(idx + 1, total_pages, user_id, supabase)
+    
+    # Make a single API call with all compiled text
+    response_dict = {}
+
+    print(all_text_content)
+    
+    try:
+        print("Making a single API call with all compiled information...")
+        
+        
+        response = client.chat.completions.create(
+            model="o4-mini-2025-04-16",
+            messages=[
+                {"role": "system", "content": "You have been given compiled text content from multiple pages of a form, along with extracted form data. Each page is clearly marked with '=== PAGE X ==='. Your task is to analyze all this information together and fill out a response dictionary. It is very important that in the outputted dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Make sure the na type being used is correct and as accurate as possible.Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```." + extra_info},
+                {"role": "user", "content": all_text_content}
+            ]
+        )
+
+        # Check if the response output exists and has the expected structure
+        print("Response received from API")
+        if response and hasattr(response, 'choices') and len(response.choices) > 0:
+            response_text = response.choices[0].message.content
+            # Clean up the response if needed to ensure it's valid Python
+            response_text = response_text.strip()
+            if response_text.startswith('```python'):
+                response_text = response_text[9:]
+            if response_text.startswith('```'):
+                response_text = response_text[3:]
+            if response_text.endswith('```'):
+                response_text = response_text[:-3]
             
+            response_dict = eval(response_text)
+            print("Successfully evaluated response dictionary")
+
+    except Exception as e:
+        print(f"Error getting API response: {str(e)}")
+        # In case of failure, return an empty dictionary or appropriate error state
+        response_dict = {"error": f"Failed to process form: {str(e)}"}
+    
     print(f"Completed processing {total_pages} pages")
     return response_dict
 
@@ -470,12 +485,9 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                     # Count total fillable fields
                     field_stats["total_fields"] += 1
 
-                    print(original_name)
-
                     # Check if we have a response for this field
                     if original_name and original_name in response_dict:
 
-                        print(f"Processing field: {original_name}")
 
                         field_value = response_dict[original_name]
                         
@@ -832,16 +844,10 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
         
         try:
             print("Processing document text for:", doc_type)
-            # Limit text to 5000 tokens (approximate character count)
-            # A very rough estimate - 1 token ≈ 4 characters for English text
-            char_limit = 5000 * 4
-            if len(full_text) > char_limit:
-                print(f"Truncating text from {len(full_text)} chars to ~{char_limit} chars")
-                full_text = full_text[:char_limit]
-            
+            # Limit text to 5000 tokens (approximate character count)            
             # Generate summary using OpenAI with the current document only
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="o4-mini-2025-04-16",
                 messages=[
                     {"role": "system", "content": "You are a professional o1 document reviewer. Review the following documents and specifically list the strengths and weaknesses of the applicants resources in creating a successful o1 application. Additionally, provide a list of recommendations for the applicant to improve their application. Format the output as follows: Strengths: [list of strengths], Weaknesses: [list of weaknesses], Recommendations: [list of recommendations]. Make sure to separate each point with a [SEP] separator. Refer to the applicant as 'you'."},
                     {"role": "user", "content": full_text}

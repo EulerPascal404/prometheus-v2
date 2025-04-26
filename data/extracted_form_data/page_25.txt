@@ -1,108 +1,54 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/1332/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateFrom/137Line1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateTo/137Line1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137Explanation/137Line1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateFrom/137Line2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateTo/137Line2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137Explanation/137Line2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateFrom/137Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateTo/137Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137Explanation/137Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateFrom/137Line4/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateTo/137Line4/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137Explanation/137Line4/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateFrom/137Line5/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateTo/137Line5/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137Explanation/137Line5/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateFrom/137Line6/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137DateTo/137Line6/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (q5/137Explanation/137Line6/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/1333/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (a/137Parent/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (b/137Branch/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (c/137Subsidiary/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (d/137Affiliate/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (e/137JointVenture/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------

@@ -1,52 +1,26 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part5Line12/137TypeofBusiness/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line13/137YearEstablished/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line14/137NumberofEmployees/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line15/137GrossAnnualIncome/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line16/137NetAnnualIncome/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line15/137Yes/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line15/137No/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (NoDeemed/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Deemed/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Line1a/137PetitionerLastName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line1a/137PetitionerLastName/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line1b/137PetitionerFirstName/1330/135)
 Available Options: Text input
---------------------------------------------------

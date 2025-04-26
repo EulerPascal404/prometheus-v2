@@ -1,80 +1,40 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137DateSignedByDODPM/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137DODPMSignature/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137DODPMName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (a/137seasonal/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (b/137peakload/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (d/137onetime/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (c/137recurrent/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (a/137unpredictable/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (b/137periodic/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (c/137intermittent/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137Explanation/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (SupHLine5/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (SupHLine5/1331/135)
 Available Options: ['/N', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (SupHLine6a/1330/135)
 Available Options: ['/N', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (SupHLine6a/1331/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (SupHLine6/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137AuthorizedOfficialSignature/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137DateSignedByAuthorizedOfficial/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137AuthorizedOfficialName/1330/135)
 Available Options: Text input
---------------------------------------------------

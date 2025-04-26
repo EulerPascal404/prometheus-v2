@@ -1,68 +1,34 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Cell2/1330/135)
 Available Options: Text input
---------------------------------------------------

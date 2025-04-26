@@ -945,7 +945,7 @@ export default function DocumentReview() {
     extraInfo: ''
   });
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const addressInputRef = useRef<HTMLInputElement>(null);
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'strength-analysis': false,
     'document-summaries': false,
@@ -1139,6 +1139,64 @@ export default function DocumentReview() {
           }
         });
       }
+
+      // Add the custom styles for Google Places Autocomplete
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `
+        /* Autocomplete dropdown styling */
+        .pac-container {
+          background-color: rgba(15, 23, 42, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 0.5rem;
+          border: 1px solid rgba(168, 85, 247, 0.2);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          font-family: 'Inter', system-ui, sans-serif;
+          margin-top: 4px;
+          padding: 8px 0;
+          z-index: 1000;
+        }
+        
+        .pac-item {
+          padding: 8px 12px;
+          color: #E2E8F0;
+          font-size: 0.875rem;
+          border-top: 1px solid rgba(56, 189, 248, 0.1);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .pac-item:first-child {
+          border-top: none;
+        }
+        
+        .pac-item:hover, .pac-item-selected {
+          background-color: rgba(168, 85, 247, 0.15);
+        }
+        
+        .pac-icon {
+          display: none;
+        }
+        
+        .pac-item-query {
+          color: #A855F7;
+          font-size: 0.875rem;
+          font-weight: 500;
+          padding-right: 4px;
+        }
+        
+        .pac-matched {
+          color: #60A5FA;
+          font-weight: 600;
+        }
+        
+        .pac-logo:after {
+          background-color: rgba(15, 23, 42, 0.95);
+          color: #94A3B8;
+          font-size: 0.75rem;
+          padding: 4px 8px;
+        }
+      `;
+      document.head.appendChild(styleElement);
     }
   };
 

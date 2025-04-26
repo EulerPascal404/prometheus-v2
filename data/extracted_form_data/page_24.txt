@@ -1,176 +1,88 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line1/137FamilyName/1334/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (HSupLine2/137FamilyName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (a/137individual/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (b/137blanket/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (LSuppLine4a/1330/135)
 Available Options: ['/N', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (LSuppLine4b/137Yes/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (LSuppLine4b/137No/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (LSuppLine4a/1331/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137Name/137Line1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateFrom/137line1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateTo/137line1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137Name/137Line2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateFrom/137line2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateTo/137line2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137Name/137Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateFrom/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateTo/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137Name/137Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateFrom/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateTo/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137Name/137Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateFrom/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateTo/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137Name/137Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateFrom/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateTo/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Sect1/137Name/137Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateFrom/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (DateTo/137line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (a/137L1A/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (b/137L1B/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Part3Line2/137City/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part3Line2/137State/1330/135)
 Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
---------------------------------------------------
-Page: 1
 Original Key: (Part3Line2/137ZipCode/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part3Line2/137StreetName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line2/137AptSteFlrNumber/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (LClassLine4/137Unit/1330/135)
 Available Options: ['/ FLR ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (LClassLine4/137Unit/1331/135)
 Available Options: ['/ STE ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (LClassLine4/137Unit/1332/135)
 Available Options: ['/ APT ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (LSuppLine3/137NameofEmployerAbroad/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part3Line2/137Province/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part3Line2/137Country/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part3Line2/137PostalCode/1330/135)
 Available Options: Text input
---------------------------------------------------

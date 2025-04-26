@@ -1,156 +1,78 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line5/137Yes/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line5/137No/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line4/137No/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line6/137Yes/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line6/137No/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line4/137Yes/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (Part5/137Q10/137DateFrom/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part5/137Q10/137DateTo/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line9/137Hours/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line7/137No/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line7/137Yes/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (Line10/137Explanation/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line8/137Wages/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line8/137Per/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3a/137State/1330/135)
 Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3a/137ZipCode/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3a/137Unit/1330/135)
 Available Options: ['/ APT ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3a/137AptSteFlrNumber/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3a/137Unit/1331/135)
 Available Options: ['/ FLR ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3a/137Unit/1332/135)
 Available Options: ['/ STE ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3a/137StreetNumberName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3a/137CityTown/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part5/137Q2/137LCAorETA/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part5/137Q1/137JobTitle/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3/1330/135)
 Available Options: ['/0', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3/1331/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3a/137ThirdpartyOrganization/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3b/137State2/1330/135)
 Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3b/137ZipCode2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3b/137Unit2/1330/135)
 Available Options: ['/ APT ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3b/137AptSteFlrNumber2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3b/137Unit2/1331/135)
 Available Options: ['/ FLR ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3b/137Unit2/1332/135)
 Available Options: ['/ STE ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3b/137StreetNumberName2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3b/137CityTown/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3Add/1330/135)
 Available Options: ['/0', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3Add/1331/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (P5Line3b/137ThirdpartyOrganization2/1330/135)
 Available Options: Text input
---------------------------------------------------

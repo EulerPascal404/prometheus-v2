@@ -1,76 +1,38 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/1334/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (FEIN/137Line1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (FEIN/137Line2/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (FEIN/137Line3/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line4/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (FEIN/137Line4/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line5/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (FEIN/137Line5/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (LSec1Line11/137No/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (LSec1Line12/137Yes/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (LSec1Line12/1330/135)
 Available Options: ['/N', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (LSec1Line12/1331/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (LSec1Line12/137No/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (LSec1Line11/137Yes/1330/135)
 Available Options: ['/Off', '/Y']
---------------------------------------------------
-Page: 1
 Original Key: (Line3/137JobDescription/1335/135)
 Available Options: Text input
---------------------------------------------------

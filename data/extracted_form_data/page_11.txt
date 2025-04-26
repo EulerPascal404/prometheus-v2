@@ -1,76 +1,38 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (employer/1330/135)
 Available Options: ['/F', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (employer/1331/135)
 Available Options: ['/Off', '/U']
---------------------------------------------------
-Page: 1
 Original Key: (a/137Canada/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (b/137Mexico/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (c/137Chile/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (e/137Other/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (d/137Singapore/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (f/137ChileOrSingapore/1330/135)
 Available Options: ['/1', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (TASupLine1/137NameofPetitioner/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (TASupLine2b/137DateofSignature/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (TASupLine5/137Email/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (TASupLine1a/137PetitionerLastName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (TASupLine1b/137PetitionerFirstName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line4/137Country/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (TASupLine1/137NameofBeneficiary/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (TASupLine2/137DaytimePhoneNumber1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (TASupLine3/137MobilePhoneNumber1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5/137Line6a/137SignatureofApplicant/1331/135)
 Available Options: Text input
---------------------------------------------------

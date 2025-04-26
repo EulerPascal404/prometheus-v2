@@ -1,76 +1,38 @@
-Page: 1
 Original Key: (PDF417BarCode1/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part7Line13b/137EmpCity/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part7Line13b/137Emp1State/1330/135)
 Available Options: ['\\040', 'AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AS', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MP', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
---------------------------------------------------
-Page: 1
 Original Key: (Part7Line13b/137Emp1ZipCode/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part7Line13b/137Emp1StreetName/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Part7Line13c/137Emp1FromDate/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line13b/137AptSteFlrNumber/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line13b/137Unit/1330/135)
 Available Options: ['/ FLR ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Line13b/137Unit/1331/135)
 Available Options: ['/ STE ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (Line13b/137Unit/1332/135)
 Available Options: ['/ APT ', '/Off']
---------------------------------------------------
-Page: 1
 Original Key: (LSuppLine13a/137NameofPeer/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line1/137FamilyName/1336/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line1/137GivenName/1332/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line1/137MiddleName/1332/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Line1b/137DateofSignature/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Pt7Line3/137EmailAddress/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Preparer/137DaytimePhoneNumber1/13713d/1330/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (Pt7Line3/137DaytimePhoneNumber1/1331/135)
 Available Options: Text input
---------------------------------------------------
-Page: 1
 Original Key: (P5/137Line6a/137SignatureofApplicant/1334/135)
 Available Options: Text input
---------------------------------------------------
