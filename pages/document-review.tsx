@@ -1932,7 +1932,7 @@ export default function DocumentReview() {
                       </h4>
                         <p className="text-slate-300 mb-4">Showcase your achievements and expertise to potential employers and immigration officers.</p>
                       <button 
-                          onClick={() => {/* Portfolio page navigation will be added later */}}
+                          onClick={() => router.push('/document-collection')}
                         className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"
                       >
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

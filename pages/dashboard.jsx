@@ -49,7 +49,7 @@ export default function Dashboard() {
           }
         } else {
           console.log('No session, redirecting to auth page');
-          router.push('/auth');
+          router.push('/document-collection');
         }
       }
     )

@@ -96,7 +96,7 @@ const HomePage: FC = () => {
                   Process
                 </Link>
                 <Link 
-                  href="/apply" 
+                  href="/document-collection" 
                   className="text-slate-300 hover:text-white transition-colors font-outfit"
                 >
                   Apply
@@ -105,13 +105,13 @@ const HomePage: FC = () => {
               
               <div className="flex items-center space-x-4">
                 <Link 
-                  href="/auth" 
+                  href="/document-collection" 
                   className="hidden md:block px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 font-outfit"
                 >
                   Sign In
                 </Link>
                 <Link 
-                  href="/apply" 
+                  href="/document-collection" 
                   className="px-4 py-2 rounded-md bg-white text-slate-900 font-medium hover:bg-slate-100 transition-all duration-300 transform hover:scale-105 font-outfit"
                 >
                   Get Started
@@ -160,7 +160,7 @@ const HomePage: FC = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
                   <Link 
-                    href="/apply" 
+                    href="/document-collection" 
                 className="px-8 py-4 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium text-center hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/20 font-outfit relative overflow-hidden group"
               >
                 <span className="relative z-10">Start Your Application</span>
@@ -328,7 +328,7 @@ const HomePage: FC = () => {
             
             <div className="mt-12 text-center">
               <Link 
-                href="/apply" 
+                href="/document-collection" 
                 className="inline-block px-8 py-4 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/20 font-outfit"
               >
                 Start Now
@@ -348,7 +348,7 @@ const HomePage: FC = () => {
               </h2>
                   <div className="flex flex-col sm:flex-row gap-4 mt-8">
                     <Link 
-                      href="/apply" 
+                      href="/document-collection" 
                       className="px-8 py-4 rounded-md bg-white text-slate-900 font-medium text-center hover:bg-slate-100 transition-all duration-300 transform hover:scale-105 hover:shadow-lg font-outfit"
                     >
                       Start Now
@@ -402,8 +402,8 @@ const HomePage: FC = () => {
               <div>
                 <h4 className="text-sm font-semibold text-slate-300 mb-4 font-outfit">SERVICES</h4>
                 <ul className="space-y-2">
-                  <li><Link href="/apply" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">O-1A</Link></li>
-                  <li><Link href="/apply" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">O-1B</Link></li>
+                  <li><Link href="/document-collection" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">O-1A</Link></li>
+                  <li><Link href="/document-collection" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">O-1B</Link></li>
                   <li><Link href="/lawyer-search" className="text-slate-400 hover:text-blue-400 transition-colors font-outfit">Experts</Link></li>
                 </ul>
               </div>
