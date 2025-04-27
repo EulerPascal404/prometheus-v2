@@ -6,7 +6,7 @@ import tempfile
 import logging
 import sys
 import time
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 from typing import Dict, Optional, List, Tuple
 import PyPDF2
 from supabase import create_client, Client
@@ -19,6 +19,7 @@ from tqdm import tqdm
 from glob import glob
 from pdfrw import PdfReader, PdfWriter, PdfDict, PdfName
 import pdfrw
+import datetime
 
 # Function to parse summary text into structured arrays
 def parse_summary(summary_text: str) -> Tuple[List[str], List[str], List[str]]:
@@ -167,7 +168,7 @@ def parse_summary(summary_text: str) -> Tuple[List[str], List[str], List[str]]:
     logger.info(f"Parsed {len(strengths)} strengths, {len(weaknesses)} weaknesses, {len(recommendations)} recommendations")
     return strengths, weaknesses, recommendations
 
-NUM_PAGES = 4
+NUM_PAGES = 2
 
 # Configure logging
 logging.basicConfig(
@@ -411,7 +412,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
         
         
         response = client.chat.completions.create(
-            model="o4-mini-2025-04-16",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You have been given compiled text content from multiple pages of a form, along with extracted form data. Each page is clearly marked with '=== PAGE X ==='. Your task is to analyze all this information together and fill out a response dictionary. It is very important that in the outputted dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Make sure the na type being used is correct and as accurate as possible.Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```." + extra_info},
                 {"role": "user", "content": all_text_content}
@@ -949,122 +950,87 @@ class handler(BaseHTTPRequestHandler):
         
     def do_GET(self):
         """Handle GET requests to validate-documents"""
-        logger.info(f"Received GET request to {self.path}")
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+        query_params = self.parse_query_params()
         
-        # Extract path and parameters
-        if self.path.startswith('/api/test'):
-            self.send_json_response({
-                "status": "success",
-                "message": "HTTP API is working correctly!",
-                "version": "1.0.0"
-            })
-            return
+        # Handle CORS preflight
+        self.handle_cors()
         
-        if not self.path.startswith('/api/validate-documents'):
-            self.send_json_response({
-                "status": "error",
-                "message": "Invalid endpoint"
-            }, 404)
-            return
-        
-        # Parse query parameters
-        params = self.parse_query_params()
-        user_id = params.get('user_id')
-        
-        if not user_id:
-            logger.warning("GET request missing user_id parameter")
-            self.send_json_response({
-                "status": "error",
-                "message": "user_id is required as a query parameter",
-                "example": "/api/validate-documents?user_id=your-user-id-here"
-            }, 400)
-            return
-        
-        try:
-            # Try to get Supabase client
-            supabase = get_supabase()
+        # Get application data by application_id
+        if 'application_id' in query_params:
+            application_id = query_params.get('application_id')
+            user_id = query_params.get('user_id')
             
-            if not supabase:
-                logger.warning("Could not connect to Supabase, returning default document state")
-                # Return a default document state that allows processing to continue
+            if not application_id:
                 self.send_json_response({
-                    "status": "success_no_db",
-                    "completion_score": 0,
-                    "can_proceed": True,  # Allow proceeding without database
-                    "documents": {
-                        "user_id": user_id,
-                        "processing_status": "pending",
-                        "completion_score": 0,
-                        "resume": False,
-                        "recommendations": False,
-                        "awards": False,
-                        "publications": False,
-                        "salary": False,
-                        "memberships": False
-                    }
-                })
-                return
-
-            # Try to get existing document
-            logger.info(f"Fetching documents for user: {user_id}")
-            response = supabase.table("user_documents").select("*").eq("user_id", user_id).execute()
-            
-            # If no document exists, create one
-            if not response.data:
-                logger.info(f"Creating new document record for user: {user_id}")
-                try:
-                    insert_response = supabase.table("user_documents").insert({
-                        "user_id": user_id,
-                        "processing_status": "pending",
-                        "completion_score": 0,
-                        "resume": False,
-                        "recommendations": False,
-                        "awards": False,
-                        "publications": False,
-                        "salary": False,
-                        "memberships": False
-                    }).execute()
-                    
-                    self.send_json_response({
-                        "status": "initialized",
-                        "completion_score": 0,
-                        "can_proceed": True,  # Allow proceeding even with a new record
-                        "message": "Document record created"
-                    })
-                except Exception as insert_error:
-                    logger.error(f"Error creating document record: {str(insert_error)}")
-                    # Return a default state that allows processing to continue
-                    self.send_json_response({
-                        "status": "error_creating_record",
-                        "completion_score": 0,
-                        "can_proceed": True,  # Allow proceeding despite error
-                        "message": f"Error creating document record: {str(insert_error)}"
-                    })
+                    "status": "error",
+                    "message": "Missing application_id parameter"
+                }, 400)
                 return
                 
-            user_docs = response.data[0]
-            logger.info(f"Successfully retrieved documents for user: {user_id}")
+            # Get application details with document summaries and field stats
+            application = get_application_details(application_id, user_id)
+            
+            if not application:
+                self.send_json_response({
+                    "status": "error",
+                    "message": f"Application {application_id} not found"
+                }, 404)
+                return
+                
+            # Return application data with document details
             self.send_json_response({
                 "status": "success",
-                "completion_score": user_docs.get("completion_score", 0),
-                "can_proceed": True,  # Always allow proceeding
-                "documents": user_docs
+                "application": application
             })
+            return
+        
+        # Get all applications for a user
+        elif 'user_id' in query_params:
+            user_id = query_params.get('user_id')
+            try:
+                supabase = get_supabase()
+                if supabase:
+                    # Get all applications for this user
+                    applications_response = supabase.table("applications").select("*").eq("user_id", user_id).order("created_at", {"ascending": False}).execute()
+                    
+                    if applications_response and applications_response.data:
+                        # Parse JSONB fields for each application
+                        for app in applications_response.data:
+                            try:
+                                if app.get("field_stats") and isinstance(app["field_stats"], str):
+                                    app["field_stats"] = json.loads(app["field_stats"])
+                                if app.get("document_summaries") and isinstance(app["document_summaries"], str):
+                                    app["document_summaries"] = json.loads(app["document_summaries"])
+                            except Exception as e:
+                                logger.error(f"Error parsing JSON fields for application {app.get('id')}: {str(e)}")
+                        
+                        self.send_json_response({
+                            "status": "success",
+                            "applications": applications_response.data
+                        })
+                    else:
+                        self.send_json_response({
+                            "status": "not_found",
+                            "message": "No applications found for this user"
+                        })
+                else:
+                    self.send_json_response({
+                        "status": "error",
+                        "message": "Database connection not available"
+                    }, 500)
+            except Exception as e:
+                self.send_json_response({
+                    "status": "error",
+                    "message": f"Error retrieving applications: {str(e)}"
+                }, 500)
+            return
             
-        except Exception as e:
-            logger.error(f"Error processing GET request: {str(e)}")
-            # Return a default document state that allows processing to continue
-            self.send_json_response({
-                "status": "error_fallback",
-                "message": f"Error checking validation status: {str(e)}",
-                "completion_score": 0,
-                "can_proceed": True,  # Allow proceeding despite error
-                "documents": {
-                    "user_id": user_id,
-                    "processing_status": "error",
-                    "completion_score": 0
-                }
-            })
+        self.send_json_response({
+            "status": "error",
+            "message": "Invalid request. Use with user_id or application_id parameter."
+        }, 400)
         
     def do_POST(self):
         """Handle POST requests to validate-documents"""
@@ -1112,8 +1078,40 @@ class handler(BaseHTTPRequestHandler):
                 }, 400)
                 return
 
-            logger.info(f"Processing documents for user: {user_id}")
-            logger.info(f"Documents to process: {list(uploaded_documents.keys())}")
+            # Extract application ID if present
+            application_id = request_data.get('application_id')
+            if application_id:
+                logger.info(f"Processing documents for user: {user_id}, application: {application_id}")
+            else:
+                logger.info(f"Processing documents for user: {user_id}, no application ID provided")
+
+            # Safely log the uploaded documents
+            if uploaded_documents:
+                # Create a dictionary to use for processing
+                document_dict = {}
+                
+                # Check type and convert if necessary
+                if isinstance(uploaded_documents, list):
+                    # Convert list to dictionary
+                    logger.info(f"Received uploaded_documents as list, converting to dictionary")
+                    for doc in uploaded_documents:
+                        if isinstance(doc, dict) and 'docType' in doc:
+                            document_dict[doc['docType']] = True
+                    logger.info(f"Processing these specific documents: {list(document_dict.keys())}")
+                    uploaded_documents = document_dict
+                elif isinstance(uploaded_documents, dict):
+                    document_dict = uploaded_documents
+                    logger.info(f"Processing these specific documents: {list(document_dict.keys())}")
+                else:
+                    logger.error(f"Unsupported format for uploaded_documents: {type(uploaded_documents)}")
+                    document_dict = {}
+                
+                # Include application_id in document processing
+                if 'application_id' in request_data and request_data['application_id']:
+                    application_id = request_data['application_id']
+                    logger.info(f"Processing for application ID: {application_id}")
+                else:
+                    application_id = None
             
             # Try to get Supabase client, but continue even if it fails
             supabase = None
@@ -1122,13 +1120,25 @@ class handler(BaseHTTPRequestHandler):
                 if supabase:
                     logger.info("Supabase connection established")
                     # Check for existing documents
-                    response = supabase.table("user_documents").select("processing_status, last_validated").eq("user_id", user_id).single().execute()
+                    if 'application_id' in request_data and request_data['application_id']:
+                        application_id = request_data['application_id']
+                        logger.info(f"Processing documents for application: {application_id}")
+                        response = supabase.table("user_documents").select("processing_status, last_validated").eq("user_id", user_id).eq("application_id", application_id).single().execute()
+                    else:
+                        response = supabase.table("user_documents").select("processing_status, last_validated").eq("user_id", user_id).single().execute()
                     
                     # Update status to pending
-                    supabase.table("user_documents").update({
+                    update_data = {
                         "processing_status": "pending",
                         "last_validated": "now()"
-                    }).eq("user_id", user_id).execute()
+                    }
+                    
+                    if 'application_id' in request_data and request_data['application_id']:
+                        application_id = request_data['application_id']
+                        update_data["application_id"] = application_id
+                        supabase.table("user_documents").update(update_data).eq("user_id", user_id).eq("application_id", application_id).execute()
+                    else:
+                        supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
                 else:
                     logger.warning("Supabase connection not available, continuing without database updates")
                     response = None
@@ -1139,11 +1149,9 @@ class handler(BaseHTTPRequestHandler):
             document_summaries = {}
             all_extracted_text = []  # Collector for all document text
             
-            # Process uploaded documents - ONLY the ones explicitly in the uploaded_documents parameter
+            # Process uploaded documents - ONLY the ones explicitly in uploaded_documents parameter
             if uploaded_documents:
-                logger.info(f"Processing these specific documents: {list(uploaded_documents.keys())}")
-                
-                for doc_type, should_process in uploaded_documents.items():
+                for doc_type, should_process in document_dict.items():
                     if should_process:
                         try:
                             # Update processing status if Supabase is available
@@ -1160,20 +1168,31 @@ class handler(BaseHTTPRequestHandler):
                             if supabase:
                                 try:
                                     # Look for the most recent document of this type
-                                    results = supabase.storage.from_('documents').list(f"{user_id}/{doc_type}")
+                                    storage_path = ""
+                                    
+                                    # Try the application-specific path if application_id is available
+                                    if application_id:
+                                        storage_path = f"{user_id}/applications/{application_id}/{doc_type}"
+                                        logger.info(f"Looking for documents in: {storage_path}")
+                                        results = supabase.storage.from_('documents').list(storage_path)
+                                    else:
+                                        # Fall back to the old path structure if no application_id
+                                        storage_path = f"{user_id}/{doc_type}"
+                                        logger.info(f"Looking for documents in: {storage_path}")
+                                        results = supabase.storage.from_('documents').list(storage_path)
+                                    
                                     if results and len(results) > 0:
                                         # Sort by created_at to get the most recent
                                         sorted_files = sorted(results, key=lambda x: x.get('created_at', ''), reverse=True)
                                         most_recent_file = sorted_files[0]['name']
                                         logger.info(f"Found most recent {doc_type} file: {most_recent_file}")
                                         
-                                        # Download the most recent file
-                                        file_response = supabase.storage.from_('documents').download(
-                                            f"{user_id}/{doc_type}/{most_recent_file}"
-                                        )
-                                        logger.info(f"Downloaded file for {doc_type} from Supabase storage")
+                                        # Download the most recent file using the correct path
+                                        file_path = f"{storage_path}/{most_recent_file}"
+                                        file_response = supabase.storage.from_('documents').download(file_path)
+                                        logger.info(f"Downloaded file for {doc_type} from Supabase storage: {file_path}")
                                     else:
-                                        logger.warning(f"No files found for {doc_type}")
+                                        logger.warning(f"No files found for {doc_type} in path {storage_path}")
                                 except Exception as e:
                                     logger.error(f"Error accessing/downloading file from Supabase: {str(e)}")
                             
@@ -1273,43 +1292,29 @@ class handler(BaseHTTPRequestHandler):
                 consolidated_field_stats = {}
 
             # Update Supabase if available
-            if supabase:
+            if supabase and application_id:
                 try:
-                    # Create update data
-                    update_data = {
+                    # Calculate completion score based on the processed documents
+                    optional_docs = ["recommendations", "awards", "publications", "salary", "memberships"]
+                    processed_docs = [doc_type for doc_type in document_dict.keys() if doc_type in optional_docs]
+                    uploaded_optional = len(processed_docs)
+                    completion_score = int((uploaded_optional / len(optional_docs)) * 100)
+                    
+                    # Use the new JSONB columns in the applications table to store data directly
+                    app_update_data = {
+                        "score": completion_score,
+                        "field_stats": json.dumps(consolidated_field_stats),  # Will be cast to JSONB by Supabase
+                        "document_summaries": json.dumps(document_summaries),  # Will be cast to JSONB by Supabase
                         "processing_status": "completed",
-                        "document_summaries": document_summaries,
-                        "field_stats": consolidated_field_stats
+                        "summary": f"Application processed with {len(document_dict)} documents. Score: {completion_score}%"
                     }
                     
-                    if not response or not response.data:
-                        # Create new record
-                        insert_data = {
-                            "user_id": user_id,
-                            "processing_status": "completed",
-                            "completion_score": 0,
-                            **(uploaded_documents or {}),
-                            "document_summaries": document_summaries,
-                            "field_stats": consolidated_field_stats
-                        }
-                        
-                        insert_response = supabase.table("user_documents").insert(insert_data).execute()
-                        user_docs = insert_response.data[0] if insert_response.data else {}
-                    else:
-                        user_docs = response.data
-                        # Update existing record
-                        supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
-
-                    # Calculate completion score
-                    optional_docs = ["recommendations", "awards", "publications", "salary", "memberships"]
-                    uploaded_optional = sum(1 for doc in optional_docs if user_docs.get(doc))
-                    completion_score = (uploaded_optional / len(optional_docs)) * 100
+                    # Update applications table
+                    logger.info(f"Updating application {application_id} with processing results using JSONB columns")
+                    app_update_response = supabase.table("applications").update(app_update_data).eq("id", application_id).execute()
+                    logger.info(f"Application update response: {app_update_response.data if hasattr(app_update_response, 'data') else 'No data returned'}")
                     
-                    # Final update with completion score
-                    supabase.table("user_documents").update({
-                        "completion_score": completion_score,
-                        "last_validated": "now()"
-                    }).eq("user_id", user_id).execute()
+                    # We don't need to update user_documents since we're storing everything in applications
                     
                     self.send_json_response({
                         "status": "success",
@@ -1317,7 +1322,8 @@ class handler(BaseHTTPRequestHandler):
                         "message": f"Documents validated successfully. Your profile is {completion_score}% complete.",
                         "can_proceed": True,
                         "document_summaries": document_summaries,
-                        "field_stats": consolidated_field_stats  # Return the consolidated field stats
+                        "field_stats": consolidated_field_stats,
+                        "application_id": application_id
                     })
                 except Exception as e:
                     logger.error(f"Error updating database: {str(e)}")
@@ -1327,8 +1333,15 @@ class handler(BaseHTTPRequestHandler):
                         "message": f"Documents processed but database update failed: {str(e)}",
                         "can_proceed": True,
                         "document_summaries": document_summaries,
-                        "field_stats": consolidated_field_stats  # Return the consolidated field stats
+                        "field_stats": consolidated_field_stats
                     })
+            elif supabase: 
+                # No application ID provided
+                self.send_json_response({
+                    "status": "error",
+                    "message": "Application ID is required for document processing",
+                    "can_proceed": False
+                }, 400)
             else:
                 # Supabase not available, just return the summaries
                 self.send_json_response({
@@ -1336,7 +1349,7 @@ class handler(BaseHTTPRequestHandler):
                     "message": "Documents processed successfully (database not updated)",
                     "can_proceed": True,
                     "document_summaries": document_summaries,
-                    "field_stats": consolidated_field_stats  # Return the consolidated field stats
+                    "field_stats": consolidated_field_stats
                 })
             
         except Exception as e:

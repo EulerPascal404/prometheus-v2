@@ -8,24 +8,27 @@ import Script from 'next/script';
 
 // Define types that were previously imported from utils/documentProcessor
 export interface FieldStats {
-  total_fields: number;
-  user_info_filled: number;
-  percent_filled: number;
-  N_A_per: number;      // Fields needed for personal info
-  N_A_r: number;        // Fields needed for resume info
-  N_A_rl: number;       // Fields needed for recommendation letters
-  N_A_ar: number;       // Fields needed for awards/recognition
-  N_A_p: number;        // Fields needed for publications
-  N_A_ss: number;       // Fields needed for salary/success info
-  N_A_pm: number;       // Fields needed for professional membership
-  // Additional fields used in document-review.tsx
-  na_extraordinary: number;  // Fields needed for extraordinary ability evidence
-  na_recognition: number;    // Fields needed for recognition evidence
-  na_publications: number;   // Fields needed for publications evidence
-  na_leadership: number;     // Fields needed for leadership evidence
-  na_contributions: number;  // Fields needed for contributions evidence
-  na_salary: number;         // Fields needed for salary evidence
-  na_success: number;        // Fields needed for success evidence
+  total_fields: number;           // Total number of fields in application
+  user_info_filled: number;       // Number of fields user has completed
+  percent_filled: number;         // Percentage of application completed
+  
+  // Missing fields by category
+  N_A_per: number;                // Personal info fields needed
+  N_A_r: number;                  // Resume info fields needed
+  N_A_rl: number;                 // Recommendation letter fields needed
+  N_A_ar: number;                 // Awards/recognition fields needed
+  N_A_p: number;                  // Publications fields needed
+  N_A_ss: number;                 // Salary/success info fields needed
+  N_A_pm: number;                 // Professional membership fields needed
+  
+  // O-1 specific criteria tracking
+  na_extraordinary: number;       // Extraordinary ability evidence needed
+  na_recognition: number;         // Recognition evidence needed
+  na_publications: number;        // Publications evidence needed
+  na_leadership: number;          // Leadership evidence needed
+  na_contributions: number;       // Contributions evidence needed
+  na_salary: number;              // Salary evidence needed
+  na_success: number;             // Success evidence needed
 }
 
 interface PriorityArea {
@@ -354,11 +357,11 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
             </h5>
             
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/30">
-              {/* Missing fields indicators with visual status indicators */}
+              {/* Document status indicators with visual status indicators */}
               {[
                 { 
                   label: 'Personal Information', 
-                  value: safeStats.N_A_per, 
+                  value: safeStats.N_A_per === undefined ? -1 : safeStats.N_A_per, // Use -1 if data is not yet loaded/document not uploaded
                   icon: (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -367,7 +370,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 },
                 { 
                   label: 'Resume Details', 
-                  value: safeStats.N_A_r, 
+                  value: safeStats.N_A_r === undefined ? -1 : safeStats.N_A_r,
                   icon: (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -376,7 +379,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 },
                 { 
                   label: 'Recommendation Letters', 
-                  value: safeStats.N_A_rl, 
+                  value: safeStats.N_A_rl === undefined ? -1 : safeStats.N_A_rl,
                   icon: (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -385,7 +388,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 },
                 { 
                   label: 'Awards & Recognition', 
-                  value: safeStats.N_A_ar, 
+                  value: safeStats.N_A_ar === undefined ? -1 : safeStats.N_A_ar,
                   icon: (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -394,7 +397,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 },
                 { 
                   label: 'Publications', 
-                  value: safeStats.N_A_p, 
+                  value: safeStats.N_A_p === undefined ? -1 : safeStats.N_A_p,
                   icon: (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -403,7 +406,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 },
                 { 
                   label: 'Salary & Success', 
-                  value: safeStats.N_A_ss, 
+                  value: safeStats.N_A_ss === undefined ? -1 : safeStats.N_A_ss,
                   icon: (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -412,44 +415,113 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 },
                 { 
                   label: 'Professional Membership', 
-                  value: safeStats.N_A_pm, 
+                  value: safeStats.N_A_pm === undefined ? -1 : safeStats.N_A_pm,
                   icon: (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   )
                 }
-              ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between py-1.5 px-3 rounded-lg hover:bg-slate-700/30 transition-colors duration-200">
-                  <div className="flex items-center">
-                    <span className={`mr-2 ${
-                      item.value > 3 ? 'text-red-400' : 
-                      item.value > 0 ? 'text-amber-400' : 
-                      'text-green-400'
-                    }`}>{item.icon}</span>
-                    <span className="text-slate-300">{item.label}</span>
+              ].map((docItem) => {
+                // Determine document status based on upload status and completeness
+                let status: string;
+                let statusClass: string;
+                
+                // Check if document is not uploaded (value = -1)
+                if (docItem.value === -1) {
+                  status = 'Not Uploaded';
+                  statusClass = 'bg-red-500/20 text-red-400';
+                } 
+                // Document is uploaded but has incomplete fields
+                else if (docItem.value > 0) {
+                  // Determine severity based on number of missing fields
+                  // But don't show the specific number
+                  if (docItem.value > 5) {
+                    status = 'Incomplete';
+                    statusClass = 'bg-red-500/20 text-red-400';
+                  } else if (docItem.value > 2) {
+                    status = 'Partially Complete'; 
+                    statusClass = 'bg-amber-500/20 text-amber-400';
+                  } else {
+                    status = 'Mostly Complete';
+                    statusClass = 'bg-green-500/20 text-green-400';
+                  }
+                } 
+                // Document is completely filled
+                else {
+                  status = 'Complete';
+                  statusClass = 'bg-green-500/20 text-green-400';
+                }
+                
+                const iconColorClass = docItem.value === -1 
+                  ? 'text-red-400' 
+                  : docItem.value > 5 
+                    ? 'text-red-400'
+                    : docItem.value > 2 
+                      ? 'text-amber-400'
+                      : 'text-green-400';
+                
+                return (
+                  <div key={docItem.label} className="flex items-center justify-between py-1.5 px-3 rounded-lg hover:bg-slate-700/30 transition-colors duration-200">
+                    <div className="flex items-center">
+                      <span className={`mr-2 ${iconColorClass}`}>{docItem.icon}</span>
+                      <span className="text-slate-300">{docItem.label}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusClass} flex items-center`}>
+                        {status === 'Complete' && (
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                        {status === 'Not Uploaded' && (
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                        {status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      item.value > 3 ? 'bg-red-500/20 text-red-400' : 
-                      item.value > 0 ? 'bg-amber-500/20 text-amber-400' : 
-                      'bg-green-500/20 text-green-400'
-                    }`}>
-                      {item.value > 0 ? `${item.value} missing` : 'Complete'}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             <div className="mt-3 pt-3 border-t border-slate-700/30 flex justify-between items-center">
-              <span className="text-slate-400 text-sm">Total Missing Fields:</span>
+              <span className="text-slate-400 text-sm">Application Status:</span>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                totalMissingFields > 10 ? 'bg-red-500/20 text-red-400' : 
-                totalMissingFields > 5 ? 'bg-amber-500/20 text-amber-400' : 
-                'bg-green-500/20 text-green-400'
+                // Count documents that haven't been uploaded
+                (safeStats.N_A_r === -1 ? 1 : 0) +
+                (safeStats.N_A_rl === -1 ? 1 : 0) +
+                (safeStats.N_A_ar === -1 ? 1 : 0) +
+                (safeStats.N_A_p === -1 ? 1 : 0) +
+                (safeStats.N_A_ss === -1 ? 1 : 0) +
+                (safeStats.N_A_pm === -1 ? 1 : 0) > 3
+                  ? 'bg-red-500/20 text-red-400' 
+                  : (safeStats.N_A_r === -1 ? 1 : 0) +
+                    (safeStats.N_A_rl === -1 ? 1 : 0) +
+                    (safeStats.N_A_ar === -1 ? 1 : 0) +
+                    (safeStats.N_A_p === -1 ? 1 : 0) +
+                    (safeStats.N_A_ss === -1 ? 1 : 0) +
+                    (safeStats.N_A_pm === -1 ? 1 : 0) > 0
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : 'bg-green-500/20 text-green-400'
               }`}>
-                {totalMissingFields}
+                {(safeStats.N_A_r === -1 ? 1 : 0) +
+                 (safeStats.N_A_rl === -1 ? 1 : 0) +
+                 (safeStats.N_A_ar === -1 ? 1 : 0) +
+                 (safeStats.N_A_p === -1 ? 1 : 0) +
+                 (safeStats.N_A_ss === -1 ? 1 : 0) +
+                 (safeStats.N_A_pm === -1 ? 1 : 0) > 3
+                   ? 'Missing Documents' 
+                   : (safeStats.N_A_r === -1 ? 1 : 0) +
+                     (safeStats.N_A_rl === -1 ? 1 : 0) +
+                     (safeStats.N_A_ar === -1 ? 1 : 0) +
+                     (safeStats.N_A_p === -1 ? 1 : 0) +
+                     (safeStats.N_A_ss === -1 ? 1 : 0) +
+                     (safeStats.N_A_pm === -1 ? 1 : 0) > 0
+                     ? 'Documents Incomplete' 
+                     : safeStats.percent_filled < 100 ? 'Fields Incomplete' : 'Application Complete'}
               </span>
             </div>
           </div>
@@ -654,7 +726,8 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                   </svg>
                 ),
-                status: safeStats.N_A_ar > 3 ? 'critical' : safeStats.N_A_ar > 0 ? 'warning' : 'complete'
+                missingValue: safeStats.N_A_ar === undefined ? -1 : safeStats.N_A_ar,
+                status: safeStats.N_A_ar === -1 || safeStats.N_A_ar === undefined ? 'not-uploaded' : 'uploaded'
               },
               {
                 type: 'publications',
@@ -665,7 +738,8 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 ),
-                status: safeStats.N_A_p > 3 ? 'critical' : safeStats.N_A_p > 0 ? 'warning' : 'complete'
+                missingValue: safeStats.N_A_p === undefined ? -1 : safeStats.N_A_p,
+                status: safeStats.N_A_p === -1 || safeStats.N_A_p === undefined ? 'not-uploaded' : 'uploaded'
               },
               {
                 type: 'recommendation',
@@ -676,7 +750,8 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 ),
-                status: safeStats.N_A_rl > 3 ? 'critical' : safeStats.N_A_rl > 0 ? 'warning' : 'complete'
+                missingValue: safeStats.N_A_rl === undefined ? -1 : safeStats.N_A_rl,
+                status: safeStats.N_A_rl === -1 || safeStats.N_A_rl === undefined ? 'not-uploaded' : 'uploaded'
               },
               {
                 type: 'resume',
@@ -687,7 +762,8 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 ),
-                status: safeStats.N_A_r > 3 ? 'critical' : safeStats.N_A_r > 0 ? 'warning' : 'complete'
+                missingValue: safeStats.N_A_r === undefined ? -1 : safeStats.N_A_r,
+                status: safeStats.N_A_r === -1 || safeStats.N_A_r === undefined ? 'not-uploaded' : 'uploaded'
               },
               {
                 type: 'salary',
@@ -698,7 +774,8 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 ),
-                status: safeStats.N_A_ss > 3 ? 'critical' : safeStats.N_A_ss > 0 ? 'warning' : 'complete'
+                missingValue: safeStats.N_A_ss === undefined ? -1 : safeStats.N_A_ss,
+                status: safeStats.N_A_ss === -1 || safeStats.N_A_ss === undefined ? 'not-uploaded' : 'uploaded'
               },
               {
                 type: 'membership',
@@ -709,60 +786,98 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 ),
-                status: safeStats.N_A_pm > 3 ? 'critical' : safeStats.N_A_pm > 0 ? 'warning' : 'complete'
+                missingValue: safeStats.N_A_pm === undefined ? -1 : safeStats.N_A_pm,
+                status: safeStats.N_A_pm === -1 || safeStats.N_A_pm === undefined ? 'not-uploaded' : 'uploaded'
               }
-            ].map((doc) => (
+            ].map((doc) => {
+              const isNotUploaded = doc.status === 'not-uploaded';
+              const isUploaded = doc.status === 'uploaded';
+              
+              // Determine completion status based on missing values
+              let completionStatus = 'complete';
+              let statusLabel = 'Complete';
+              
+              if (isUploaded && doc.missingValue > 0) {
+                if (doc.missingValue > 5) {
+                  completionStatus = 'high-missing';
+                  statusLabel = 'Incomplete';
+                } else if (doc.missingValue > 2) {
+                  completionStatus = 'medium-missing';
+                  statusLabel = 'Partially Complete';
+                } else {
+                  completionStatus = 'low-missing';
+                  statusLabel = 'Mostly Complete';
+                }
+              }
+              
+              return (
               <div 
                 key={doc.type}
                 className={`border rounded-lg p-4 transition-all duration-300 hover:shadow-md ${
-                  doc.status === 'critical' 
+                  isNotUploaded
                     ? 'bg-red-900/20 border-red-800/30 hover:border-red-500/50' 
-                    : doc.status === 'warning'
-                      ? 'bg-amber-900/20 border-amber-800/30 hover:border-amber-500/50'
-                      : 'bg-green-900/20 border-green-800/30 hover:border-green-500/50'
+                    : completionStatus === 'high-missing'
+                      ? 'bg-red-900/20 border-red-800/30 hover:border-red-500/50'
+                      : completionStatus === 'medium-missing'
+                        ? 'bg-amber-900/20 border-amber-800/30 hover:border-amber-500/50'
+                        : 'bg-green-900/20 border-green-800/30 hover:border-green-500/50'
                 }`}
               >
                 <div className="flex items-start mb-3">
                   <div className={`flex-shrink-0 rounded-full p-2 mr-3 ${
-                    doc.status === 'critical' 
+                    isNotUploaded
                       ? 'bg-red-500/20 text-red-400' 
-                      : doc.status === 'warning'
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-green-500/20 text-green-400'
+                      : completionStatus === 'high-missing'
+                        ? 'bg-red-500/20 text-red-400'
+                        : completionStatus === 'medium-missing'
+                          ? 'bg-amber-500/20 text-amber-400'
+                          : 'bg-green-500/20 text-green-400'
                   }`}>
                     {doc.icon}
-              </div>
+                  </div>
                   <div>
                     <h5 className={`font-medium ${
-                      doc.status === 'critical' 
+                      isNotUploaded
                         ? 'text-red-300' 
-                        : doc.status === 'warning'
-                          ? 'text-amber-300'
-                          : 'text-green-300'
-                    }`}>
+                        : completionStatus === 'high-missing'
+                          ? 'text-red-300'
+                          : completionStatus === 'medium-missing'
+                            ? 'text-amber-300'
+                            : 'text-green-300'
+                    } flex items-center`}>
                       {doc.label}
+                      <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                        isNotUploaded
+                          ? 'bg-red-500/30 text-red-200' 
+                          : completionStatus === 'high-missing'
+                            ? 'bg-red-500/30 text-red-200'
+                            : completionStatus === 'medium-missing'
+                              ? 'bg-amber-500/30 text-amber-200'
+                              : 'bg-green-500/30 text-green-200'
+                      }`}>
+                        {isNotUploaded 
+                          ? 'Not Uploaded'
+                          : statusLabel
+                        }
+                      </span>
                     </h5>
                     <p className="text-slate-400 text-sm mt-1">{doc.description}</p>
-            </div>
-        </div>
+                  </div>
+                </div>
                 
                 <label 
                   className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
-                    doc.status === 'critical' 
+                    isNotUploaded
                       ? 'border-red-700/50 hover:bg-red-900/30' 
-                      : doc.status === 'warning'
-                        ? 'border-amber-700/50 hover:bg-amber-900/30'
-                        : 'border-green-700/50 hover:bg-green-900/30'
+                      : 'border-green-700/50 hover:bg-green-900/30'
                   }`}
                 >
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <svg 
                       className={`w-8 h-8 mb-3 ${
-                        doc.status === 'critical' 
+                        isNotUploaded
                           ? 'text-red-500' 
-                          : doc.status === 'warning'
-                            ? 'text-amber-500'
-                            : 'text-green-500'
+                          : 'text-green-500'
                       }`} 
                       fill="none" 
                       stroke="currentColor" 
@@ -787,16 +902,37 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   />
                 </label>
                 
-                {doc.status === 'complete' && (
-                  <div className="flex items-center justify-center mt-3 text-green-400 bg-green-900/20 rounded-lg p-2">
-                    <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm">Complete</span>
+                {isUploaded && (
+                  <div className={`flex justify-center mt-3 rounded-lg p-2 ${
+                    completionStatus === 'high-missing'
+                      ? 'text-red-400 bg-red-900/20'
+                      : completionStatus === 'medium-missing'
+                        ? 'text-amber-400 bg-amber-900/20'
+                        : 'text-green-400 bg-green-900/20'
+                  }`}>
+                    {completionStatus === 'complete' ? (
+                      <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                    <span className="text-sm font-medium">
+                      {completionStatus === 'complete' 
+                        ? 'Document Complete' 
+                        : completionStatus === 'low-missing'
+                          ? 'Document Mostly Complete'
+                          : completionStatus === 'medium-missing'
+                            ? 'Document Needs More Information'
+                            : 'Document Incomplete'}
+                    </span>
                   </div>
                 )}
               </div>
-            ))}
+            );
+          })}
           </div>
           
           <div className="flex justify-center mt-6">
@@ -917,9 +1053,32 @@ function LoadingScreen() {
   );
 }
 
+// Helper function to create default field stats based on application score
+const createDefaultFieldStats = (score: number): FieldStats => {
+  return {
+    total_fields: 100,
+    user_info_filled: score * 10,
+    percent_filled: score * 10,
+    N_A_per: score < 10 ? 1 : 0,
+    N_A_r: score < 9 ? 1 : 0,
+    N_A_rl: score < 8 ? 1 : 0,
+    N_A_ar: score < 7 ? 1 : 0,
+    N_A_p: score < 6 ? 1 : 0,
+    N_A_ss: score < 5 ? 1 : 0,
+    N_A_pm: score < 4 ? 1 : 0,
+    na_extraordinary: score < 10 ? 3 : 0,
+    na_recognition: score < 9 ? 3 : 0,
+    na_publications: score < 8 ? 3 : 0,
+    na_leadership: score < 7 ? 3 : 0,
+    na_contributions: score < 6 ? 3 : 0,
+    na_salary: score < 5 ? 3 : 0,
+    na_success: score < 4 ? 3 : 0
+  };
+};
+
 export default function DocumentReview() {
   const router = useRouter();
-  const { userId, processed } = router.query;
+  const { userId, processed, id } = router.query;
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [parsedSummary, setParsedSummary] = useState<ParsedSummary>({
@@ -959,6 +1118,7 @@ export default function DocumentReview() {
   ]);
   const [documentSummaries, setDocumentSummaries] = useState<DocumentSummaries>({});
   const [currentDocIndex, setCurrentDocIndex] = useState(0);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
   
   // Default mock stats to use when no data is available
   const defaultStats: FieldStats = {
@@ -994,13 +1154,19 @@ export default function DocumentReview() {
           return;
         }
         
-        const parsedData = JSON.parse(apiResponseStr);
-        console.log("Raw parsed API response data:", parsedData);
-        
-        // Ensure document_summaries exists
-        if (!parsedData.document_summaries) {
-          console.warn("API response missing document_summaries, creating empty object");
-          parsedData.document_summaries = {};
+        let parsedData;
+        try {
+          parsedData = JSON.parse(apiResponseStr);
+          console.log("Raw parsed API response data:", parsedData);
+          
+          // Ensure document_summaries exists
+          if (!parsedData.document_summaries) {
+            console.warn("API response missing document_summaries, creating empty object");
+            parsedData.document_summaries = {};
+          }
+        } catch (e) {
+          console.error("Error parsing API response data:", e);
+          parsedData = { document_summaries: {} };
         }
         
         // Ensure each document summary has the necessary structure
@@ -1226,111 +1392,79 @@ export default function DocumentReview() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        
-        // Get current user
         const { data: { user } } = await supabase.auth.getUser();
+        
         if (!user) {
-          throw new Error('No authenticated user found');
+          console.error('No authenticated user found');
+          router.push('/auth');
+          return;
         }
         
-        // Get documents from storage
-        const { data: files, error: listError } = await supabase.storage
-          .from('documents')
-          .list(`${user.id}`);
+        // If we have an application ID, fetch documents for that specific application
+        if (id && typeof id === 'string') {
+          console.log(`Fetching documents for application ID: ${id}`);
           
-        if (listError) {
-          throw listError;
-        }
-        
-        // Set the local O1 form path
-        console.log("Setting local O1 form path...");
-        setFilledPdfUrl('/data/o1-form-template-cleaned-filled.pdf');
-        
-        // Process files
-        const docs: DocumentInfo[] = [];
-        for (const file of files) {
-          // Skip the filled O1 form in the document list
-          if (file.name === 'filled-o1-form.pdf' || file.name === 'o1-form-template-cleaned-filled.pdf') continue;
-          
-          const docType = file.name.split('.')[0];
-          const { data: urlData, error: urlError } = await supabase.storage
-          .from('documents')
-            .createSignedUrl(`${user.id}/${file.name}`, 3600);
+          // Fetch files from the application-specific path in storage
+          const { data: files, error } = await supabase.storage
+            .from('documents')
+            .list(`${user.id}/applications/${id}`);
             
-          if (urlError) {
-            console.error(`Error getting URL for ${file.name}:`, urlError);
-            continue;
+          if (error) {
+            console.error('Error fetching files:', error);
+            setIsLoading(false);
+            return;
           }
           
-          const summary = documentSummaries[docType]?.summary || '';
-          
-          docs.push({
-              fileName: file.name,
-            fileUrl: urlData.signedUrl,
-            uploadedAt: file.created_at,
-            fileType: docType,
-            summary
-          });
-        }
-        
-        setDocuments(docs);
-        
-        // Here is the critical part: Directly initialize a document and its summary
-        // First check if we have API response data
-        if (apiResponseData && apiResponseData.document_summaries) {
-          console.log("Found API response data:", apiResponseData);
-          
-          // Find a document with content
-          const apiDocTypes = Object.keys(apiResponseData.document_summaries);
-          for (const docType of apiDocTypes) {
-            const apiSummary = apiResponseData.document_summaries[docType];
-            const hasContent = (
-              Array.isArray(apiSummary.strengths) && apiSummary.strengths.length > 0 ||
-              Array.isArray(apiSummary.weaknesses) && apiSummary.weaknesses.length > 0 ||
-              Array.isArray(apiSummary.recommendations) && apiSummary.recommendations.length > 0
-            );
+          if (files && files.length > 0) {
+            // Process document folders by docType
+            const documentsByType: DocumentInfo[] = [];
             
-            if (hasContent) {
-              console.log(`Found API document with content: ${docType}`);
-              
-              // Set it as selected document
-              setSelectedDoc(docType);
-              
-              // Directly initialize parsed summary
-              const directSummary: ParsedSummary = {
-                strengths: Array.isArray(apiSummary.strengths) ? [...apiSummary.strengths] : [],
-                weaknesses: Array.isArray(apiSummary.weaknesses) ? [...apiSummary.weaknesses] : [],
-                recommendations: Array.isArray(apiSummary.recommendations) ? [...apiSummary.recommendations] : [],
-                hasAttemptedReparse: true
-              };
-              
-              console.log("Setting parsed summary directly:", directSummary);
-              setParsedSummary(directSummary);
-              break; // Found one document, stop searching
+            // For each docType folder
+            for (const folder of files) {
+              if (folder.name && !folder.name.includes('.')) { // It's a folder, not a file
+                const { data: docFiles, error: docError } = await supabase.storage
+                  .from('documents')
+                  .list(`${user.id}/applications/${id}/${folder.name}`);
+                  
+                if (docError) {
+                  console.error(`Error fetching files for ${folder.name}:`, docError);
+                  continue;
+                }
+                
+                if (docFiles && docFiles.length > 0) {
+                  for (const file of docFiles) {
+                    const fileUrl = supabase.storage.from('documents')
+                      .getPublicUrl(`${user.id}/applications/${id}/${folder.name}/${file.name}`).data.publicUrl;
+                      
+                    documentsByType.push({
+                      fileName: file.name,
+                      fileUrl,
+                      uploadedAt: file.created_at || new Date().toISOString(),
+                      fileType: folder.name,
+                    });
+                  }
+                }
+              }
             }
+            
+            setDocuments(documentsByType);
           }
         }
-        // Fall back to default document selection if no API data
-        else if (docs.length > 0) {
-          setSelectedDoc(docs[0].fileType);
-          if (docs[0].summary) {
-            setParsedSummary(parseSummary(docs[0].summary));
-          }
+        // If we don't have an application ID but have processed flag, use localStorage data
+        else if (processed === 'true') {
+          // Use existing localStorage approach
+          // ... existing code for localStorage retrieval ...
         }
-        
       } catch (error) {
-        console.error('Error fetching data:', error);
-        alert('Error loading your documents. Please try again.');
+        console.error('Error in fetchData:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
-    if (userId) {
-      fetchData();
-    }
-  }, [userId, apiResponseData, documentSummaries]);
-
+    
+    fetchData();
+  }, [router, userId, processed, id]);
+  
   // Update parsed summary when selected document changes
   useEffect(() => {
     if (selectedDoc && documentSummaries[selectedDoc]) {
@@ -1579,6 +1713,315 @@ export default function DocumentReview() {
     }
   }, []);
 
+  // Save application data to Supabase
+  const saveApplicationToSupabase = async () => {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user found');
+        return;
+      }
+
+      // Calculate application score
+      const applicationScore = apiResponseData?.completion_score || 
+        (fieldStats ? Math.round(fieldStats.percent_filled / 10) : 0);
+      
+      // Create a summary from document summaries
+      let applicationSummary = '';
+      if (Object.keys(documentSummaries).length > 0) {
+        const firstDocType = Object.keys(documentSummaries)[0];
+        const firstDocSummary = documentSummaries[firstDocType];
+        applicationSummary = firstDocSummary.summary || 'No summary available';
+      }
+
+      // Prepare application data
+      const applicationData = {
+        user_id: user.id,
+        status: 'in_progress',
+        score: applicationScore,
+        summary: applicationSummary,
+        document_count: Object.keys(documentSummaries).length,
+        last_updated: new Date().toISOString()
+      };
+
+      // If we already have an application ID, update the existing application
+      if (applicationId) {
+        const { error } = await supabase
+          .from('applications')
+          .update(applicationData)
+          .eq('id', applicationId);
+        
+        if (error) {
+          console.error('Error updating application:', error);
+          return;
+        }
+        
+        // Also save the metadata (document summaries and field stats)
+        const metadataToSave = {
+          application_id: applicationId,
+          document_summaries: JSON.stringify(documentSummaries),
+          field_stats: fieldStats ? JSON.stringify(fieldStats) : JSON.stringify(createDefaultFieldStats(applicationScore)),
+          api_response_data: apiResponseData ? JSON.stringify(apiResponseData) : null,
+          updated_at: new Date().toISOString()
+        };
+        
+        // Check if metadata already exists
+        const { data: existingMetadata } = await supabase
+          .from('application_metadata')
+          .select('id')
+          .eq('application_id', applicationId)
+          .single();
+          
+        if (existingMetadata) {
+          // Update existing metadata
+          const { error: metaError } = await supabase
+            .from('application_metadata')
+            .update(metadataToSave)
+            .eq('application_id', applicationId);
+            
+          if (metaError) {
+            console.error('Error updating application metadata:', metaError);
+          } else {
+            console.log('Application metadata updated successfully');
+          }
+        } else {
+          // Insert new metadata
+          const { error: metaError } = await supabase
+            .from('application_metadata')
+            .insert([metadataToSave]);
+            
+          if (metaError) {
+            console.error('Error creating application metadata:', metaError);
+          } else {
+            console.log('Application metadata created successfully');
+          }
+        }
+        
+        console.log('Application updated successfully');
+      } else {
+        // Otherwise, create a new application
+        const { data, error } = await supabase
+          .from('applications')
+          .insert([applicationData])
+          .select();
+        
+        if (error) {
+          console.error('Error creating application:', error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          const newAppId = data[0].id;
+          setApplicationId(newAppId);
+          
+          // Save metadata for the new application
+          const metadataToSave = {
+            application_id: newAppId,
+            document_summaries: JSON.stringify(documentSummaries),
+            field_stats: fieldStats ? JSON.stringify(fieldStats) : JSON.stringify(createDefaultFieldStats(applicationScore)),
+            api_response_data: apiResponseData ? JSON.stringify(apiResponseData) : null,
+            updated_at: new Date().toISOString()
+          };
+          
+          const { error: metaError } = await supabase
+            .from('application_metadata')
+            .insert([metadataToSave]);
+            
+          if (metaError) {
+            console.error('Error creating application metadata:', metaError);
+          } else {
+            console.log('Application metadata created successfully');
+          }
+          
+          console.log('New application created successfully');
+        }
+      }
+    } catch (err) {
+      console.error('Error saving application to Supabase:', err);
+    }
+  };
+
+  // Call saveApplicationToSupabase when document processing is complete
+  useEffect(() => {
+    if (apiResponseData && documentSummaries && Object.keys(documentSummaries).length > 0) {
+      saveApplicationToSupabase();
+    }
+  }, [apiResponseData, documentSummaries, fieldStats, applicationId]);
+
+  // Check for application ID in URL and load existing application data
+  useEffect(() => {
+    const loadExistingApplication = async () => {
+      if (id && typeof id === 'string') {
+        try {
+          setIsLoading(true);
+          setApplicationId(id);
+          
+          // Get current user
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            console.error('No authenticated user found');
+            router.push('/auth');
+            return;
+          }
+          
+          // Fetch the application data
+          const { data: appData, error: appError } = await supabase
+            .from('applications')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+          
+          if (appError) {
+            console.error('Error fetching application:', appError);
+            setIsLoading(false);
+            return;
+          }
+          
+          if (appData) {
+            console.log('Loaded existing application:', appData);
+            
+            // Fetch the application's documents and summaries
+            const { data: files, error: filesError } = await supabase.storage
+              .from('documents')
+              .list(`${user.id}/applications/${id}`);
+              
+            if (filesError) {
+              console.error('Error fetching files:', filesError);
+              setIsLoading(false);
+              return;
+            }
+            
+            if (files && files.length > 0) {
+              // Process documents
+              const documentsByType: DocumentInfo[] = [];
+              const summariesByType: DocumentSummaries = {};
+              
+              // For each docType folder
+              for (const folder of files) {
+                if (folder.name && !folder.name.includes('.')) { // It's a folder, not a file
+                  const { data: docFiles, error: docError } = await supabase.storage
+                    .from('documents')
+                    .list(`${user.id}/applications/${id}/${folder.name}`);
+                    
+                  if (docError) {
+                    console.error(`Error fetching files for ${folder.name}:`, docError);
+                    continue;
+                  }
+                  
+                  if (docFiles && docFiles.length > 0) {
+                    // Create a default document summary for this document type
+                    if (!summariesByType[folder.name]) {
+                      summariesByType[folder.name] = {
+                        pages: docFiles.length, // Use number of files as page count
+                        summary: `${folder.name.charAt(0).toUpperCase() + folder.name.slice(1)} document`,
+                        strengths: [],
+                        weaknesses: [],
+                        recommendations: []
+                      };
+                    }
+                    
+                    for (const file of docFiles) {
+                      const fileUrl = supabase.storage.from('documents')
+                        .getPublicUrl(`${user.id}/applications/${id}/${folder.name}/${file.name}`).data.publicUrl;
+                        
+                      documentsByType.push({
+                        fileName: file.name,
+                        fileUrl,
+                        uploadedAt: file.created_at || new Date().toISOString(),
+                        fileType: folder.name,
+                      });
+                    }
+                  }
+                }
+              }
+              
+              // Set documents and document summaries
+              setDocuments(documentsByType);
+              
+              // Fetch document summaries from metadata if available
+              const { data: metaData, error: metaError } = await supabase
+                .from('application_metadata')
+                .select('*')
+                .eq('application_id', id)
+                .single();
+                
+              if (!metaError && metaData && metaData.document_summaries) {
+                try {
+                  const parsedSummaries = JSON.parse(metaData.document_summaries);
+                  if (parsedSummaries && typeof parsedSummaries === 'object') {
+                    console.log('Loaded document summaries from metadata:', parsedSummaries);
+                    setDocumentSummaries(parsedSummaries);
+                    
+                    // Expand the document-summaries section
+                    setExpandedSections(prev => ({
+                      ...prev,
+                      'document-summaries': true
+                    }));
+                    
+                    // Set selected document to first document if available
+                    if (Object.keys(parsedSummaries).length > 0) {
+                      setSelectedDoc(Object.keys(parsedSummaries)[0]);
+                      setCurrentDocIndex(0);
+                    }
+                  } else {
+                    console.log('No valid document summaries found in metadata, using default summaries');
+                    setDocumentSummaries(summariesByType);
+                  }
+                } catch (parseErr) {
+                  console.error('Error parsing document summaries:', parseErr);
+                  setDocumentSummaries(summariesByType);
+                }
+              } else {
+                console.log('No metadata found, using default document summaries');
+                setDocumentSummaries(summariesByType);
+              }
+              
+              // Set field stats from metadata if available
+              if (metaData && metaData.field_stats) {
+                try {
+                  const parsedStats = JSON.parse(metaData.field_stats);
+                  if (parsedStats && typeof parsedStats === 'object') {
+                    setFieldStats(parsedStats);
+                  }
+                } catch (parseErr) {
+                  console.error('Error parsing field stats:', parseErr);
+                  // Create default field stats based on application score if parsing fails
+                  const defaultStats = createDefaultFieldStats(appData.score);
+                  setFieldStats(defaultStats);
+                }
+              } else {
+                // Create default field stats based on application score if no metadata
+                const defaultStats = createDefaultFieldStats(appData.score);
+                setFieldStats(defaultStats);
+              }
+              
+              // Try to load API response data from metadata
+              if (metaData && metaData.api_response_data) {
+                try {
+                  const parsedApiData = JSON.parse(metaData.api_response_data);
+                  if (parsedApiData && typeof parsedApiData === 'object') {
+                    console.log('Loaded API response data from metadata');
+                    setApiResponseData(parsedApiData);
+                  }
+                } catch (parseErr) {
+                  console.error('Error parsing API response data:', parseErr);
+                }
+              }
+            }
+          }
+        } catch (loadErr) {
+          console.error('Error loading existing application:', loadErr);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    loadExistingApplication();
+  }, [id, router]);
+
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <Head>
@@ -1777,6 +2220,9 @@ export default function DocumentReview() {
                           <span className="text-primary-400 font-medium">
                             {currentDocIndex + 1} / {Object.keys(documentSummaries).length}
                           </span>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Click document names below to view details
+                          </p>
                         </div>
                         
                         <button 
@@ -1790,6 +2236,26 @@ export default function DocumentReview() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </button>
+                      </div>
+                      
+                      {/* Document list navigation */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {Object.keys(documentSummaries).map((docType, idx) => (
+                          <button
+                            key={docType}
+                            onClick={() => {
+                              setSelectedDoc(docType);
+                              setCurrentDocIndex(idx);
+                            }}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                              selectedDoc === docType || idx === currentDocIndex
+                                ? 'bg-primary-500 text-white'
+                                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                            }`}
+                          >
+                            {docType.charAt(0).toUpperCase() + docType.slice(1)}
+                          </button>
+                        ))}
                       </div>
                       
                       {/* Document display */}
@@ -1913,7 +2379,7 @@ export default function DocumentReview() {
                       </h4>
                       <p className="text-slate-300 mb-4">Get personalized guidance from an experienced immigration attorney who specializes in O-1 visas.</p>
                       <button 
-                          onClick={() => router.push('/lawyer-search')}
+                        onClick={() => router.push('/lawyer-search')}
                         className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"
                       >
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1923,22 +2389,24 @@ export default function DocumentReview() {
                       </button>
                     </div>
                     
+            
+
                     <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/30 hover:border-primary-500/30 transition-colors duration-300 group">
                       <h4 className="text-lg font-medium text-white mb-4 flex items-center">
                         <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
-                          View Portfolio
+                        Application Portfolio
                       </h4>
-                        <p className="text-slate-300 mb-4">Showcase your achievements and expertise to potential employers and immigration officers.</p>
+                      <p className="text-slate-300 mb-4">View and manage all your O-1 visa applications in one place. Track progress, scores, and key metrics.</p>
                       <button 
-                          onClick={() => router.push('/document-collection')}
-                        className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"
+                        onClick={() => router.push('/application-portfolio')}
+                        className="w-full bg-gradient-to-r from-primary-500/20 to-purple-500/20 hover:from-primary-500/30 hover:to-purple-500/30 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center border border-primary-500/30 hover:border-primary-500/50 group-hover:shadow-lg"
                       >
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                          Go to Portfolio
+                        View Applications
                       </button>
                     </div>
                   </div>

@@ -32,6 +32,18 @@ interface UploadedDocument {
   docType: string;
   filename: string;
   uploadedAt: Date;
+  application_id?: string;
+}
+
+// New interface for application data
+interface Application {
+  id: string;
+  created_at: string;
+  status: 'in_progress' | 'submitted' | 'approved' | 'rejected';
+  score: number;
+  summary: string;
+  document_count: number;
+  last_updated: string;
 }
 
 interface PersonalInfo {
@@ -184,6 +196,62 @@ function extractSection(analysis: string, sectionName: string): string[] {
     .map(item => item.substring(1).trim());
 }
 
+// Function to handle file uploads
+async function uploadFileToStorage(docType: string, file: File, applicationId?: string | null) {
+  try {
+    // Get the authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('No authenticated user found');
+    }
+    
+    // Check if file is PDF
+    if (file.type !== 'application/pdf') {
+      throw new Error('Only PDF files are supported');
+    }
+    
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('File size should not exceed 10MB');
+    }
+    
+    // Generate a unique file ID
+    const fileId = Date.now().toString();
+    
+    // Create storage path
+    // documents/[user_id]/applications/[application_id]/[document_type]/[files]
+    let storagePath;
+    if (applicationId) {
+      storagePath = `${user.id}/applications/${applicationId}/${docType}/${fileId}-${file.name}`;
+    } else {
+      storagePath = `${user.id}/${docType}/${fileId}-${file.name}`;
+    }
+    
+    console.log(`Uploading file to storage path: ${storagePath}`);
+    
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(storagePath, file);
+      
+    if (uploadError) {
+      throw new Error(`Failed to upload file: ${uploadError.message}`);
+    }
+    
+    // Update local state
+    return {
+      id: fileId,
+      docType,
+      filename: file.name,
+      uploadedAt: new Date(),
+      application_id: applicationId || undefined
+    };
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw error;
+  }
+}
+
 function LoadingScreen() {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
@@ -200,6 +268,7 @@ function LoadingScreen() {
 
 export default function DocumentCollection() {
   const router = useRouter();
+  const { applicationId } = router.query;
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -216,6 +285,11 @@ export default function DocumentCollection() {
   // Add these refs for Google Maps autocomplete
   const addressInputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  
+  // Add state for existing applications
+  const [existingApplications, setExistingApplications] = useState<Application[]>([]);
+  const [showApplicationSelector, setShowApplicationSelector] = useState(false);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   
   const documentTypes: DocumentType[] = [
     {
@@ -274,6 +348,7 @@ export default function DocumentCollection() {
     }
   ];
 
+  // Initial user check
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user }, error } = await supabase.auth.getUser();
@@ -282,69 +357,171 @@ export default function DocumentCollection() {
       if (error || !user) {
         console.error('No authenticated user found:', error);
         router.push('/auth');
+        return;
       }
+      
+      // Check if we already have an applicationId
+      if (applicationId) {
+        setSelectedApplicationId(applicationId as string);
+        // If we have an applicationId, we'll load specific documents below
+      } else {
+        // Otherwise, show the application selector
+        setShowApplicationSelector(true);
+      }
+      
+      // Fetch applications from Supabase
+      const { data: applications, error: appError } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (appError) {
+        console.error('Error loading applications:', appError);
+      } else if (applications) {
+        setExistingApplications(applications);
+      }
+      
       setIsLoading(false);
     };
 
     checkUser();
-  }, []);
-
-  const handleFileUpload = async (docType: string, file: File) => {
+  }, [applicationId, router]);
+  
+  // Add function to load documents for a specific application
+  useEffect(() => {
+    const loadApplicationDocuments = async () => {
+      if (!applicationId && !selectedApplicationId) return;
+      
+      const appId = (applicationId || selectedApplicationId) as string;
+      if (!appId) return;
+      
+      try {
+        setIsLoading(true);
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('No authenticated user found');
+          return;
+        }
+        
+        // Fetch files from the application-specific path in storage
+        // The correct path structure is:
+        // documents/[user_id]/applications/[application_id]/[document_type]/[files]
+        const { data: docTypes, error: docTypesError } = await supabase.storage
+          .from('documents')
+          .list(`${user.id}/applications/${appId}`);
+          
+        if (docTypesError) {
+          console.error('Error fetching application folders:', docTypesError);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!docTypes || docTypes.length === 0) {
+          // No documents yet
+          setUploadedDocs([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Collect all documents from all document type folders
+        const allDocuments: UploadedDocument[] = [];
+        
+        for (const folder of docTypes) {
+          if (folder.name && !folder.name.includes('.')) { // It's a folder, not a file
+            const docType = folder.name;
+            
+            const { data: files, error: filesError } = await supabase.storage
+              .from('documents')
+              .list(`${user.id}/applications/${appId}/${docType}`);
+              
+            if (filesError) {
+              console.error(`Error fetching files for ${docType}:`, filesError);
+              continue;
+            }
+            
+            if (files && files.length > 0) {
+              for (const fileObj of files) {
+                // Extract the original fileId from the filename (assuming format: fileId-originalFilename)
+                const fileIdMatch = fileObj.name.match(/^([^-]+)-(.+)$/);
+                const fileId = fileIdMatch ? fileIdMatch[1] : Date.now().toString();
+                const originalFilename = fileIdMatch ? fileIdMatch[2] : fileObj.name;
+                
+                allDocuments.push({
+                  id: fileId,
+                  docType: docType,
+                  filename: originalFilename,
+                  uploadedAt: new Date(fileObj.created_at || Date.now()),
+                  application_id: appId
+                });
+              }
+            }
+          }
+        }
+        
+        setUploadedDocs(allDocuments);
+      } catch (error) {
+        console.error('Error loading application documents:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (applicationId || selectedApplicationId) {
+      loadApplicationDocuments();
+    }
+  }, [applicationId, selectedApplicationId]);
+  
+  // Function to create a new application and redirect
+  const createNewApplication = async () => {
     try {
-      setError(null);
       setIsProcessing(true);
       
-      // Validate file type
-      if (!file.type.includes('pdf')) {
-        throw new Error('Please upload a PDF file');
-      }
-      
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        throw new Error('File size must be less than 10MB');
-      }
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('No authenticated user found');
       }
-
-      // Generate a unique ID for the file
-      const fileId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-      const filename = file.name;
       
-      // Upload file to Supabase storage with unique filename
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(`${user.id}/${docType}/${fileId}-${filename}`, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) {
-        throw new Error(`Failed to upload file: ${uploadError.message}`);
-      }
-
-      // Update local state with new document
-      const newDocument: UploadedDocument = {
-        id: fileId,
-        docType,
-        filename,
-        uploadedAt: new Date()
+      // Create a new empty application
+      const newApplication = {
+        user_id: user.id,
+        status: 'in_progress',
+        score: 0,
+        summary: 'New application',
+        document_count: 0,
+        last_updated: new Date().toISOString()
       };
       
-      setUploadedDocs(prev => [...prev, newDocument]);
+      // Insert into Supabase
+      const { data, error } = await supabase
+        .from('applications')
+        .insert([newApplication])
+        .select();
       
-      // Clear any previous errors
-      setError(null);
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        // Navigate to document collection with the new application ID
+        router.push(`/document-collection?applicationId=${data[0].id}`);
+      }
     } catch (error) {
-      console.error('Error uploading file:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred while uploading the file');
+      console.error('Error creating new application:', error);
+      setError('Failed to create a new application. Please try again.');
     } finally {
       setIsProcessing(false);
     }
   };
-
+  
+  // Function to select an existing application
+  const selectApplication = (appId: string) => {
+    setSelectedApplicationId(appId);
+    setShowApplicationSelector(false);
+    router.push(`/document-collection?applicationId=${appId}`);
+  };
+  
   // Helper to check if any documents of a specific type have been uploaded
   const hasDocType = (docType: string) => {
     return uploadedDocs.some(doc => doc.docType === docType);
@@ -365,10 +542,18 @@ export default function DocumentCollection() {
         throw new Error('No authenticated user found');
       }
       
+      // Use document's application_id if available
+      // documents/[user_id]/applications/[application_id]/[document_type]/[files]
+      const storagePath = docToRemove.application_id
+        ? `${user.id}/applications/${docToRemove.application_id}/${docToRemove.docType}/${docToRemove.id}-${docToRemove.filename}`
+        : `${user.id}/${docToRemove.docType}/${docToRemove.id}-${docToRemove.filename}`;
+      
+      console.log(`Deleting file from storage path: ${storagePath}`);
+      
       // Delete from Supabase storage
       const { error: deleteError } = await supabase.storage
         .from('documents')
-        .remove([`${user.id}/${docToRemove.docType}/${docToRemove.id}-${docToRemove.filename}`]);
+        .remove([storagePath]);
         
       if (deleteError) {
         throw new Error(`Failed to delete file: ${deleteError.message}`);
@@ -439,10 +624,22 @@ export default function DocumentCollection() {
       console.log('Submitting documents for processing:', documentsObject);
       console.log('Personal info:', personalInfo);
 
-      // Use replace instead of push to prevent back button from returning to this page
-      router.replace({
+      // Save documents to localStorage
+      const documentsToProcess = uploadedDocs.map(doc => ({
+        id: doc.id,
+        docType: doc.docType,
+        filename: doc.filename,
+        uploadedAt: doc.uploadedAt,
+        application_id: doc.application_id || applicationId || undefined
+      }));
+      
+      localStorage.setItem('uploadedDocuments', JSON.stringify(documentsToProcess));
+      
+      // Navigate to processing page with application id if available
+      const query = applicationId ? { documents: JSON.stringify(documentsToProcess), applicationId } : { documents: JSON.stringify(documentsToProcess) };
+      router.push({
         pathname: '/processing-documents',
-        query: { documents: JSON.stringify(documentsObject) }
+        query
       });
     } catch (error) {
       console.error('Error continuing to dashboard:', error);
@@ -495,6 +692,131 @@ export default function DocumentCollection() {
       // Clean up if needed
     };
   }, []);
+
+  // Add the missing handleFileUpload method inside the component
+  const handleFileUpload = async (docType: string, file: File) => {
+    try {
+      setIsProcessing(true);
+      setError(null);
+      
+      const appId = applicationId || selectedApplicationId;
+      const newDoc = await uploadFileToStorage(docType, file, appId as string);
+      
+      if (newDoc) {
+        setUploadedDocs(prev => [...prev, newDoc]);
+        
+        // If it's a resume document, try to generate a summary
+        if (docType === 'resume') {
+          try {
+            // Extract text from the PDF
+            const text = await extractTextFromPdf(file);
+            
+            // Generate summary using OpenAI
+            const summary = await generateSummary(text, docType);
+            
+            // Store the summary
+            setDocumentSummaries(prev => ({
+              ...prev,
+              [newDoc.id]: summary
+            }));
+          } catch (error) {
+            console.error('Error processing resume:', error);
+            // Don't block the upload if summary generation fails
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred while uploading the document');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Add the missing renderApplicationSelector function
+  const renderApplicationSelector = () => (
+    <div className="max-w-xl mx-auto pt-12 md:pt-24">
+      <div className="text-center mb-8 relative">
+        <h1 className="text-3xl font-bold gradient-text mb-2">Welcome to Prometheus</h1>
+        <p className="text-slate-300">
+          Let's get started with your O-1 visa application. You can create a new application or continue an existing one.
+        </p>
+      </div>
+
+      <div className="card p-6 w-full border-primary-500/30 mb-8">
+        <div className="flex flex-col items-center gap-6">
+          <div className="space-y-2 text-center">
+            <h2 className="text-xl font-semibold gradient-text">Your Applications</h2>
+            <p className="text-sm text-slate-400 max-w-lg mx-auto">
+              You can manage multiple visa applications separately. Each application has its own documents and status.
+            </p>
+          </div>
+          
+          {/* Create New Application Button */}
+          <button
+            onClick={createNewApplication}
+            disabled={isProcessing}
+            className={`gradient-button text-base px-6 py-3 w-full max-w-md ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {isProcessing ? 'Creating Application...' : 'Create New Application'}
+            {!isProcessing && (
+              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            )}
+            {isProcessing && (
+              <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin ml-2"></div>
+            )}
+          </button>
+          
+          {/* Existing Applications List */}
+          {existingApplications.length > 0 && (
+            <div className="w-full max-w-md">
+              <h3 className="text-md font-medium text-slate-300 mb-3">Or continue with an existing application:</h3>
+              <div className="space-y-3 mt-2">
+                {existingApplications.map(app => (
+                  <button
+                    key={app.id}
+                    onClick={() => selectApplication(app.id)}
+                    className="w-full bg-slate-800/70 hover:bg-slate-800 border border-slate-700/50 rounded-lg p-4 text-left transition-colors duration-200"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-slate-300">
+                            Application from {new Date(app.created_at).toLocaleDateString()}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            app.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
+                            app.status === 'submitted' ? 'bg-yellow-500/20 text-yellow-400' :
+                            app.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {app.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {app.document_count} document{app.document_count !== 1 ? 's' : ''} • 
+                          Last updated: {new Date(app.last_updated).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <svg className="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="text-center text-sm text-slate-500 max-w-lg mx-auto">
+        <p>Creating multiple applications allows you to prepare different visa petitions or explore various options without mixing your documents.</p>
+      </div>
+    </div>
+  );
 
   // Simplified resume-only view
   const renderSimpleUpload = () => (
@@ -674,16 +996,6 @@ export default function DocumentCollection() {
               {isProcessing && (
                 <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin ml-2"></div>
               )}
-            </button>
-            
-            <button
-              onClick={() => setShowAllDocuments(true)}
-              className="text-sm text-primary-400 hover:text-primary-300 transition-colors flex items-center justify-center mt-2"
-            >
-              <span>I have additional supporting documents</span>
-              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
             </button>
           </div>
         </div>
@@ -928,7 +1240,11 @@ export default function DocumentCollection() {
       <BackgroundEffects />
 
       <div className="min-h-screen bg-transparent p-6">
-        {showAllDocuments ? renderFullDocumentCollection() : renderSimpleUpload()}
+        {showApplicationSelector ? (
+          renderApplicationSelector()
+        ) : (
+          showAllDocuments ? renderFullDocumentCollection() : renderSimpleUpload()
+        )}
       </div>
     </div>
   );

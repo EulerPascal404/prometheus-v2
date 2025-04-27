@@ -7,7 +7,7 @@ import { BackgroundEffects } from '../components/BackgroundEffects';
 
 export default function ProcessingDocuments() {
   const router = useRouter();
-  const { documents } = router.query;
+  const { documents, applicationId } = router.query;
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState("Initializing...");
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
@@ -254,16 +254,23 @@ export default function ProcessingDocuments() {
           console.log('Making request with token:', accessToken.substring(0, 10) + '...');
           
           // Make the API call to the backend
+          const requestBody: any = {
+            user_id: user.id,
+            uploaded_documents: documentsObject
+          };
+
+          // Include application ID if available
+          if (applicationId) {
+            requestBody.application_id = applicationId;
+          }
+
           const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${accessToken}`
             },
-            body: JSON.stringify({
-              user_id: user.id,
-              uploaded_documents: documentsObject
-            })
+            body: JSON.stringify(requestBody)
           });
           
           console.log('Response status:', response.status);
@@ -294,14 +301,17 @@ export default function ProcessingDocuments() {
               pollInterval.current = null;
             }
             
+            // Include applicationId in the query if available
+            const query = { 
+              userId: user.id,
+              processed: 'true',
+              ...(applicationId ? { id: applicationId } : {})
+            };
+            
             // Use replace instead of push to prevent back button from returning to processing page
-            // Only pass minimal data in URL query params
             router.replace({
               pathname: '/document-review',
-              query: { 
-                userId: user.id,
-                processed: 'true'
-              }
+              query
             });
           } else {
             hasCalledApi.current = false; // Reset the flag on error
@@ -341,7 +351,7 @@ export default function ProcessingDocuments() {
         pollInterval.current = null;
       }
     };
-  }, [documents]);
+  }, [router, documents, applicationId]);
 
   const circumference = 2 * Math.PI * 76; // circle radius = 76
   const strokeDashoffset = circumference - (progress / 100) * circumference;
