@@ -1735,18 +1735,24 @@ export default function DocumentReview() {
         applicationSummary = firstDocSummary.summary || 'No summary available';
       }
 
-      // Prepare application data
+      // Prepare application data with document summaries and field stats directly included
       const applicationData = {
         user_id: user.id,
         status: 'in_progress',
         score: applicationScore,
         summary: applicationSummary,
         document_count: Object.keys(documentSummaries).length,
-        last_updated: new Date().toISOString()
+        last_updated: new Date().toISOString(),
+        // Store document summaries and field stats directly in the applications table
+        document_summaries: JSON.stringify(documentSummaries),
+        field_stats: fieldStats ? JSON.stringify(fieldStats) : JSON.stringify(createDefaultFieldStats(applicationScore))
       };
 
       // If we already have an application ID, update the existing application
       if (applicationId) {
+        console.log('Updating application with ID:', applicationId);
+        console.log('Application data:', applicationData);
+        
         const { error } = await supabase
           .from('applications')
           .update(applicationData)
@@ -1757,50 +1763,12 @@ export default function DocumentReview() {
           return;
         }
         
-        // Also save the metadata (document summaries and field stats)
-        const metadataToSave = {
-          application_id: applicationId,
-          document_summaries: JSON.stringify(documentSummaries),
-          field_stats: fieldStats ? JSON.stringify(fieldStats) : JSON.stringify(createDefaultFieldStats(applicationScore)),
-          api_response_data: apiResponseData ? JSON.stringify(apiResponseData) : null,
-          updated_at: new Date().toISOString()
-        };
-        
-        // Check if metadata already exists
-        const { data: existingMetadata } = await supabase
-          .from('application_metadata')
-          .select('id')
-          .eq('application_id', applicationId)
-          .single();
-          
-        if (existingMetadata) {
-          // Update existing metadata
-          const { error: metaError } = await supabase
-            .from('application_metadata')
-            .update(metadataToSave)
-            .eq('application_id', applicationId);
-            
-          if (metaError) {
-            console.error('Error updating application metadata:', metaError);
-          } else {
-            console.log('Application metadata updated successfully');
-          }
-        } else {
-          // Insert new metadata
-          const { error: metaError } = await supabase
-            .from('application_metadata')
-            .insert([metadataToSave]);
-            
-          if (metaError) {
-            console.error('Error creating application metadata:', metaError);
-          } else {
-            console.log('Application metadata created successfully');
-          }
-        }
-        
         console.log('Application updated successfully');
       } else {
         // Otherwise, create a new application
+        console.log('Creating new application');
+        console.log('Application data:', applicationData);
+        
         const { data, error } = await supabase
           .from('applications')
           .insert([applicationData])
@@ -1814,27 +1782,7 @@ export default function DocumentReview() {
         if (data && data.length > 0) {
           const newAppId = data[0].id;
           setApplicationId(newAppId);
-          
-          // Save metadata for the new application
-          const metadataToSave = {
-            application_id: newAppId,
-            document_summaries: JSON.stringify(documentSummaries),
-            field_stats: fieldStats ? JSON.stringify(fieldStats) : JSON.stringify(createDefaultFieldStats(applicationScore)),
-            api_response_data: apiResponseData ? JSON.stringify(apiResponseData) : null,
-            updated_at: new Date().toISOString()
-          };
-          
-          const { error: metaError } = await supabase
-            .from('application_metadata')
-            .insert([metadataToSave]);
-            
-          if (metaError) {
-            console.error('Error creating application metadata:', metaError);
-          } else {
-            console.log('Application metadata created successfully');
-          }
-          
-          console.log('New application created successfully');
+          console.log('New application created successfully with ID:', newAppId);
         }
       }
     } catch (err) {
@@ -1882,21 +1830,60 @@ export default function DocumentReview() {
           if (appData) {
             console.log('Loaded existing application:', appData);
             
-            // Fetch the application's documents and summaries
+            // Always expand the strength-analysis section even if no documents exist
+            setExpandedSections(prev => ({
+              ...prev,
+              'strength-analysis': true
+            }));
+            
+            // Parse document summaries from application data if available
+            if (appData.document_summaries) {
+              try {
+                const parsedSummaries = typeof appData.document_summaries === 'string' 
+                  ? JSON.parse(appData.document_summaries) 
+                  : appData.document_summaries;
+                
+                if (parsedSummaries && Object.keys(parsedSummaries).length > 0) {
+                  setDocumentSummaries(parsedSummaries);
+                  console.log('Loaded document summaries:', parsedSummaries);
+                  
+                  // Expand document-summaries section
+                  setExpandedSections(prev => ({
+                    ...prev,
+                    'document-summaries': true
+                  }));
+                }
+              } catch (error) {
+                console.error('Error parsing document summaries:', error);
+              }
+            }
+            
+            // Parse field stats from application data if available
+            if (appData.field_stats) {
+              try {
+                const parsedStats = typeof appData.field_stats === 'string' 
+                  ? JSON.parse(appData.field_stats) 
+                  : appData.field_stats;
+                
+                if (parsedStats) {
+                  setFieldStats(parsedStats);
+                  console.log('Loaded field stats:', parsedStats);
+                }
+              } catch (error) {
+                console.error('Error parsing field stats:', error);
+              }
+            }
+            
+            // Fetch the application's documents from storage
             const { data: files, error: filesError } = await supabase.storage
               .from('documents')
               .list(`${user.id}/applications/${id}`);
               
             if (filesError) {
               console.error('Error fetching files:', filesError);
-              setIsLoading(false);
-              return;
-            }
-            
-            if (files && files.length > 0) {
+            } else if (files && files.length > 0) {
               // Process documents
               const documentsByType: DocumentInfo[] = [];
-              const summariesByType: DocumentSummaries = {};
               
               // For each docType folder
               for (const folder of files) {
@@ -1911,17 +1898,6 @@ export default function DocumentReview() {
                   }
                   
                   if (docFiles && docFiles.length > 0) {
-                    // Create a default document summary for this document type
-                    if (!summariesByType[folder.name]) {
-                      summariesByType[folder.name] = {
-                        pages: docFiles.length, // Use number of files as page count
-                        summary: `${folder.name.charAt(0).toUpperCase() + folder.name.slice(1)} document`,
-                        strengths: [],
-                        weaknesses: [],
-                        recommendations: []
-                      };
-                    }
-                    
                     for (const file of docFiles) {
                       const fileUrl = supabase.storage.from('documents')
                         .getPublicUrl(`${user.id}/applications/${id}/${folder.name}/${file.name}`).data.publicUrl;
@@ -1937,77 +1913,13 @@ export default function DocumentReview() {
                 }
               }
               
-              // Set documents and document summaries
+              // Set documents and select first document if available
               setDocuments(documentsByType);
               
-              // Fetch document summaries from metadata if available
-              const { data: metaData, error: metaError } = await supabase
-                .from('application_metadata')
-                .select('*')
-                .eq('application_id', id)
-                .single();
-                
-              if (!metaError && metaData && metaData.document_summaries) {
-                try {
-                  const parsedSummaries = JSON.parse(metaData.document_summaries);
-                  if (parsedSummaries && typeof parsedSummaries === 'object') {
-                    console.log('Loaded document summaries from metadata:', parsedSummaries);
-                    setDocumentSummaries(parsedSummaries);
-                    
-                    // Expand the document-summaries section
-                    setExpandedSections(prev => ({
-                      ...prev,
-                      'document-summaries': true
-                    }));
-                    
-                    // Set selected document to first document if available
-                    if (Object.keys(parsedSummaries).length > 0) {
-                      setSelectedDoc(Object.keys(parsedSummaries)[0]);
-                      setCurrentDocIndex(0);
-                    }
-                  } else {
-                    console.log('No valid document summaries found in metadata, using default summaries');
-                    setDocumentSummaries(summariesByType);
-                  }
-                } catch (parseErr) {
-                  console.error('Error parsing document summaries:', parseErr);
-                  setDocumentSummaries(summariesByType);
-                }
-              } else {
-                console.log('No metadata found, using default document summaries');
-                setDocumentSummaries(summariesByType);
-              }
-              
-              // Set field stats from metadata if available
-              if (metaData && metaData.field_stats) {
-                try {
-                  const parsedStats = JSON.parse(metaData.field_stats);
-                  if (parsedStats && typeof parsedStats === 'object') {
-                    setFieldStats(parsedStats);
-                  }
-                } catch (parseErr) {
-                  console.error('Error parsing field stats:', parseErr);
-                  // Create default field stats based on application score if parsing fails
-                  const defaultStats = createDefaultFieldStats(appData.score);
-                  setFieldStats(defaultStats);
-                }
-              } else {
-                // Create default field stats based on application score if no metadata
-                const defaultStats = createDefaultFieldStats(appData.score);
-                setFieldStats(defaultStats);
-              }
-              
-              // Try to load API response data from metadata
-              if (metaData && metaData.api_response_data) {
-                try {
-                  const parsedApiData = JSON.parse(metaData.api_response_data);
-                  if (parsedApiData && typeof parsedApiData === 'object') {
-                    console.log('Loaded API response data from metadata');
-                    setApiResponseData(parsedApiData);
-                  }
-                } catch (parseErr) {
-                  console.error('Error parsing API response data:', parseErr);
-                }
+              // Set selected document to first document in summaries if available
+              if (Object.keys(documentSummaries).length > 0) {
+                setSelectedDoc(Object.keys(documentSummaries)[0]);
+                setCurrentDocIndex(0);
               }
             }
           }
@@ -2021,6 +1933,17 @@ export default function DocumentReview() {
     
     loadExistingApplication();
   }, [id, router]);
+
+  useEffect(() => {
+    if (fieldStats || apiResponseData) {
+      // When field stats or API data is loaded, expand both sections
+      setExpandedSections(prev => ({
+        ...prev,
+        'strength-analysis': true,
+        'document-summaries': true
+      }));
+    }
+  }, [fieldStats, apiResponseData]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">

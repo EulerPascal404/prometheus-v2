@@ -770,6 +770,54 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
 
 # ----- END OF INCORPORATED CODE -----
 
+def get_application_details(application_id: str, user_id: str = None) -> Dict:
+    """
+    Get application details including document summaries and field stats
+    
+    Args:
+        application_id: The ID of the application to retrieve
+        user_id: Optional user ID to verify ownership
+        
+    Returns:
+        Dict: Application details or None if not found
+    """
+    try:
+        supabase = get_supabase()
+        if not supabase:
+            logger.error("Supabase client not available")
+            return None
+        
+        # Build the query
+        query = supabase.table("applications").select("*").eq("id", application_id)
+        
+        # Add user_id filter if provided for security
+        if user_id:
+            query = query.eq("user_id", user_id)
+        
+        # Execute the query
+        response = query.single().execute()
+        
+        if not response.data:
+            logger.error(f"Application {application_id} not found")
+            return None
+        
+        application = response.data
+        
+        # Parse JSON fields if they are stored as strings
+        try:
+            if application.get("document_summaries") and isinstance(application["document_summaries"], str):
+                application["document_summaries"] = json.loads(application["document_summaries"])
+                
+            if application.get("field_stats") and isinstance(application["field_stats"], str):
+                application["field_stats"] = json.loads(application["field_stats"])
+        except Exception as e:
+            logger.error(f"Error parsing JSON fields: {str(e)}")
+        
+        return application
+    except Exception as e:
+        logger.error(f"Error getting application details: {str(e)}")
+        return None
+
 def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None, supabase: Client = None) -> dict:
     try:
         # Save the PDF content to a temporary file
