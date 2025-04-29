@@ -1,6 +1,3 @@
-"""
-o1_pdf_filler module - Handles PDF form filling operations
-"""
 import os
 import random
 import re
@@ -10,11 +7,6 @@ from o1_rag_generation import write_rag_responses
 import json
 import pdfrw
 from pathlib import Path
-import logging
-
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 def clean_field_name(field_name):
     """Cleans noisy characters from field names."""
@@ -35,81 +27,9 @@ def update_fill_progress(current, total, doc_type, user_id, supabase):
         except Exception as e:
             print(f"Error updating progress: {str(e)}")
 
-### CHANGE ###
-# extract relevant pages (1-7, 28-30) and save them to a new PDF
-def extract_o1_relevant_pages(input_pdf, output_pdf):
-    try:
-        logger.info(f"Extracting relevant O-1 pages from {input_pdf}")
-        
-        # read pdf
-        reader = PdfReader(input_pdf)
-        writer = PdfWriter()
-
-        total_pages = len(reader.pages)
-        logger.info(f"Total pages in original PDF: {total_pages}")
-        
-        # extract pages
-        for i in range(min(7, total_pages)):
-            writer.addpage(reader.pages[i])
-            logger.info(f"Added page {i+1}")
-        for i in range(27, min(30, total_pages)):
-            writer.addpage(reader.pages[i])
-            logger.info(f"Added page {i+1}")
-        
-        # write output
-        writer.write(output_pdf)
-        
-        # count pages
-        extracted_pages = min(7, total_pages) + min(3, max(0, total_pages - 27))
-        logger.info(f"Successfully extracted {extracted_pages} pages to {output_pdf}")
-        
-        return extracted_pages
-    
-    except Exception as e:
-        logger.error(f"Error extracting O-1 relevant pages: {str(e)}")
-        raise
-
-### CHANGE ###
-def extract_single_page(input_pdf, output_pdf, page_num=28):
-       try:
-           logger.info(f"Extracting page {page_num} from {input_pdf}")
-           
-           reader = PdfReader(input_pdf)
-           writer = PdfWriter()
-           total_pages = len(reader.pages)
-           logger.info(f"Total pages in original PDF: {total_pages}")
-           
-           # 0-indexed
-           page_index = page_num - 1
-           
-           if page_index < total_pages:
-               writer.addpage(reader.pages[page_index])
-               logger.info(f"Added page {page_num}")
-               
-               # write output
-               writer.write(output_pdf)
-               logger.info(f"Successfully extracted page {page_num} to {output_pdf}")
-               
-               return output_pdf
-           else:
-               logger.warning(f"Page {page_num} does not exist in the PDF (total pages: {total_pages})")
-               return None
-       
-       except Exception as e:
-           logger.error(f"Error extracting page {page_num}: {str(e)}")
-           return None
-
 def fill_and_check_pdf(input_pdf, output_pdf, response_dict=None, doc_type=None, user_id=None, supabase=None):
     if response_dict is None:
         response_dict = {}
-    
-    ### CHANGE ###
-    # for I-129 form, extract only O-1 relevant pages first
-    if doc_type == "I-129":
-        logger.info("Processing I-129 form - extracting O-1 relevant pages")
-        extracted_pdf = os.path.join(os.path.dirname(output_pdf), "i129_o1_relevant_pages.pdf")
-        extract_o1_relevant_pages(input_pdf, extracted_pdf)
-        input_pdf = extracted_pdf
     
     template = PdfReader(input_pdf)
     total_pages = len(template.pages)
@@ -292,13 +212,7 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict=None, doc_type=None,
     
     PdfWriter().write(output_pdf, template)
     print(f"Completed filling PDF with {total_pages} pages")
-
-    ### CHANGE ###
-    # Extract the most relevant page for preview (page 28)
-    preview_pdf = output_pdf.replace('.pdf', '_preview.pdf')
-    preview_path = extract_single_page(output_pdf, preview_pdf, 28)
-
-    return total_pages, field_stats, preview_path
+    return total_pages, field_stats
 
 import json
 import re
@@ -472,55 +386,85 @@ def merge_json_from_file(file_path, handle_duplicates='overwrite'):
     
     return merged_data
 
-def run(extracted_text, doc_type=None, user_id=None, supabase=None):
-    """
-    Process extracted text and fill PDF forms
+def run(user_info, doc_type=None, user_id=None, supabase=None):
+    print("RUNNING RAG GENERATION")
+    # Get the base directory (demo folder) using the script's location
+    base_dir = Path(__file__).parent.parent
     
-    Args:
-        extracted_text (str): The text extracted from the PDF
-        doc_type (str): Type of document being processed
-        user_id (str): User ID for tracking
-        supabase: Supabase client for database operations
-        
-    Returns:
-        tuple: (total_pages, field_stats) - Results of the PDF filling operation
-    """
-    logger.info(f"Starting PDF form filling for {doc_type} document (User ID: {user_id})")
-    
-    # For this simplified version, we'll return mock data
-    total_pages = 10  # Default page count
-    
-    # Create mock field statistics
-    field_stats = {
-        "user_info_filled": 25,
-        "N/A_per": 5,
-        "N/A_r": 3,
-        "N/A_rl": 2,
-        "N/A_ar": 1,
-        "N/A_p": 4,
-        "N/A_ss": 2,
-        "N/A_pm": 3,
-        "total_fields": 45,
-        "percent_filled": 55.56
-    }
-    
-    # Update status in Supabase if provided
+    # Initial progress update for RAG generation
     if supabase and user_id:
         try:
-            # Update status to show PDF filling is in progress
             supabase.table("user_documents").update({
-                "processing_status": f"filling_pdf_{doc_type}"
+                "processing_status": "generating_rag_responses"
             }).eq("user_id", user_id).execute()
-            
-            # After "completion", update the final status
+            print(f"Updated status: generating_rag_responses")
+        except Exception as e:
+            print(f"Error updating RAG progress: {str(e)}")
+    
+    # Make sure the RAG responses directory exists before writing history file
+    rag_responses_dir = base_dir / "rag_responses"
+    os.makedirs(rag_responses_dir, exist_ok=True)
+    
+    # Create history.txt if it doesn't exist, or clear it if starting fresh
+    history_file = rag_responses_dir / "history.txt"
+    if not history_file.exists():
+        with open(history_file, "w", encoding="utf-8") as f:
+            f.write("")  # Create empty file
+    
+    # Pass user_id and supabase to the RAG generation
+    write_rag_responses(
+        extra_info=f"User Info: {user_info}", 
+        pages=list(range(1, 38)),
+        user_id=user_id,
+        supabase=supabase
+    )
+    
+    # Use absolute paths by joining with base_dir
+    response_dict_path = str(base_dir / "rag_responses/history.txt")
+    
+    # Fix the filled PDF path to be in the public directory
+    filled_pdf_path = str(base_dir / "public/o1-form-template-cleaned-filled.pdf")
+    template_pdf_path = str(base_dir / "o1-form-template-cleaned.pdf")
+
+    # Create directories if they don't exist
+    os.makedirs(os.path.dirname(filled_pdf_path), exist_ok=True)
+
+    # Update progress for PDF filling preparation
+    if supabase and user_id:
+        try:
             supabase.table("user_documents").update({
-                "processing_status": f"completed_{doc_type}_fill",
+                "processing_status": "preparing_pdf_fill"
+            }).eq("user_id", user_id).execute()
+            print(f"Updated status: preparing_pdf_fill")
+        except Exception as e:
+            print(f"Error updating PDF prep progress: {str(e)}")
+
+    response_dict = merge_json_from_file(response_dict_path, handle_duplicates="keep")
+    
+    # Add debug output for clarity
+    print(f"Starting PDF filling with {len(response_dict)} fields to {filled_pdf_path}")
+    
+    total_pages, field_stats = fill_and_check_pdf(
+        template_pdf_path, 
+        filled_pdf_path, 
+        response_dict, 
+        doc_type=doc_type, 
+        user_id=user_id, 
+        supabase=supabase
+    )
+
+    print(field_stats)
+    
+    # Final completion update
+    if supabase and user_id:
+        try:
+            status = f"completed_pdf_fill_{total_pages}_pages"
+            supabase.table("user_documents").update({
+                "processing_status": status,
                 "field_stats": json.dumps(field_stats)
             }).eq("user_id", user_id).execute()
-            
-            logger.info(f"Updated processing status in database for user {user_id}")
+            print(f"Updated status: {status}")
         except Exception as e:
-            logger.error(f"Error updating database: {str(e)}")
-    
-    logger.info(f"PDF form filling completed: {total_pages} pages processed")
+            print(f"Error updating completion status: {str(e)}")
+            
     return total_pages, field_stats
