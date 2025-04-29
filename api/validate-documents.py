@@ -433,7 +433,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None, 
         logger.info(f"Making API call for batch {batch_idx+1} with {len(batch_pages)} pages")
         try:
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": f"You have been given a batch of pages from a form, along with extracted form data. Each page is clearly marked with '=== PAGE X ==='. Your task is to analyze this batch (pages {batch_pages}) and fill out a response dictionary for these pages only. It is very important that in the outputted dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear and detailed. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Only fill out fields that can be entirely filled out with the user info provided. Only output the dictionary. Don't include the word python or ```." + extra_info},
                     {"role": "user", "content": batch_text}
@@ -945,7 +945,7 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
             # Limit text to 5000 tokens (approximate character count)            
             # Generate summary using OpenAI with the current document only
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a professional o1 document reviewer. Review the following documents and specifically list the strengths and weaknesses of the applicants resources in creating a successful o1 application. Additionally, provide a list of recommendations for the applicant to improve their application. Format the output as follows: Strengths: [list of strengths], Weaknesses: [list of weaknesses], Recommendations: [list of recommendations]. Make sure to separate each point with a [SEP] separator. Refer to the applicant as 'you'."},
                     {"role": "user", "content": full_text}
