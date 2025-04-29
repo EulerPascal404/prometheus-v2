@@ -113,7 +113,7 @@ def extract_all_text(data):
                     all_text.append(f"{prefix}• {value}")
         else:
             all_text.append(f"{prefix}{item}")
-    
+
     try:
         # Priority 1: Extract document summaries from uploaded documents
         if 'document_summaries' in data:

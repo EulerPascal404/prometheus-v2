@@ -1,0 +1,6 @@
+README.md
+setup.py
+o1_api.egg-info/PKG-INFO
+o1_api.egg-info/SOURCES.txt
+o1_api.egg-info/dependency_links.txt
+o1_api.egg-info/top_level.txt
