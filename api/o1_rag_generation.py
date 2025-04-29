@@ -10,7 +10,7 @@ load_dotenv('.env.local')
 
 CREATED_VECTOR_STORE = True
 # Global variable to control number of pages filled - set to 10 for now
-NUM_PAGES = 2
+NUM_PAGES = 10
 
 def write_to_file(filename: str, content: str):
     """Writes the given content to a file."""

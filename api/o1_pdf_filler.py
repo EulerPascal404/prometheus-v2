@@ -35,9 +35,81 @@ def update_fill_progress(current, total, doc_type, user_id, supabase):
         except Exception as e:
             print(f"Error updating progress: {str(e)}")
 
+### CHANGE ###
+# extract relevant pages (1-7, 28-30) and save them to a new PDF
+def extract_o1_relevant_pages(input_pdf, output_pdf):
+    try:
+        logger.info(f"Extracting relevant O-1 pages from {input_pdf}")
+        
+        # read pdf
+        reader = PdfReader(input_pdf)
+        writer = PdfWriter()
+
+        total_pages = len(reader.pages)
+        logger.info(f"Total pages in original PDF: {total_pages}")
+        
+        # extract pages
+        for i in range(min(7, total_pages)):
+            writer.addpage(reader.pages[i])
+            logger.info(f"Added page {i+1}")
+        for i in range(27, min(30, total_pages)):
+            writer.addpage(reader.pages[i])
+            logger.info(f"Added page {i+1}")
+        
+        # write output
+        writer.write(output_pdf)
+        
+        # count pages
+        extracted_pages = min(7, total_pages) + min(3, max(0, total_pages - 27))
+        logger.info(f"Successfully extracted {extracted_pages} pages to {output_pdf}")
+        
+        return extracted_pages
+    
+    except Exception as e:
+        logger.error(f"Error extracting O-1 relevant pages: {str(e)}")
+        raise
+
+### CHANGE ###
+def extract_single_page(input_pdf, output_pdf, page_num=28):
+       try:
+           logger.info(f"Extracting page {page_num} from {input_pdf}")
+           
+           reader = PdfReader(input_pdf)
+           writer = PdfWriter()
+           total_pages = len(reader.pages)
+           logger.info(f"Total pages in original PDF: {total_pages}")
+           
+           # 0-indexed
+           page_index = page_num - 1
+           
+           if page_index < total_pages:
+               writer.addpage(reader.pages[page_index])
+               logger.info(f"Added page {page_num}")
+               
+               # write output
+               writer.write(output_pdf)
+               logger.info(f"Successfully extracted page {page_num} to {output_pdf}")
+               
+               return output_pdf
+           else:
+               logger.warning(f"Page {page_num} does not exist in the PDF (total pages: {total_pages})")
+               return None
+       
+       except Exception as e:
+           logger.error(f"Error extracting page {page_num}: {str(e)}")
+           return None
+
 def fill_and_check_pdf(input_pdf, output_pdf, response_dict=None, doc_type=None, user_id=None, supabase=None):
     if response_dict is None:
         response_dict = {}
+    
+    ### CHANGE ###
+    # for I-129 form, extract only O-1 relevant pages first
+    if doc_type == "I-129":
+        logger.info("Processing I-129 form - extracting O-1 relevant pages")
+        extracted_pdf = os.path.join(os.path.dirname(output_pdf), "i129_o1_relevant_pages.pdf")
+        extract_o1_relevant_pages(input_pdf, extracted_pdf)
+        input_pdf = extracted_pdf
     
     template = PdfReader(input_pdf)
     total_pages = len(template.pages)
@@ -220,7 +292,13 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict=None, doc_type=None,
     
     PdfWriter().write(output_pdf, template)
     print(f"Completed filling PDF with {total_pages} pages")
-    return total_pages, field_stats
+
+    ### CHANGE ###
+    # Extract the most relevant page for preview (page 28)
+    preview_pdf = output_pdf.replace('.pdf', '_preview.pdf')
+    preview_path = extract_single_page(output_pdf, preview_pdf, 28)
+
+    return total_pages, field_stats, preview_path
 
 import json
 import re

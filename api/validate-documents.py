@@ -10,6 +10,7 @@ from urllib.parse import parse_qs, urlparse
 from typing import Dict, Optional, List, Tuple
 import PyPDF2
 from supabase import create_client, Client
+from o1_pdf_filler import extract_single_page
 from dotenv import load_dotenv
 from pathlib import Path
 from openai import OpenAI
@@ -20,6 +21,9 @@ from glob import glob
 from pdfrw import PdfReader, PdfWriter, PdfDict, PdfName
 import pdfrw
 import datetime
+
+# Global settings
+NUM_PAGES = 10  # Max pages to process for O-1 form (pages 1-7 and 28-30)
 
 # Function to parse summary text into structured arrays
 def parse_summary(summary_text: str) -> Tuple[List[str], List[str], List[str]]:
@@ -168,8 +172,6 @@ def parse_summary(summary_text: str) -> Tuple[List[str], List[str], List[str]]:
     logger.info(f"Parsed {len(strengths)} strengths, {len(weaknesses)} weaknesses, {len(recommendations)} recommendations")
     return strengths, weaknesses, recommendations
 
-NUM_PAGES = 2
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -262,10 +264,15 @@ def log_page_progress(page_num, total_pages, user_id, supabase):
         except Exception as e:
             print(f"Error updating RAG page progress: {str(e)}")
 
-def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
-    # Use NUM_PAGES to limit the number of pages processed
-    if pages is None:
-        # Only process the first NUM_PAGES pages
+def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None, doc_type=None):
+    # generate 10 pages
+    if doc_type == "I-129":
+        # Explicitly set the relevant pages for O-1 petition
+        o1_relevant_pages = [1, 2, 3, 4, 5, 6, 7, 28, 29, 30]
+        pages = o1_relevant_pages
+        logger.info(f"Processing specific O-1 relevant pages: {pages}")
+    elif pages is None:
+        # For other documents, use the standard range with NUM_PAGES limit
         pages = list(range(1, min(38, NUM_PAGES + 1)))
     else:
         # Respect the limit if pages are provided
@@ -274,7 +281,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     total_pages = len(pages)
     print(f"Will process {total_pages} pages out of {NUM_PAGES} maximum")
     
-    # Get the base directory (demo folder) using the script's location
+    # Get the base directory using the script's location
     base_dir = "data/"
     print(f"Base directory: {base_dir}")
     
@@ -324,121 +331,157 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     except Exception as e:
         print(f"Warning: Could not create/clear history file: {str(e)}")
 
-    # Compile all text information in a single pass
-    all_text_content = ""
+    batch_size = 3
+    if doc_type == "I-129":
+        batches = [
+            pages[:4],  #page 1-4
+            pages[4:7], #page 5-7
+            pages[7:],  #page 28-30
+        ]
+    else:
+        # For other document types, use uniform batch sizes
+        batches = [pages[i:i + batch_size] for i in range(0, len(pages), batch_size)]
     
-    # Process each page to collect text
-    for idx, page_num in enumerate(pages):
-        # Update progress before processing each page
+    logger.info(f"Processing {len(batches)} batches of pages for {doc_type or 'unknown document'}")
+    
+    # Initialize the response dictionary
+    response_dict = {}
+    
+    # Process each batch of pages
+    for batch_idx, batch_pages in enumerate(batches):
+        # Update progress for batch start
         if supabase and user_id:
-            log_page_progress(idx + 1, total_pages, user_id, supabase)
-        
-        form_data_file = str(base_dir + f"extracted_form_data/page_{page_num}.txt")
-        print(f"Looking for form data file: {form_data_file}")
-        
-        try:
-            # Read form data - handle missing files gracefully
-            form_data = ""
-            if os.path.exists(form_data_file):
-                try:
-                    form_data = read_text_file(form_data_file)
-                    print(f"Successfully read form data file: {form_data_file}")
-                except Exception as e:
-                    print(f"Warning: Could not read form data file: {str(e)}")
-            else:
-                print(f"Warning: Form data file not found: {form_data_file}")
-                # Try alternative path
-                alt_form_data_file = str(Path.cwd() / f"extracted_form_data/page_{page_num}.txt")
-                print(f"Trying alternative path: {alt_form_data_file}")
-                try:
-                    if os.path.exists(alt_form_data_file):
-                        form_data = read_text_file(alt_form_data_file)
-                        print(f"Successfully read form data from alternative path: {alt_form_data_file}")
-                    else:
-                        print(f"Alternative path also not found: {alt_form_data_file}")
-                        # Continue with empty form data instead of skipping
-                        form_data = "No form data available"
-                except Exception as e:
-                    print(f"Warning: Could not read form data from alternative path: {str(e)}")
-                    form_data = "No form data available"
-            
-            # Get the extracted text for this page
-            page_text = ""
+            progress_status = f"processing_batch_{batch_idx+1}_of_{len(batches)}"
+            logger.info(f"Starting batch {batch_idx+1} of {len(batches)} with pages {batch_pages}")
             try:
-                if len(files) > 0 and page_num-1 < len(files) and os.path.exists(files[page_num-1]):
-                    page_text = read_text_file(files[page_num-1])
-                    print(f"Successfully read page text from: {files[page_num-1]}")
+                supabase.table("user_documents").update({
+                    "processing_status": progress_status
+                }).eq("user_id", user_id).execute()
+            except Exception as e:
+                logger.error(f"Error updating batch progress: {str(e)}")
+
+        # Compile text for this batch
+        batch_text = ""
+        batch_page_idx = 0
+        
+        # Process each page in this batch
+        for page_num in batch_pages:
+            # Update progress within batch
+            if supabase and user_id:
+                batch_progress = f"batch_{batch_idx+1}_page_{batch_page_idx+1}_of_{len(batch_pages)}"
+                log_page_progress(page_num, total_pages, user_id, supabase)
+            
+            form_data_file = str(base_dir + f"extracted_form_data/page_{page_num}.txt")
+            logger.info(f"Looking for form data file: {form_data_file}")
+            
+            try:
+                # Read form data - handle missing files gracefully
+                form_data = ""
+                if os.path.exists(form_data_file):
+                    try:
+                        form_data = read_text_file(form_data_file)
+                        logger.info(f"Successfully read form data file: {form_data_file}")
+                    except Exception as e:
+                        logger.warning(f"Could not read form data file: {str(e)}")
                 else:
-                    print(f"Warning: Extracted text file not found for page {page_num}")
-                    # Try alternative path
-                    alt_page_file = str(Path.cwd() / f"extracted_text/page_{page_num}.txt")
-                    print(f"Trying alternative path: {alt_page_file}")
-                    if os.path.exists(alt_page_file):
-                        page_text = read_text_file(alt_page_file)
-                        print(f"Successfully read page text from alternative path: {alt_page_file}")
+                    logger.warning(f"Form data file not found: {form_data_file}")
+                    # Try alternative path or use empty data
+                    alt_form_data_file = str(Path.cwd() / f"extracted_form_data/page_{page_num}.txt")
+                    try:
+                        if os.path.exists(alt_form_data_file):
+                            form_data = read_text_file(alt_form_data_file)
+                            logger.info(f"Successfully read form data from alternative path: {alt_form_data_file}")
+                        else:
+                            form_data = "No form data available"
+                    except Exception as e:
+                        logger.warning(f"Could not read form data from alternative path: {str(e)}")
+                        form_data = "No form data available"
+                
+                # Get the extracted text for this page
+                page_text = ""
+                try:
+                    if len(files) > 0 and page_num-1 < len(files) and os.path.exists(files[page_num-1]):
+                        page_text = read_text_file(files[page_num-1])
+                        logger.info(f"Successfully read page text from: {files[page_num-1]}")
                     else:
-                        print(f"Alternative path also not found: {alt_page_file}")
-                        # Use first file if available, or provide dummy text
-                        if len(files) > 0:
+                        # Try alternative path or use first file as fallback
+                        alt_page_file = str(Path.cwd() / f"extracted_text/page_{page_num}.txt")
+                        if os.path.exists(alt_page_file):
+                            page_text = read_text_file(alt_page_file)
+                            logger.info(f"Successfully read page text from alternative path: {alt_page_file}")
+                        elif len(files) > 0:
                             page_text = read_text_file(files[0])
                             print(f"Using first available file as fallback: {files[0]}")
                         else:
                             page_text = "No page text available for analysis"
-                            print("Using dummy text as fallback")
+                except Exception as e:
+                    logger.warning(f"Error reading page text: {str(e)}")
+                    page_text = "Error reading page text"
+                
+                # Add page content to the batch text with clear page separator
+                page_content = f"\n\n=== PAGE {page_num} ===\n{form_data.strip()}\n{page_text.strip()}\n"
+                batch_text += page_content
+                batch_page_idx += 1
+                
             except Exception as e:
-                print(f"Warning: Error reading page text: {str(e)}")
-                page_text = "Error reading page text"
+                logger.error(f"Error processing page {page_num}: {e}")
+                batch_text += f"\n\n=== PAGE {page_num} ===\nError processing page: {str(e)}\n"
+                batch_page_idx += 1
+                continue
+        
+        # Process this batch with an API call
+        logger.info(f"Making API call for batch {batch_idx+1} with {len(batch_pages)} pages")
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": f"You have been given a batch of pages from a form, along with extracted form data. Each page is clearly marked with '=== PAGE X ==='. Your task is to analyze this batch (pages {batch_pages}) and fill out a response dictionary for these pages only. It is very important that in the outputted dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear and detailed. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Only fill out fields that can be entirely filled out with the user info provided. Only output the dictionary. Don't include the word python or ```." + extra_info},
+                    {"role": "user", "content": batch_text}
+                ]
+            )
             
-            # Add page content to the compiled text with clear page separator
-            page_content = form_data.strip() + "\n" + page_text.strip()
-            all_text_content += page_content
-            
+            # Process the response for this batch
+            logger.info(f"Received response for batch {batch_idx+1}")
+            if response and hasattr(response, 'choices') and len(response.choices) > 0:
+                response_text = response.choices[0].message.content
+                # Clean up the response to ensure it's valid Python
+                response_text = response_text.strip()
+                if response_text.startswith('```python'):
+                    response_text = response_text[9:]
+                if response_text.startswith('```'):
+                    response_text = response_text[3:]
+                if response_text.endswith('```'):
+                    response_text = response_text[:-3]
+                
+                # Parse the response for this batch
+                try:
+                    batch_response_dict = eval(response_text)
+                    logger.info(f"Successfully parsed response for batch {batch_idx+1}")
+                    
+                    # Merge with the overall response dictionary
+                    response_dict.update(batch_response_dict)
+                    
+                    # Save the batch response to a file for reference
+                    batch_file = str(base_dir + f"rag_responses/batch_{batch_idx+1}_response.txt")
+                    write_to_file(batch_file, response_text)
+                    logger.info(f"Saved batch {batch_idx+1} response to {batch_file}")
+                except Exception as e:
+                    logger.error(f"Error parsing batch {batch_idx+1} response: {str(e)}")
+            else:
+                logger.error(f"Invalid response format for batch {batch_idx+1}")
+                
         except Exception as e:
-            print(f"Error processing page {page_num}: {e}")
-            all_text_content += f"\n\n=== PAGE {page_num} ===\nError processing page: {str(e)}"
-            continue
-
-        # Add progress update after each page is processed
-        if supabase and user_id and (idx % 3 == 0 or idx == len(pages) - 1):  # Update every 3 pages or on the last page
-            log_page_progress(idx + 1, total_pages, user_id, supabase)
+            logger.error(f"Error processing batch {batch_idx+1}: {str(e)}")
     
-    # Make a single API call with all compiled text
-    response_dict = {}
-
-    print(all_text_content)
-    
-    try:
-        print("Making a single API call with all compiled information...")
-        
-        
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You have been given compiled text content from multiple pages of a form, along with extracted form data. Each page is clearly marked with '=== PAGE X ==='. Your task is to analyze all this information together and fill out a response dictionary. It is very important that in the outputted dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Make sure the na type being used is correct and as accurate as possible.Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```." + extra_info},
-                {"role": "user", "content": all_text_content}
-            ]
-        )
-
-        # Check if the response output exists and has the expected structure
-        print("Response received from API")
-        if response and hasattr(response, 'choices') and len(response.choices) > 0:
-            response_text = response.choices[0].message.content
-            # Clean up the response if needed to ensure it's valid Python
-            response_text = response_text.strip()
-            if response_text.startswith('```python'):
-                response_text = response_text[9:]
-            if response_text.startswith('```'):
-                response_text = response_text[3:]
-            if response_text.endswith('```'):
-                response_text = response_text[:-3]
-            
-            response_dict = eval(response_text)
-            print("Successfully evaluated response dictionary")
-
-    except Exception as e:
-        print(f"Error getting API response: {str(e)}")
-        # In case of failure, return an empty dictionary or appropriate error state
-        response_dict = {"error": f"Failed to process form: {str(e)}"}
+    # Record final progress
+    if supabase and user_id:
+        try:
+            supabase.table("user_documents").update({
+                "processing_status": "completed_rag_processing"
+            }).eq("user_id", user_id).execute()
+            logger.info("Updated status: completed_rag_processing")
+        except Exception as e:
+            logger.error(f"Error updating final RAG progress: {str(e)}")
     
     print(f"Completed processing {total_pages} pages")
     return response_dict
@@ -629,10 +672,15 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                 print(f"Error storing field statistics: {str(e)}")
     except Exception as e:
         print(f"Error saving field statistics: {str(e)}")
+
+    ### CHANGE ###
+    preview_pdf = output_pdf.replace('.pdf', '_preview.pdf')
+    # Make sure this function is imported or defined in validate-documents.py
+    preview_path = extract_single_page(output_pdf, preview_pdf, 28)
     
   #  PdfWriter().write(output_pdf, template)
     print(f"Completed filling PDF with {total_pages} pages")
-    return total_pages, field_stats
+    return total_pages, field_stats, preview_path
 
 def update_fill_progress(current, total, doc_type, user_id, supabase):
     """Updates the progress status in the database"""
@@ -711,7 +759,8 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
         extra_info=f"Extracted Text: {extracted_text}...", 
         pages=list(range(1, NUM_PAGES)),  # Limit to defined page count for serverless environment
         user_id=user_id,
-        supabase=supabase
+        supabase=supabase,
+        doc_type=doc_type  # Pass document type for special handling
     )
     print(f"Response dict for {doc_type}: {full_response_dict}")
     
@@ -751,7 +800,7 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
         "na_success": 3
     }
     
-    total_pages, field_stats = fill_and_check_pdf("data/o1-form-template-cleaned-filled.pdf", "data/o1-form-template-cleaned-filled.pdf", full_response_dict, doc_type, user_id, supabase)
+    total_pages, field_stats, preview_path = fill_and_check_pdf("data/o1-form-template-cleaned-filled.pdf", "data/o1-form-template-cleaned-filled.pdf", full_response_dict, doc_type, user_id, supabase)
     print(f"Field stats after filling for {doc_type}: {field_stats}")
     # Final completion update
     if supabase and user_id:
@@ -766,7 +815,7 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
             logger.error(f"Error updating completion status: {str(e)}")
     
     logger.info(f"PDF form filling completed: {total_pages} pages processed")
-    return total_pages, field_stats
+    return total_pages, field_stats, preview_path
 
 # ----- END OF INCORPORATED CODE -----
 
@@ -1118,6 +1167,9 @@ class handler(BaseHTTPRequestHandler):
             # Allow direct document data in the request
             document_data = request_data.get("document_data", {})
             
+            # Initialize preview_path variable
+            preview_path = None
+            
             if not user_id or (not uploaded_documents and not document_data):
                 logger.warning("POST request missing required fields")
                 self.send_json_response({
@@ -1330,7 +1382,7 @@ class handler(BaseHTTPRequestHandler):
                 
                 # Call run() function ONCE with all the combined text
                 logger.info("Running RAG generation with combined text from all documents")
-                num_pages, field_stats = run(combined_text, "combined", user_id, supabase)
+                num_pages, field_stats, preview_path = run(combined_text, "combined", user_id, supabase)
                 logger.info(f"Consolidated RAG processing complete. Field stats: {field_stats}")
                 
                 # Store the field stats to return in the response
@@ -1354,7 +1406,9 @@ class handler(BaseHTTPRequestHandler):
                         "field_stats": json.dumps(consolidated_field_stats),  # Will be cast to JSONB by Supabase
                         "document_summaries": json.dumps(document_summaries),  # Will be cast to JSONB by Supabase
                         "processing_status": "completed",
-                        "summary": f"Application processed with {len(document_dict)} documents. Score: {completion_score}%"
+                        "summary": f"Application processed with {len(document_dict)} documents. Score: {completion_score}%",
+                        ### change ###
+                        "preview_pdf_path": preview_path  # Add the preview path to the database record
                     }
                     
                     # Update applications table
@@ -1371,7 +1425,10 @@ class handler(BaseHTTPRequestHandler):
                         "can_proceed": True,
                         "document_summaries": document_summaries,
                         "field_stats": consolidated_field_stats,
-                        "application_id": application_id
+                        "application_id": application_id,
+                        "preview_available": preview_path is not None,
+                        "preview_message": "We've prepared a preview of the most relevant page of your I-129 form. You can see the complete form after matching with a visa expert.",
+                        "preview_pdf_path": preview_path
                     })
                 except Exception as e:
                     logger.error(f"Error updating database: {str(e)}")
@@ -1381,7 +1438,10 @@ class handler(BaseHTTPRequestHandler):
                         "message": f"Documents processed but database update failed: {str(e)}",
                         "can_proceed": True,
                         "document_summaries": document_summaries,
-                        "field_stats": consolidated_field_stats
+                        "field_stats": consolidated_field_stats,
+                        "preview_available": preview_path is not None,
+                        "preview_message": "We've prepared a preview of the most relevant page of your I-129 form. You can see the complete form after matching with a visa expert.",
+                        "preview_pdf_path": preview_path
                     })
             elif supabase: 
                 # No application ID provided
@@ -1397,7 +1457,10 @@ class handler(BaseHTTPRequestHandler):
                     "message": "Documents processed successfully (database not updated)",
                     "can_proceed": True,
                     "document_summaries": document_summaries,
-                    "field_stats": consolidated_field_stats
+                    "field_stats": consolidated_field_stats,
+                    "preview_available": preview_path is not None,
+                    "preview_message": "We've prepared a preview of the most relevant page of your I-129 form. You can see the complete form after matching with a visa expert.",
+                    "preview_pdf_path": preview_path
                 })
             
         except Exception as e:
