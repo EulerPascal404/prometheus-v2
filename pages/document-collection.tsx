@@ -44,6 +44,7 @@ interface Application {
   summary: string;
   document_count: number;
   last_updated: string;
+  name: string;
 }
 
 interface PersonalInfo {
@@ -57,6 +58,18 @@ interface PersonalInfo {
 interface Window {
   google: any; // Using any to avoid type conflicts
   initializeGooglePlaces: () => void;
+}
+
+// Add this interface near the top with other interfaces
+interface UserPersonalInfo {
+  id: string;
+  user_id: string;
+  full_name: string;
+  phone: string;
+  address: string;
+  extra_info: string;
+  created_at: string;
+  last_updated: string;
 }
 
 // Function to extract text from PDF
@@ -291,6 +304,10 @@ export default function DocumentCollection() {
   const [showApplicationSelector, setShowApplicationSelector] = useState(false);
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   
+  // Add this state near other state declarations
+  const [userPersonalInfo, setUserPersonalInfo] = useState<UserPersonalInfo | null>(null);
+  const [isLoadingPersonalInfo, setIsLoadingPersonalInfo] = useState(true);
+  
   const documentTypes: DocumentType[] = [
     {
       id: 'resume',
@@ -477,39 +494,77 @@ export default function DocumentCollection() {
   const createNewApplication = async () => {
     try {
       setIsProcessing(true);
+      setError(null); // Clear any previous errors
       
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Authentication error:', authError);
+        throw new Error('Authentication failed. Please try logging in again.');
+      }
       if (!user) {
-        throw new Error('No authenticated user found');
+        console.error('No authenticated user found');
+        throw new Error('No authenticated user found. Please log in.');
       }
       
-      // Create a new empty application
+      // Get user's personal info - handle case where table doesn't exist or no data
+      let personalInfoData: { full_name?: string; phone?: string; address?: string; extra_info?: string } | null = null;
+      try {
+        const { data, error: personalInfoError } = await supabase
+          .from('user_personal_info')
+          .select('full_name, phone, address, extra_info')
+          .eq('user_id', user.id)
+          .single();
+
+        if (personalInfoError && personalInfoError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          console.error('Error fetching personal info:', personalInfoError);
+          // Don't throw error, just log it and continue with empty personal info
+        } else {
+          personalInfoData = data as { full_name?: string; phone?: string; address?: string; extra_info?: string } | null;
+        }
+      } catch (err) {
+        console.error('Error accessing user_personal_info table:', err);
+        // Continue with empty personal info
+      }
+
+      // Create a new empty application with personal info if available
       const newApplication = {
         user_id: user.id,
         status: 'in_progress',
         score: 0,
         summary: 'New application',
         document_count: 0,
-        last_updated: new Date().toISOString()
+        last_updated: new Date().toISOString(),
+        name: 'Untitled Application',
+        personal_name: personalInfoData?.full_name || '',
+        personal_phone: personalInfoData?.phone || '',
+        personal_address: personalInfoData?.address || '',
+        personal_extra_info: personalInfoData?.extra_info || ''
       };
       
+      console.log('Creating new application with data:', newApplication);
+      
       // Insert into Supabase
-      const { data, error } = await supabase
+      const { data, error: insertError } = await supabase
         .from('applications')
         .insert([newApplication])
         .select();
       
-      if (error) {
-        throw error;
+      if (insertError) {
+        console.error('Error inserting application:', insertError);
+        throw new Error(`Failed to create application: ${insertError.message}`);
       }
       
       if (data && data.length > 0) {
+        console.log('Successfully created application:', data[0]);
         // Navigate to document collection with the new application ID
         router.push(`/document-collection?applicationId=${data[0].id}`);
+      } else {
+        throw new Error('No data returned after creating application');
       }
     } catch (error) {
       console.error('Error creating new application:', error);
-      setError('Failed to create a new application. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to create a new application. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -573,12 +628,83 @@ export default function DocumentCollection() {
     console.log('Resume uploaded?', hasDocType('resume'));
   }, [uploadedDocs]);
 
-  const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Add this useEffect to load personal info when the component mounts
+  useEffect(() => {
+    const loadPersonalInfo = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('user_personal_info')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          console.error('Error loading personal info:', error);
+          return;
+        }
+
+        if (data) {
+          setUserPersonalInfo(data);
+          setPersonalInfo({
+            name: data.full_name || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            extraInfo: data.extra_info || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading personal info:', error);
+      } finally {
+        setIsLoadingPersonalInfo(false);
+      }
+    };
+
+    loadPersonalInfo();
+  }, []);
+
+  // Update the handlePersonalInfoChange function
+  const handlePersonalInfoChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setPersonalInfo(prevInfo => ({
       ...prevInfo,
       [name]: value
     }));
+
+    // Save to database after a short delay
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const personalInfoData = {
+        user_id: user.id,
+        full_name: name === 'name' ? value : personalInfo.name,
+        phone: name === 'phone' ? value : personalInfo.phone,
+        address: name === 'address' ? value : personalInfo.address,
+        extra_info: name === 'extraInfo' ? value : personalInfo.extraInfo
+      };
+
+      if (userPersonalInfo) {
+        // Update existing record
+        const { error } = await supabase
+          .from('user_personal_info')
+          .update(personalInfoData)
+          .eq('id', userPersonalInfo.id);
+
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { error } = await supabase
+          .from('user_personal_info')
+          .insert([personalInfoData]);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error saving personal info:', error);
+    }
   };
 
   const isPersonalInfoComplete = () => {
@@ -784,7 +910,7 @@ export default function DocumentCollection() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-slate-300">
-                            Application from {new Date(app.created_at).toLocaleDateString()}
+                            {app.name || 'Untitled Application'}
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             app.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :

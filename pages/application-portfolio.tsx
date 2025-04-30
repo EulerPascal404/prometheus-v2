@@ -13,6 +13,7 @@ interface Application {
   summary: string;
   document_count: number;
   last_updated: string;
+  name: string;
 }
 
 export default function ApplicationPortfolio() {
@@ -20,6 +21,8 @@ export default function ApplicationPortfolio() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingApplication, setIsCreatingApplication] = useState(false);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [newName, setNewName] = useState('');
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -91,7 +94,8 @@ export default function ApplicationPortfolio() {
         score: 0,
         summary: 'New application',
         document_count: 0,
-        last_updated: new Date().toISOString()
+        last_updated: new Date().toISOString(),
+        name: 'Untitled Application'
       };
       
       // Insert into Supabase
@@ -113,6 +117,31 @@ export default function ApplicationPortfolio() {
       alert('Failed to create a new application. Please try again.');
     } finally {
       setIsCreatingApplication(false);
+    }
+  };
+
+  const handleNameEdit = (appId: string, currentName: string) => {
+    setEditingName(appId);
+    setNewName(currentName);
+  };
+
+  const saveName = async (appId: string) => {
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .update({ name: newName })
+        .eq('id', appId);
+
+      if (error) throw error;
+
+      // Update local state
+      setApplications(applications.map(app => 
+        app.id === appId ? { ...app, name: newName } : app
+      ));
+      setEditingName(null);
+    } catch (error) {
+      console.error('Error updating application name:', error);
+      alert('Failed to update application name. Please try again.');
     }
   };
 
@@ -223,8 +252,46 @@ export default function ApplicationPortfolio() {
                             </svg>
                           </div>
                           <div className="ml-3">
-                            <span className="text-sm text-slate-400">Application ID</span>
-                            <h3 className="text-lg font-medium text-white">{app.id.slice(0, 8)}</h3>
+                            {editingName === app.id ? (
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="text"
+                                  value={newName}
+                                  onChange={(e) => setNewName(e.target.value)}
+                                  className="bg-slate-700/50 border border-primary-500/30 rounded px-2 py-1 text-white focus:outline-none focus:border-primary-500"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') saveName(app.id);
+                                    if (e.key === 'Escape') setEditingName(null);
+                                  }}
+                                />
+                                <button
+                                  onClick={() => saveName(app.id)}
+                                  className="text-primary-400 hover:text-primary-300"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => setEditingName(null)}
+                                  className="text-slate-400 hover:text-slate-300"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="group">
+                                <span className="text-sm text-slate-400">Application Name</span>
+                                <h3 
+                                  className="text-lg font-medium text-white cursor-pointer hover:text-primary-400 transition-colors"
+                                  onClick={() => handleNameEdit(app.id, app.name)}
+                                >
+                                  {app.name || 'Untitled Application'}
+                                </h3>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>

@@ -47,6 +47,19 @@ CREATE TABLE public.user_documents (
     last_validated TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- User Personal Information Table
+CREATE TABLE public.user_personal_info (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    full_name TEXT,
+    phone TEXT,
+    address TEXT,
+    extra_info TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    UNIQUE(user_id)
+);
+
 -- Create a function to update last_updated timestamp
 CREATE OR REPLACE FUNCTION update_last_updated_column()
 RETURNS TRIGGER AS $$
@@ -59,6 +72,12 @@ $$ LANGUAGE plpgsql;
 -- Create trigger to automatically update last_updated on applications
 CREATE TRIGGER update_applications_last_updated
 BEFORE UPDATE ON public.applications
+FOR EACH ROW
+EXECUTE FUNCTION update_last_updated_column();
+
+-- Create trigger to automatically update last_updated on user_personal_info
+CREATE TRIGGER update_user_personal_info_last_updated
+BEFORE UPDATE ON public.user_personal_info
 FOR EACH ROW
 EXECUTE FUNCTION update_last_updated_column();
 
@@ -155,10 +174,32 @@ CREATE POLICY "Users can delete processing status for their documents"
     FOR DELETE
     USING (auth.uid() = user_id);
 
+-- User Personal Information: Users can only see and modify their own personal information
+CREATE POLICY "Users can view their own personal info"
+    ON public.user_personal_info 
+    FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own personal info"
+    ON public.user_personal_info 
+    FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own personal info"
+    ON public.user_personal_info 
+    FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own personal info"
+    ON public.user_personal_info 
+    FOR DELETE
+    USING (auth.uid() = user_id);
+
 -- Enable RLS on all tables
 ALTER TABLE public.applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.application_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_personal_info ENABLE ROW LEVEL SECURITY;
 
 -- Storage configuration (run these in separate steps through the Supabase dashboard)
 -- 1. Create a new bucket called 'documents' in the Storage section
