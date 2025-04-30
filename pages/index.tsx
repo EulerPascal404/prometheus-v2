@@ -149,7 +149,7 @@ const HomePage: FC = () => {
             </div>
             
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight mb-8 font-syne">
-              <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent animate-gradient">Building successful</span> O-1 visa applications one at a time
+              <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent animate-gradient">Building successful</span> O-1 visa applications
               </h1>
             
             <div className="max-w-2xl mx-auto mb-12">

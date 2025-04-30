@@ -441,6 +441,21 @@ export default function ProcessingDocuments() {
             margin-bottom: 1rem;
           }
           
+          .criteria-chips-container {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            justify-content: center;
+            flex-wrap: nowrap;
+          }
+          
+          .criteria-chips-container::-webkit-scrollbar {
+            display: none;
+          }
+          
           .criteria-chip {
             display: inline-block;
             padding: 0.25rem 0.75rem;
@@ -451,6 +466,8 @@ export default function ProcessingDocuments() {
             color: #c4b5fd;
             box-shadow: 0 0 5px rgba(168, 85, 247, 0.3);
             transition: all 0.3s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
           }
           
           .criteria-chip:nth-child(odd) {
@@ -553,7 +570,7 @@ export default function ProcessingDocuments() {
                 Analyzing Your O-1 Visa Eligibility
               </h1>
               <div className="current-stage">{currentStage}</div>
-              <div className="flex flex-wrap justify-center gap-2 my-4">
+              <div className="criteria-chips-container">
                 <span className="criteria-chip" style={{ '--i': 0 } as React.CSSProperties}>Awards</span>
                 <span className="criteria-chip" style={{ '--i': 1 } as React.CSSProperties}>Publications</span>
                 <span className="criteria-chip" style={{ '--i': 2 } as React.CSSProperties}>Leadership</span>
