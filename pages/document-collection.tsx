@@ -296,8 +296,9 @@ export default function DocumentCollection() {
   });
   
   // Add these refs for Google Maps autocomplete
-  const addressInputRef = useRef<HTMLInputElement | null>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const addressInputRef = useRef<HTMLInputElement>(null);
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [googleMapsReady, setGoogleMapsReady] = useState(false);
   
   // Add state for existing applications
   const [existingApplications, setExistingApplications] = useState<Application[]>([]);
@@ -774,50 +775,43 @@ export default function DocumentCollection() {
     }
   };
 
-  // Add this function for initializing Google Maps autocomplete
-  const initializeAutocomplete = () => {
-    if (typeof window !== 'undefined' && window.google && addressInputRef.current) {
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-        componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'formatted_address'],
-      });
-
-      if (autocompleteRef.current) {
-        autocompleteRef.current.addListener('place_changed', () => {
-          if (autocompleteRef.current) {
-            const place = autocompleteRef.current.getPlace();
-            if (place.formatted_address) {
-              setPersonalInfo(prevInfo => ({
-                ...prevInfo,
-                address: place.formatted_address || ''
-              }));
-            }
-          }
-        });
-      }
-    }
-  };
-
-  // Add this useEffect for loading Google Maps script
+  // Initialize Google Maps script
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.google) {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
-      script.onload = () => {
-        window.initializeGooglePlaces = initializeAutocomplete;
-        window.initializeGooglePlaces();
-      };
+      script.onload = () => setGoogleMapsReady(true);
       document.head.appendChild(script);
-    } else if (typeof window !== 'undefined' && window.google) {
-      initializeAutocomplete();
+    } else {
+      setGoogleMapsReady(true);
     }
-    
-    return () => {
-      // Clean up if needed
-    };
   }, []);
+
+  // Initialize Google Places autocomplete
+  useEffect(() => {
+    if (googleMapsReady && addressInputRef.current && !autocomplete) {
+      const input = addressInputRef.current;
+      const options = {
+        componentRestrictions: { country: 'us' },
+        fields: ['formatted_address', 'address_components'],
+        types: ['address']
+      };
+      
+      const autocompleteInstance = new google.maps.places.Autocomplete(input, options);
+      setAutocomplete(autocompleteInstance);
+
+      autocompleteInstance.addListener('place_changed', () => {
+        const place = autocompleteInstance.getPlace();
+        const newAddress = place.formatted_address || personalInfo.address || '';
+        setPersonalInfo(prev => ({
+          ...prev,
+          address: newAddress
+        }));
+      });
+    }
+  }, [googleMapsReady, autocomplete]);
 
   // Add the missing handleFileUpload method inside the component
   const handleFileUpload = async (docType: string, file: File) => {
@@ -1347,6 +1341,92 @@ export default function DocumentCollection() {
       </div>
     </div>
   );
+
+  // Add style for any Google Maps elements
+  useEffect(() => {
+    // Create a style element for Google Maps styling
+    const styleEl = document.createElement('style');
+    styleEl.id = 'google-maps-style';
+    styleEl.innerHTML = `
+      /* Google Maps related styling */
+      .gm-style {
+        font-family: 'IBM Plex Mono', 'Space Mono', 'Roboto Mono', monospace;
+      }
+      
+      .gm-style button {
+        background: rgba(168, 85, 247, 0.1);
+        border: 1px solid rgba(168, 85, 247, 0.25);
+        color: #C084FC;
+      }
+      
+      .gm-style button:hover {
+        background: rgba(168, 85, 247, 0.15);
+        border-color: rgba(168, 85, 247, 0.4);
+      }
+      
+      /* Autocomplete dropdown styling */
+      .pac-container {
+        background-color: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 0.5rem;
+        border: 1px solid rgba(168, 85, 247, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        font-family: 'Inter', system-ui, sans-serif;
+        margin-top: 4px;
+        padding: 8px 0;
+        z-index: 1000;
+      }
+      
+      .pac-item {
+        padding: 8px 12px;
+        color: #E2E8F0;
+        font-size: 0.875rem;
+        border-top: 1px solid rgba(56, 189, 248, 0.1);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      
+      .pac-item:first-child {
+        border-top: none;
+      }
+      
+      .pac-item:hover, .pac-item-selected {
+        background-color: rgba(168, 85, 247, 0.15);
+      }
+      
+      .pac-icon {
+        display: none;
+      }
+      
+      .pac-item-query {
+        color: #A855F7;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding-right: 4px;
+      }
+      
+      .pac-matched {
+        color: #60A5FA;
+        font-weight: 600;
+      }
+      
+      .pac-logo:after {
+        background-color: rgba(15, 23, 42, 0.95);
+        color: #94A3B8;
+        font-size: 0.75rem;
+        padding: 4px 8px;
+      }
+    `;
+    
+    document.head.appendChild(styleEl);
+    
+    return () => {
+      const existingStyle = document.getElementById('google-maps-style');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
