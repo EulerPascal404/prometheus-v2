@@ -5,6 +5,7 @@ import Script from 'next/script';
 // Import SharedStyles and BackgroundEffects
 import { SharedStyles, BackgroundEffects } from '../components/SharedStyles';
 import { supabase } from '../config/supabase';
+import Navbar from '../components/Navbar';
 
 interface LawyerMatch {
   name: string;
@@ -914,12 +915,11 @@ export default function LawyerSearch() {
   return (
     <div>
       <Head>
-        {/* Use SharedStyles */}
         <style>{SharedStyles}</style>
         <title>O-1 Visa Expert Match - Prometheus</title>
       </Head>
 
-      {/* Use BackgroundEffects */}
+      <Navbar />
       <BackgroundEffects />
 
       {/* Removed pt-16, using p-6 on content */}

@@ -3,23 +3,13 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { SharedStyles } from '../components/SharedStyles';
 import { BackgroundEffects } from '../components/BackgroundEffects';
+import Navbar from '../components/Navbar';
 
 const HomePage: FC = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [activeFeature, setActiveFeature] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
-
-  // Handle scroll events
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Mouse move effect
   useEffect(() => {
@@ -61,6 +51,8 @@ const HomePage: FC = () => {
       
       <BackgroundEffects />
       
+      <Navbar />
+      
       {/* Mouse follower effect */}
       <div 
         className="fixed w-64 h-64 rounded-full pointer-events-none z-10 opacity-20 mix-blend-screen"
@@ -74,60 +66,6 @@ const HomePage: FC = () => {
       />
       
       <div className="relative z-10 min-h-screen">
-        {/* Navigation */}
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-slate-900/80 backdrop-blur-md py-3' : 'bg-transparent py-5'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center">
-              <Link href="/" className="flex items-center group">
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-purple-400 transition-all duration-300 font-outfit">Prometheus</span>
-              </Link>
-              
-              <div className="hidden md:flex space-x-8">
-                <Link 
-                  href="#features" 
-                  className="text-slate-300 hover:text-white transition-colors font-outfit"
-                >
-                  Features
-                </Link>
-                <Link 
-                  href="#process" 
-                  className="text-slate-300 hover:text-white transition-colors font-outfit"
-                >
-                  Process
-                </Link>
-                <Link 
-                  href="/document-collection" 
-                  className="text-slate-300 hover:text-white transition-colors font-outfit"
-                >
-                  Apply
-                </Link>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <Link 
-                  href="/document-collection" 
-                  className="hidden md:block px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 font-outfit"
-                >
-                  Sign In
-                </Link>
-                <Link 
-                  href="/document-collection" 
-                  className="px-4 py-2 rounded-md bg-white text-slate-900 font-medium hover:bg-slate-100 transition-all duration-300 transform hover:scale-105 font-outfit"
-                >
-                  Get Started
-                </Link>
-                
-                {/* Mobile menu button */}
-                <button className="md:hidden text-white">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </nav>
-
         {/* Hero Section - Enhanced with dynamic visuals */}
         <section id="hero" ref={heroRef} className="pt-40 pb-20 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center">
           <div className="max-w-7xl mx-auto text-center">
