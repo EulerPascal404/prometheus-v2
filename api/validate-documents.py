@@ -21,6 +21,14 @@ from pdfrw import PdfReader, PdfWriter, PdfDict, PdfName
 import pdfrw
 import datetime
 
+# Standardize O-1 relevant pages representation
+# 1-indexed for human reference (pages 1-7 and 28-30 of the form as labeled)
+O1_RELEVANT_PAGES_1INDEXED = list(range(1, 8)) + list(range(28, 31))
+# 0-indexed for programmatic use (e.g., array indices)
+O1_RELEVANT_PAGES_0INDEXED = list(range(0, 7)) + list(range(27, 30))
+# Default NUM_PAGES for O-1 is 10 pages total (pages 1-7 and 28-30)
+NUM_PAGES = 10
+
 # Function to parse summary text into structured arrays
 def parse_summary(summary_text: str) -> Tuple[List[str], List[str], List[str]]:
     """
@@ -168,8 +176,6 @@ def parse_summary(summary_text: str) -> Tuple[List[str], List[str], List[str]]:
     logger.info(f"Parsed {len(strengths)} strengths, {len(weaknesses)} weaknesses, {len(recommendations)} recommendations")
     return strengths, weaknesses, recommendations
 
-NUM_PAGES = 2
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -263,16 +269,16 @@ def log_page_progress(page_num, total_pages, user_id, supabase):
             print(f"Error updating RAG page progress: {str(e)}")
 
 def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
-    # Use NUM_PAGES to limit the number of pages processed
+    # Use O1_RELEVANT_PAGES_1INDEXED to limit the number of pages processed
     if pages is None:
-        # Only process the first NUM_PAGES pages
-        pages = list(range(1, min(38, NUM_PAGES + 1)))
+        # Only process the O-1 relevant pages
+        pages = O1_RELEVANT_PAGES_1INDEXED
     else:
         # Respect the limit if pages are provided
-        pages = [p for p in pages if p <= NUM_PAGES]
+        pages = [p for p in pages if p in O1_RELEVANT_PAGES_1INDEXED]
     
     total_pages = len(pages)
-    print(f"Will process {total_pages} pages out of {NUM_PAGES} maximum")
+    print(f"Will process {total_pages} O-1 relevant pages")
     
     # Get the base directory (demo folder) using the script's location
     base_dir = "data/"
@@ -448,7 +454,10 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
     template = PdfReader(input_pdf)
     total_pages = len(template.pages)
     
-    print(f"Started filling PDF with {total_pages} pages")
+    # Check if we're using the trimmed PDF (which contains only O-1 pages)
+    is_trimmed_pdf = "o1only" in input_pdf or total_pages <= 10
+    
+    print(f"Started filling PDF with {total_pages} pages" + (" (trimmed O-1 PDF)" if is_trimmed_pdf else ""))
     
     # Create field stats dictionary to track filled fields
     field_stats = {
@@ -463,18 +472,31 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         "total_fields": 0
     }
     
-    # Initial progress update
+    # For O-1, we expect exactly 10 relevant pages
+    o1_total_pages = 10
+    
+    # Initial progress update - always use the O-1 page count for progress
     if supabase and user_id:
-        update_fill_progress(0, total_pages, doc_type, user_id, supabase)
+        update_fill_progress(0, o1_total_pages, doc_type, user_id, supabase)
+    
+    # Track processed page count for progress reporting
+    processed_page_count = 0
     
     for page_num, page in enumerate(template.pages):
-
-        if (page_num + 1 >= NUM_PAGES):
+        # If using a full PDF, check if this page is one of the O-1 relevant ones
+        if not is_trimmed_pdf and page_num not in O1_RELEVANT_PAGES_0INDEXED:
+            continue  # Skip non-O1 pages
+        
+        # Safety check - don't process more than the expected O-1 pages
+        if processed_page_count >= o1_total_pages:
             break
-
-        # Update progress for each page
+            
+        # Increment processed page counter for progress reporting
+        processed_page_count += 1
+        
+        # Update progress for each relevant page - report the sequential number (1 to 10) not the raw page index
         if supabase and user_id:
-            update_fill_progress(page_num + 1, total_pages, doc_type, user_id, supabase)
+            update_fill_progress(processed_page_count, o1_total_pages, doc_type, user_id, supabase)
             
         annotations = page.get('/Annots')
         if annotations:
@@ -584,9 +606,9 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                                 val = random.choice(opts)[0].replace('(', '').replace(')', '')
                                 annotation.update(PdfDict(V=val, AS=val))
     
-    # Final progress update - completed
+    # Final progress update - with the correct O-1 page count (10)
     if supabase and user_id:
-        update_fill_progress(total_pages, total_pages, doc_type, user_id, supabase)
+        update_fill_progress(o1_total_pages, o1_total_pages, doc_type, user_id, supabase)
     
     # Write field stats to a report file
     base_dir = Path(output_pdf).parent
@@ -709,7 +731,7 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
     # Generate RAG responses using ONLY the current uploaded document text
     full_response_dict = write_rag_responses(
         extra_info=f"Extracted Text: {extracted_text}...", 
-        pages=list(range(1, NUM_PAGES)),  # Limit to defined page count for serverless environment
+        pages=O1_RELEVANT_PAGES_1INDEXED,  # Use 1-indexed pages for consistency
         user_id=user_id,
         supabase=supabase
     )

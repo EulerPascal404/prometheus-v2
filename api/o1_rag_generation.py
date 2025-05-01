@@ -11,6 +11,11 @@ load_dotenv('.env.local')
 CREATED_VECTOR_STORE = True
 # Global variable to control number of pages filled - set to 10 for now
 NUM_PAGES = 10
+# Standardize O-1 relevant pages representation
+# 1-indexed for human reference (pages 1-7, 28-30 from the form)
+O1_RELEVANT_PAGES_1INDEXED = list(range(1, 8)) + list(range(28, 31))
+# 0-indexed for programmatic use (array indices)
+O1_RELEVANT_PAGES_0INDEXED = list(range(0, 7)) + list(range(27, 30))
 
 def write_to_file(filename: str, content: str):
     """Writes the given content to a file."""
@@ -48,19 +53,22 @@ def log_page_progress(page_num, total_pages, user_id, supabase):
             print(f"Error updating RAG page progress: {str(e)}")
 
 def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
-    # Use NUM_PAGES to limit the number of pages processed
+    # Use O1_RELEVANT_PAGES_1INDEXED by default for O-1 processing
     if pages is None:
-        # Only process the first NUM_PAGES pages
-        pages = list(range(1, min(38, NUM_PAGES + 1)))
+        # For O-1, use the specific relevant pages (1-indexed)
+        pages = O1_RELEVANT_PAGES_1INDEXED
     else:
-        # Respect the limit if pages are provided
-        pages = [p for p in pages if p <= NUM_PAGES]
+        # If pages are provided, ensure they exist in the O-1 relevant pages
+        pages = [p for p in pages if p in O1_RELEVANT_PAGES_1INDEXED]
     
     total_pages = len(pages)
-    print(f"Will process {total_pages} pages out of {NUM_PAGES} maximum")
+    print(f"Will process {total_pages} O-1 relevant pages")
     
     # Get the base directory (demo folder) using the script's location
     base_dir = Path(__file__).parent.parent
+    
+    # Path to the trimmed O-1 PDF
+    trimmed_pdf_path = str(base_dir / "o1-form-template-cleaned-o1only.pdf")
     
     # Use absolute paths for all file operations
     files = glob(str(base_dir / "extracted_text/*.txt"))
@@ -92,10 +100,13 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
             
             # Get the extracted text for this page
             page_text = ""
-            if len(files) > 0 and page_num-1 < len(files) and os.path.exists(files[page_num-1]):
-                page_text = read_text_file(files[page_num-1])
+            # For the trimmed PDF, we need mapping between 1-indexed page numbers and file indices
+            # Calculate the correct index in files list for this page
+            file_idx = page_num - 1  # Convert from 1-indexed to 0-indexed for files
+            if len(files) > 0 and 0 <= file_idx < len(files) and os.path.exists(files[file_idx]):
+                page_text = read_text_file(files[file_idx])
             else:
-                print(f"Warning: Extracted text file not found for page {page_num}")
+                print(f"Warning: Extracted text file not found for page {page_num} (file index {file_idx})")
                 continue
             
             text_prompt = form_data + page_text
@@ -135,4 +146,4 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
         if supabase and user_id and (idx % 3 == 0 or idx == len(pages) - 1):  # Update every 3 pages or on the last page
             log_page_progress(idx + 1, total_pages, user_id, supabase)
             
-    print(f"Completed processing {total_pages} pages")
+    print(f"Completed processing {total_pages} O-1 relevant pages")

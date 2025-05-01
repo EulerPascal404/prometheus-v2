@@ -34,7 +34,10 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict=None, doc_type=None,
     template = PdfReader(input_pdf)
     total_pages = len(template.pages)
     
-    print(f"Started filling PDF with {total_pages} pages")
+    # Check if we're using the trimmed PDF (which contains only O-1 pages)
+    is_trimmed_pdf = "o1only" in input_pdf or total_pages <= 10
+    
+    print(f"Started filling PDF with {total_pages} pages" + (" (trimmed O-1 PDF)" if is_trimmed_pdf else ""))
     
     # Create field stats dictionary to track filled fields
     field_stats = {
@@ -49,14 +52,30 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict=None, doc_type=None,
         "total_fields": 0
     }
     
-    # Initial progress update
+    # For O-1, we expect exactly 10 relevant pages
+    o1_total_pages = 10
+    
+    # Initial progress update - use the O-1 page count
     if supabase and user_id:
-        update_fill_progress(0, total_pages, doc_type, user_id, supabase)
+        update_fill_progress(0, o1_total_pages, doc_type, user_id, supabase)
+    
+    # Track processed page count for progress reporting
+    processed_page_count = 0
     
     for page_num, page in enumerate(template.pages):
-        # Update progress for each page
+        # If using the full PDF, we would skip pages not in O1_RELEVANT_PAGES_0INDEXED
+        # But since we're using the trimmed PDF, all pages are relevant
+        
+        # Safety check - don't process more than the expected O-1 pages
+        if processed_page_count >= o1_total_pages:
+            break
+        
+        # Increment processed page counter for progress reporting
+        processed_page_count += 1
+        
+        # Update progress for each relevant page - report sequential numbers
         if supabase and user_id:
-            update_fill_progress(page_num + 1, total_pages, doc_type, user_id, supabase)
+            update_fill_progress(processed_page_count, o1_total_pages, doc_type, user_id, supabase)
             
         annotations = page.get('/Annots')
         if annotations:
@@ -164,9 +183,9 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict=None, doc_type=None,
                                 val = random.choice(opts)[0].replace('(', '').replace(')', '')
                                 annotation.update(PdfDict(V=val, AS=val))
     
-    # Final progress update - completed
+    # Final progress update - completed with the correct total
     if supabase and user_id:
-        update_fill_progress(total_pages, total_pages, doc_type, user_id, supabase)
+        update_fill_progress(o1_total_pages, o1_total_pages, doc_type, user_id, supabase)
     
     # Write field stats to a report file
     base_dir = Path(output_pdf).parent
@@ -386,11 +405,41 @@ def merge_json_from_file(file_path, handle_duplicates='overwrite'):
     
     return merged_data
 
+### CHANGE ###
+def extract_o1_relevant_pages(input_pdf_path, output_pdf_path):
+    """
+    Extracts only the O-1 relevant pages (1-7 and 28-30) from the input PDF and saves to output_pdf_path.
+    Pages are 1-indexed for user, 0-indexed for pdfrw.
+    """
+    reader = PdfReader(input_pdf_path)
+
+    # Define page indices - standardized constants
+    # 1-indexed for human reference (pages 1-7 and 28-30 of the form as labeled)
+    O1_RELEVANT_PAGES_1INDEXED = list(range(1, 8)) + list(range(28, 31))
+    # 0-indexed for programmatic use with pdfrw (e.g., array indices)
+    O1_RELEVANT_PAGES_0INDEXED = list(range(0, 7)) + list(range(27, 30))
+    
+    # Use 0-indexed version for pdfrw
+    selected_pages = [reader.pages[i] for i in O1_RELEVANT_PAGES_0INDEXED if i < len(reader.pages)]
+    writer = PdfWriter()
+    writer.addpages(selected_pages)
+    writer.write(output_pdf_path)
+    print(f"Trimmed O-1 PDF created at {output_pdf_path} with {len(selected_pages)} pages.")
+
+### CHANGE ###
 def run(user_info, doc_type=None, user_id=None, supabase=None):
     print("RUNNING RAG GENERATION")
     # Get the base directory (demo folder) using the script's location
     base_dir = Path(__file__).parent.parent
     
+    # Path to the full and trimmed template PDFs
+    full_template_pdf_path = str(base_dir / "o1-form-template-cleaned.pdf")
+    trimmed_template_pdf_path = str(base_dir / "o1-form-template-cleaned-o1only.pdf")
+
+    # Ensure the trimmed PDF exists (create if not)
+    if not os.path.exists(trimmed_template_pdf_path):
+        extract_o1_relevant_pages(full_template_pdf_path, trimmed_template_pdf_path)
+
     # Initial progress update for RAG generation
     if supabase and user_id:
         try:
@@ -411,10 +460,14 @@ def run(user_info, doc_type=None, user_id=None, supabase=None):
         with open(history_file, "w", encoding="utf-8") as f:
             f.write("")  # Create empty file
     
+    # Define page indices - standardized constants
+    # 1-indexed for human reference (pages 1-7 and 28-30 of the form as labeled)
+    O1_RELEVANT_PAGES_1INDEXED = list(range(1, 8)) + list(range(28, 31))
+    
     # Pass user_id and supabase to the RAG generation
     write_rag_responses(
         extra_info=f"User Info: {user_info}", 
-        pages=list(range(1, 38)),
+        pages=O1_RELEVANT_PAGES_1INDEXED,  # Use 1-indexed pages for consistency
         user_id=user_id,
         supabase=supabase
     )
@@ -423,8 +476,9 @@ def run(user_info, doc_type=None, user_id=None, supabase=None):
     response_dict_path = str(base_dir / "rag_responses/history.txt")
     
     # Fix the filled PDF path to be in the public directory
+    ### CHANGE ###
     filled_pdf_path = str(base_dir / "public/o1-form-template-cleaned-filled.pdf")
-    template_pdf_path = str(base_dir / "o1-form-template-cleaned.pdf")
+    template_pdf_path = trimmed_template_pdf_path  # Use the trimmed version for O-1
 
     # Create directories if they don't exist
     os.makedirs(os.path.dirname(filled_pdf_path), exist_ok=True)

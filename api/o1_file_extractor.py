@@ -55,7 +55,8 @@ def extract_filled_pdf_values(filled_pdf, output_txt_path):
         txt_file.write("\n".join(extracted_data))
 
 base_dir = Path(__file__).parent.parent
-file_pths = glob(str(base_dir / "separated_pages/*.pdf"))
+trimmed_pdf_path = str(base_dir / "o1-form-template-cleaned-o1only.pdf")
+file_pths = [trimmed_pdf_path]  # Only process the trimmed O-1 PDF
 
 for i, pth in enumerate(file_pths):
     output_path = str(base_dir / f"extracted_form_data/page_{i+1}.txt")
