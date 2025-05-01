@@ -300,15 +300,22 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
             print(f"Warning: Could not create directory {directory}: {str(e)}")
     
     # Use absolute paths for all file operations
-    extracted_text_dir = base_dir + "extracted_text"
+    extracted_text_dir = base_dir + "extracted_form_data"
     
-    # Try to find text files or create a dummy one for testing
-    files = glob(str(extracted_text_dir + "/*.txt"))
+    # Get only the text files for the pages we're processing
+    print(f"Processing pages: {pages}")
+    files = []
+    for page_num in pages:
+        # Format page number with leading zero for single digits
+        page_file = os.path.join(extracted_text_dir, f"page_{page_num}.txt")
+        if os.path.exists(page_file):
+            files.append(page_file)
+    print(f"{len(files)}")
     print(f"Found {len(files)} text files in {extracted_text_dir}")
     
     if len(files) == 0:
         # Create a dummy text file for testing if no files exist
-        dummy_file = os.path.join(extracted_text_dir, "dummy_page_1.txt")
+        dummy_file = os.path.join(extracted_text_dir, "dummy_page_01.txt")
         try:
             with open(dummy_file, 'w', encoding='utf-8') as f:
                 f.write("This is a dummy text file created because no extracted text was found.")
@@ -371,9 +378,16 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
             # Get the extracted text for this page
             page_text = ""
             try:
-                if len(files) > 0 and page_num-1 < len(files) and os.path.exists(files[page_num-1]):
-                    page_text = read_text_file(files[page_num-1])
-                    print(f"Successfully read page text from: {files[page_num-1]}")
+                # Handle O-1 form pages (1-7 and 28-30)
+                # For pages 28-30, map them to appropriate files in the array
+                file_index = page_num - 1
+                # If page is 28, 29, or 30, map to indices 7, 8, 9 in the files array
+                if page_num >= 28 and page_num <= 30:
+                    file_index = 7 + (page_num - 28)
+                
+                if len(files) > 0 and file_index < len(files) and os.path.exists(files[file_index]):
+                    page_text = read_text_file(files[file_index])
+                    print(f"Successfully read page text from: {files[file_index]}")
                 else:
                     print(f"Warning: Extracted text file not found for page {page_num}")
                     # Try alternative path
