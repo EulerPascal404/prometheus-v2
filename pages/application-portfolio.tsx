@@ -4,6 +4,7 @@ import Head from 'next/head';
 import { supabase } from '../config/supabase';
 import { SharedStyles } from '../components/SharedStyles';
 import { BackgroundEffects } from '../components/BackgroundEffects';
+import Navbar from '../components/Navbar';
 
 interface Application {
   id: string;
@@ -152,6 +153,7 @@ export default function ApplicationPortfolio() {
         <style>{SharedStyles}</style>
       </Head>
 
+      <Navbar />
       <BackgroundEffects />
 
       <div className="min-h-screen bg-transparent p-6">

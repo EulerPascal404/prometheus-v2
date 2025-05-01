@@ -5,6 +5,7 @@ import Head from 'next/head';
 import { SharedStyles } from '../components/SharedStyles';
 import { BackgroundEffects } from '../components/BackgroundEffects';
 import Script from 'next/script';
+import Navbar from '../components/Navbar';
 
 // Define types that were previously imported from utils/documentProcessor
 export interface FieldStats {
@@ -1952,6 +1953,7 @@ export default function DocumentReview() {
         <style>{SharedStyles}</style>
       </Head>
   
+      <Navbar />
       <BackgroundEffects />
       
       {isLoading && <LoadingScreen />}

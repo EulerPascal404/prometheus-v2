@@ -4,6 +4,7 @@ import { supabase } from '../config/supabase';
 import Head from 'next/head';
 import { SharedStyles } from '../components/SharedStyles';
 import { BackgroundEffects } from '../components/BackgroundEffects';
+import Link from 'next/link';
 
 export default function ProcessingDocuments() {
   const router = useRouter();
@@ -521,8 +522,46 @@ export default function ProcessingDocuments() {
 
       <BackgroundEffects />
 
-      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6">
-        <div className="max-w-2xl w-full">
+      <div className="min-h-screen bg-transparent">
+        {/* Navigation Bar */}
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md py-3 border-b border-slate-700/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center">
+              <Link href="/" className="flex items-center group">
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-purple-400 transition-all duration-300 font-outfit">Prometheus</span>
+              </Link>
+              
+              <div className="hidden md:flex space-x-8">
+                <Link 
+                  href="/document-collection" 
+                  className="text-slate-300 hover:text-white transition-colors font-outfit"
+                >
+                  Documents
+                </Link>
+                <Link 
+                  href="/document-review" 
+                  className="text-slate-300 hover:text-white transition-colors font-outfit"
+                >
+                  Review
+                </Link>
+                <Link 
+                  href="/lawyer-search" 
+                  className="text-slate-300 hover:text-white transition-colors font-outfit"
+                >
+                  Find Lawyer
+                </Link>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="bg-slate-800/50 px-4 py-1.5 rounded-full border border-slate-700/50">
+                  <span className="text-sm text-slate-300 font-outfit">Processing Documents</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <div className="max-w-2xl w-full pt-24">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold gradient-text mb-2">Processing Your Documents</h1>
             <p className="text-slate-300">
