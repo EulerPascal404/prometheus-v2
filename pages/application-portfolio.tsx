@@ -17,6 +17,59 @@ interface Application {
   name: string;
 }
 
+interface DeleteModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  applicationName: string;
+}
+
+// Add DeleteModal component
+const DeleteModal: React.FC<DeleteModalProps> = ({ isOpen, onClose, onConfirm, applicationName }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+      
+      {/* Modal */}
+      <div className="relative bg-slate-800 rounded-xl border border-slate-700/50 p-6 max-w-md w-full mx-4 transform transition-all">
+        <div className="flex flex-col items-center text-center">
+          <div className="w-12 h-12 rounded-full bg-rose-500/20 flex items-center justify-center mb-4">
+            <svg className="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+          
+          <h3 className="text-xl font-semibold text-white mb-2">Delete Application</h3>
+          <p className="text-slate-300 mb-6">
+            Are you sure you want to delete <span className="text-white font-medium">"{applicationName}"</span>? This action cannot be undone.
+          </p>
+          
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 hover:text-rose-300 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ApplicationPortfolio() {
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
@@ -24,6 +77,12 @@ export default function ApplicationPortfolio() {
   const [isCreatingApplication, setIsCreatingApplication] = useState(false);
   const [editingName, setEditingName] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
+  const [deleteModal, setDeleteModal] = useState<{isOpen: boolean; applicationId: string; applicationName: string}>({
+    isOpen: false,
+    applicationId: '',
+    applicationName: ''
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -146,6 +205,141 @@ export default function ApplicationPortfolio() {
     }
   };
 
+  const handleDelete = async () => {
+    if (isDeleting) return;
+    
+    try {
+      setIsDeleting(true);
+      
+      // Delete the application from Supabase
+      const { error } = await supabase
+        .from('applications')
+        .delete()
+        .eq('id', deleteModal.applicationId);
+
+      if (error) throw error;
+
+      // Update local state
+      setApplications(applications.filter(app => app.id !== deleteModal.applicationId));
+      setDeleteModal({ isOpen: false, applicationId: '', applicationName: '' });
+    } catch (error) {
+      console.error('Error deleting application:', error);
+      alert('Failed to delete application. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Add delete button to the application card
+  const renderApplicationCard = (app: Application) => (
+    <div
+      key={app.id}
+      className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden hover:border-primary-500/30 transition-all duration-300 group"
+    >
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex items-center">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500/20 to-purple-500/20 flex items-center justify-center border border-primary-500/30">
+              <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              {editingName === app.id ? (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="bg-slate-700/50 border border-primary-500/30 rounded px-2 py-1 text-white focus:outline-none focus:border-primary-500"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveName(app.id);
+                      if (e.key === 'Escape') setEditingName(null);
+                    }}
+                  />
+                  <button
+                    onClick={() => saveName(app.id)}
+                    className="text-primary-400 hover:text-primary-300"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setEditingName(null)}
+                    className="text-slate-400 hover:text-slate-300"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="group">
+                  <span className="text-sm text-slate-400">Application Name</span>
+                  <h3 
+                    className="text-lg font-medium text-white cursor-pointer hover:text-primary-400 transition-colors"
+                    onClick={() => handleNameEdit(app.id, app.name)}
+                  >
+                    {app.name || 'Untitled Application'}
+                  </h3>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
+              {app.status.replace('_', ' ').toUpperCase()}
+            </span>
+            <button
+              onClick={() => setDeleteModal({ isOpen: true, applicationId: app.id, applicationName: app.name })}
+              className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors rounded-lg hover:bg-rose-500/10"
+              title="Delete application"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 bg-slate-700/20 rounded-lg">
+            <span className="text-slate-300">Application Score</span>
+            <span className="text-lg font-semibold text-primary-400">{app.score}/10</span>
+          </div>
+
+          <div className="p-3 bg-slate-700/20 rounded-lg">
+            <h4 className="text-sm font-medium text-slate-300 mb-2">Summary</h4>
+            <p className="text-sm text-slate-400 line-clamp-3">{app.summary}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-slate-700/20 rounded-lg">
+              <span className="text-xs text-slate-400">Documents</span>
+              <p className="text-lg font-medium text-white">{app.document_count}</p>
+            </div>
+            <div className="p-3 bg-slate-700/20 rounded-lg">
+              <span className="text-xs text-slate-400">Last Updated</span>
+              <p className="text-sm font-medium text-white">{formatDate(app.last_updated)}</p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => router.push(`/document-review?id=${app.id}`)}
+          className="w-full mt-6 bg-slate-700/40 hover:bg-slate-700/60 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center group-hover:bg-primary-500/20"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          View Details
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <Head>
@@ -155,6 +349,13 @@ export default function ApplicationPortfolio() {
 
       <Navbar />
       <BackgroundEffects />
+
+      <DeleteModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, applicationId: '', applicationName: '' })}
+        onConfirm={handleDelete}
+        applicationName={deleteModal.applicationName}
+      />
 
       <div className="min-h-screen bg-transparent p-6">
         <div className="max-w-6xl mx-auto pt-12">
@@ -186,171 +387,21 @@ export default function ApplicationPortfolio() {
               <div className="w-12 h-12 rounded-full border-4 border-slate-600 border-t-primary-400 animate-spin"></div>
             </div>
           ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Create New Application Card - always visible */}
-                <div
-                  className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-primary-500/30 overflow-hidden hover:border-primary-500/50 transition-all duration-300 group cursor-pointer"
-                  onClick={createNewApplication}
-                >
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500/20 to-purple-500/20 flex items-center justify-center border border-primary-500/30">
-                          <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <span className="text-sm text-slate-400">New</span>
-                          <h3 className="text-lg font-medium text-white">Application</h3>
-                        </div>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium text-primary-400 bg-primary-500/20 border-primary-500/30">
-                        CREATE
-                      </span>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="p-3 bg-slate-700/20 rounded-lg">
-                        <h4 className="text-sm font-medium text-slate-300 mb-2">Start a New Application</h4>
-                        <p className="text-sm text-slate-400">Begin your O-1 visa journey by creating a new application and uploading your documents.</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-slate-700/20 rounded-lg">
-                          <span className="text-xs text-slate-400">Upload</span>
-                          <p className="text-lg font-medium text-white">Documents</p>
-                        </div>
-                        <div className="p-3 bg-slate-700/20 rounded-lg">
-                          <span className="text-xs text-slate-400">Get</span>
-                          <p className="text-lg font-medium text-white">Started</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      className="w-full mt-6 bg-gradient-to-r from-primary-500/40 to-purple-500/40 hover:from-primary-500/60 hover:to-purple-500/60 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center border border-primary-500/30 hover:border-primary-500/50"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Create Application
-                    </button>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {applications.map(app => renderApplicationCard(app))}
+              
+              {applications.length === 0 && (
+                <div className="md:col-span-2 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/30 p-6 flex flex-col items-center justify-center">
+                  <svg className="w-16 h-16 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h3 className="text-xl font-medium text-white mb-2">No Applications Found</h3>
+                  <p className="text-slate-400 max-w-md text-center mb-2">
+                    Create your first application using the button above.
+                  </p>
                 </div>
-                
-                {applications.length > 0 && applications.map((app) => (
-                  <div
-                    key={app.id}
-                    className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden hover:border-primary-500/30 transition-all duration-300 group"
-                  >
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500/20 to-purple-500/20 flex items-center justify-center border border-primary-500/30">
-                            <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                          </div>
-                          <div className="ml-3">
-                            {editingName === app.id ? (
-                              <div className="flex items-center space-x-2">
-                                <input
-                                  type="text"
-                                  value={newName}
-                                  onChange={(e) => setNewName(e.target.value)}
-                                  className="bg-slate-700/50 border border-primary-500/30 rounded px-2 py-1 text-white focus:outline-none focus:border-primary-500"
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') saveName(app.id);
-                                    if (e.key === 'Escape') setEditingName(null);
-                                  }}
-                                />
-                                <button
-                                  onClick={() => saveName(app.id)}
-                                  className="text-primary-400 hover:text-primary-300"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => setEditingName(null)}
-                                  className="text-slate-400 hover:text-slate-300"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="group">
-                                <span className="text-sm text-slate-400">Application Name</span>
-                                <h3 
-                                  className="text-lg font-medium text-white cursor-pointer hover:text-primary-400 transition-colors"
-                                  onClick={() => handleNameEdit(app.id, app.name)}
-                                >
-                                  {app.name || 'Untitled Application'}
-                                </h3>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
-                          {app.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between p-3 bg-slate-700/20 rounded-lg">
-                          <span className="text-slate-300">Application Score</span>
-                          <span className="text-lg font-semibold text-primary-400">{app.score}/10</span>
-                        </div>
-
-                        <div className="p-3 bg-slate-700/20 rounded-lg">
-                          <h4 className="text-sm font-medium text-slate-300 mb-2">Summary</h4>
-                          <p className="text-sm text-slate-400 line-clamp-3">{app.summary}</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="p-3 bg-slate-700/20 rounded-lg">
-                            <span className="text-xs text-slate-400">Documents</span>
-                            <p className="text-lg font-medium text-white">{app.document_count}</p>
-                          </div>
-                          <div className="p-3 bg-slate-700/20 rounded-lg">
-                            <span className="text-xs text-slate-400">Last Updated</span>
-                            <p className="text-sm font-medium text-white">{formatDate(app.last_updated)}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => router.push(`/document-review?id=${app.id}`)}
-                        className="w-full mt-6 bg-slate-700/40 hover:bg-slate-700/60 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center group-hover:bg-primary-500/20"
-                      >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        View Details
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                
-                {applications.length === 0 && (
-                  <div className="md:col-span-2 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/30 p-6 flex flex-col items-center justify-center">
-                    <svg className="w-16 h-16 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <h3 className="text-xl font-medium text-white mb-2">No Applications Found</h3>
-                    <p className="text-slate-400 max-w-md text-center mb-2">
-                      Create your first application using the card on the left.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </>
+              )}
+            </div>
           )}
         </div>
       </div>

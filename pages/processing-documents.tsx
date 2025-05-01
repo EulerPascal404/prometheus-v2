@@ -561,67 +561,70 @@ export default function ProcessingDocuments() {
           </div>
         </nav>
 
-        <div className="max-w-2xl w-full pt-24">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold gradient-text mb-2">Processing Your Documents</h1>
-            <p className="text-slate-300">
-              Prometheus AI is analyzing your documents to identify your exceptional qualifications for an O-1 visa.
-            </p>
-          </div>
-          
-          <div className="card p-6 w-full border-primary-500/30 mb-8">
-            <p className="text-center text-sm text-slate-300 mb-6">
-              <strong className="text-primary-300">Expert Analysis:</strong> Our AI is evaluating your materials to find the strongest evidence of your extraordinary abilities.
-            </p>
-
-            <div className="relative mx-auto">
-              <div className="processing-glow"></div>
-              <div className="circular-progress">
-                <svg width="164" height="164" viewBox="0 0 164 164">
-                  <circle
-                    className="progress-background"
-                    cx="82"
-                    cy="82"
-                    r="76"
-                  />
-                  <circle
-                    className="progress-bar"
-                    cx="82"
-                    cy="82"
-                    r="76"
-                    strokeDasharray={`${circumference} ${circumference}`}
-                    strokeDashoffset={strokeDashoffset}
-                  />
-                  <defs>
-                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#38BDF8" />
-                      <stop offset="50%" stopColor="#818CF8" />
-                      <stop offset="100%" stopColor="#C084FC" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="progress-percentage">{progress}<span style={{ fontSize: '1.25rem' }}>%</span></div>
-              </div>
+        {/* Main Content - Fixed centering */}
+        <div className="min-h-screen flex items-center justify-center px-4">
+          <div className="max-w-2xl w-full">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold gradient-text mb-2">Processing Your Documents</h1>
+              <p className="text-slate-300">
+                Prometheus AI is analyzing your documents to identify your exceptional qualifications for an O-1 visa.
+              </p>
             </div>
+            
+            <div className="card p-6 w-full border-primary-500/30 mb-8">
+              <p className="text-center text-sm text-slate-300 mb-6">
+                <strong className="text-primary-300">Expert Analysis:</strong> Our AI is evaluating your materials to find the strongest evidence of your extraordinary abilities.
+              </p>
 
-            <div className="processing-text">
-              <h1 className="processing-title gradient-text">
-                Analyzing Your O-1 Visa Eligibility
-              </h1>
-              <div className="current-stage">{currentStage}</div>
-              <div className="criteria-chips-container">
-                <span className="criteria-chip" style={{ '--i': 0 } as React.CSSProperties}>Awards</span>
-                <span className="criteria-chip" style={{ '--i': 1 } as React.CSSProperties}>Publications</span>
-                <span className="criteria-chip" style={{ '--i': 2 } as React.CSSProperties}>Leadership</span>
-                <span className="criteria-chip" style={{ '--i': 3 } as React.CSSProperties}>High Salary</span>
-                <span className="criteria-chip" style={{ '--i': 4 } as React.CSSProperties}>Critical Role</span>
-                <span className="criteria-chip" style={{ '--i': 5 } as React.CSSProperties}>Commercial Success</span>
-                <span className="criteria-chip" style={{ '--i': 6 } as React.CSSProperties}>Judging</span>
+              <div className="relative mx-auto">
+                <div className="processing-glow"></div>
+                <div className="circular-progress">
+                  <svg width="164" height="164" viewBox="0 0 164 164">
+                    <circle
+                      className="progress-background"
+                      cx="82"
+                      cy="82"
+                      r="76"
+                    />
+                    <circle
+                      className="progress-bar"
+                      cx="82"
+                      cy="82"
+                      r="76"
+                      strokeDasharray={`${circumference} ${circumference}`}
+                      strokeDashoffset={strokeDashoffset}
+                    />
+                    <defs>
+                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#38BDF8" />
+                        <stop offset="50%" stopColor="#818CF8" />
+                        <stop offset="100%" stopColor="#C084FC" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="progress-percentage">{progress}<span style={{ fontSize: '1.25rem' }}>%</span></div>
+                </div>
               </div>
-              <div className="processing-messages">
-                <p key={currentMessageIndex} className="message-transition">
-                  {processingMessages[currentMessageIndex]}
-                </p>
+
+              <div className="processing-text">
+                <h1 className="processing-title gradient-text">
+                  Analyzing Your O-1 Visa Eligibility
+                </h1>
+                <div className="current-stage">{currentStage}</div>
+                <div className="criteria-chips-container">
+                  <span className="criteria-chip" style={{ '--i': 0 } as React.CSSProperties}>Awards</span>
+                  <span className="criteria-chip" style={{ '--i': 1 } as React.CSSProperties}>Publications</span>
+                  <span className="criteria-chip" style={{ '--i': 2 } as React.CSSProperties}>Leadership</span>
+                  <span className="criteria-chip" style={{ '--i': 3 } as React.CSSProperties}>High Salary</span>
+                  <span className="criteria-chip" style={{ '--i': 4 } as React.CSSProperties}>Critical Role</span>
+                  <span className="criteria-chip" style={{ '--i': 5 } as React.CSSProperties}>Commercial Success</span>
+                  <span className="criteria-chip" style={{ '--i': 6 } as React.CSSProperties}>Judging</span>
+                </div>
+                <div className="processing-messages">
+                  <p key={currentMessageIndex} className="message-transition">
+                    {processingMessages[currentMessageIndex]}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
