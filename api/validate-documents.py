@@ -6,6 +6,7 @@ import tempfile
 import logging
 import sys
 import time
+import uuid
 from urllib.parse import parse_qs, urlparse
 from typing import Dict, Optional, List, Tuple
 import PyPDF2
@@ -936,6 +937,140 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
             "extracted_text": ""  # Empty string for consolidation
         }
 
+### CHANGE ###
+def extract_page_28(input_pdf_path, output_pdf_path):
+    """
+    Extracts only page 28 from the input PDF and saves to output_pdf_path.
+    This is the most relevant page from the I-129 form which will be shown to users
+    before they match with a visa expert to see the complete form.
+    
+    Args:
+        input_pdf_path (str): Path to the input PDF file
+        output_pdf_path (str): Path where the extracted page will be saved
+        
+    Returns:
+        bool: True if extraction was successful, False otherwise
+    """
+    try:
+        logger.info(f"Extracting page 28 from: {input_pdf_path}")
+        
+        # Check if input file exists
+        if not os.path.exists(input_pdf_path):
+            logger.error(f"Input PDF file does not exist at {input_pdf_path}")
+            return False
+            
+        reader = PdfReader(input_pdf_path)
+        
+        # Log PDF info
+        logger.info(f"PDF has {len(reader.pages)} pages total")
+        
+        # Check if the PDF has enough pages
+        if len(reader.pages) < 28:
+            logger.error(f"PDF has only {len(reader.pages)} pages, cannot extract page 28")
+            return False
+        
+        # Page 28 has index 27 (0-indexed)
+        page_28 = reader.pages[27]
+        
+        # Ensure directory exists
+        output_dir = os.path.dirname(output_pdf_path)
+        os.makedirs(output_dir, exist_ok=True)
+        logger.info(f"Created/verified directory: {output_dir}")
+        
+        # Create the single-page PDF
+        writer = PdfWriter()
+        writer.addpage(page_28)
+        writer.write(output_pdf_path)
+        
+        # Verify file was created and is accessible
+        if os.path.exists(output_pdf_path):
+            file_size = os.path.getsize(output_pdf_path)
+            logger.info(f"Successfully extracted page 28 to: {output_pdf_path} (size: {file_size} bytes)")
+            
+            # Try to verify the PDF is valid by opening it again
+            try:
+                verification_reader = PdfReader(output_pdf_path)
+                logger.info(f"PDF verification successful - extracted PDF has {len(verification_reader.pages)} pages")
+                return True
+            except Exception as ve:
+                logger.error(f"PDF verification failed: {str(ve)}")
+                return False
+        else:
+            logger.error(f"File was not created at {output_pdf_path}")
+            return False
+    except Exception as e:
+        logger.error(f"Error extracting page 28: {str(e)}")
+        return False
+
+### CHANGE ###
+def get_application_details(application_id, user_id=None):
+    """
+    Get application details including document summaries and field stats
+    
+    Args:
+        application_id (str): The application ID to retrieve
+        user_id (str, optional): User ID for verification
+        
+    Returns:
+        dict: Application details or None if not found
+    """
+    try:
+        supabase = get_supabase()
+        if not supabase:
+            logger.warning("Supabase connection not available")
+            return None
+            
+        # Query to get application data
+        query = supabase.table("applications").select("*")
+        
+        # Filter by application_id
+        query = query.eq("id", application_id)
+        
+        # If user_id is provided, also filter by user_id for security
+        if user_id:
+            query = query.eq("user_id", user_id)
+            
+        # Execute the query
+        response = query.single().execute()
+        
+        if not response or not response.data:
+            logger.warning(f"Application {application_id} not found")
+            return None
+            
+        application = response.data
+        
+        # Parse JSON fields
+        try:
+            if "field_stats" in application and isinstance(application["field_stats"], str):
+                application["field_stats"] = json.loads(application["field_stats"])
+        except Exception as e:
+            logger.error(f"Error parsing field_stats: {str(e)}")
+            application["field_stats"] = {}
+            
+        try:
+            if "document_summaries" in application and isinstance(application["document_summaries"], str):
+                application["document_summaries"] = json.loads(application["document_summaries"])
+        except Exception as e:
+            logger.error(f"Error parsing document_summaries: {str(e)}")
+            application["document_summaries"] = {}
+        
+        # Get preview information
+        if "preview_path" not in application or not application["preview_path"]:
+            # Try to get preview path from user_documents table
+            try:
+                docs_response = supabase.table("user_documents").select("preview_path, preview_message").eq("application_id", application_id).single().execute()
+                if docs_response and docs_response.data:
+                    application["preview_path"] = docs_response.data.get("preview_path")
+                    application["preview_message"] = docs_response.data.get("preview_message", 
+                        "This is page 28 of your I-129 form. Match with a visa expert to see the complete filled form.")
+            except Exception as e:
+                logger.error(f"Error retrieving preview path: {str(e)}")
+        
+        return application
+    except Exception as e:
+        logger.error(f"Error retrieving application details: {str(e)}")
+        return None
+
 class handler(BaseHTTPRequestHandler):
     def handle_cors(self):
         """Set CORS headers for all responses"""
@@ -1327,6 +1462,80 @@ class handler(BaseHTTPRequestHandler):
                 logger.warning("No extracted text available from any document")
                 consolidated_field_stats = {}
 
+            ### CHANGE ###
+            # Extract page 28 of the I-129 form if it exists (the most important page)
+            i129_preview_path = None
+            preview_message = "This is page 28 of your I-129 form. Match with a visa expert to see the complete filled form."
+            
+            try:
+                # Define paths for input and output PDFs
+                input_pdf = "data/o1-form-template-cleaned-filled.pdf"
+                preview_dir = "data/preview"
+                os.makedirs(preview_dir, exist_ok=True)
+                
+                # Use application_id if available, otherwise use user_id
+                preview_id = application_id if application_id else user_id
+                if preview_id:
+                    output_pdf = f"{preview_dir}/page28_preview_{preview_id}.pdf"
+                else:
+                    # Generate a unique ID if neither is available
+                    unique_id = str(uuid.uuid4())[:8]
+                    output_pdf = f"{preview_dir}/page28_preview_{unique_id}.pdf"
+                
+                # Extract page 28 (the most relevant page)
+                logger.info(f"Attempting to extract page 28 preview from {input_pdf}")
+                page_extracted = extract_page_28(input_pdf, output_pdf)
+                
+                print(f"Page extracted: {page_extracted}")
+                if page_extracted:
+                    logger.info(f"Successfully extracted page 28 preview to {output_pdf}")
+                    i129_preview_path = output_pdf
+                    
+                    # If Supabase is available, store the preview in storage
+                    if supabase and user_id:
+                        try:
+                            storage_path = f"{user_id}/preview"
+                            if application_id:
+                                storage_path = f"{user_id}/applications/{application_id}/preview"
+                            
+                            with open(output_pdf, 'rb') as f:
+                                preview_content = f.read()
+                            
+                            # Upload the preview to Supabase storage
+                            preview_filename = f"page28_preview.pdf"
+                            upload_path = f"{storage_path}/{preview_filename}"
+                            upload_result = supabase.storage.from_('documents').upload(
+                                upload_path,
+                                preview_content,
+                                {"content-type": "application/pdf"}
+                            )
+                            
+                            # Get public URL for the preview
+                            i129_preview_path = supabase.storage.from_('documents').get_public_url(upload_path)
+                            logger.info(f"Preview uploaded to Supabase: {i129_preview_path}")
+                            
+                            # Update user_documents table with the preview path
+                            update_data = {
+                                "preview_path": i129_preview_path,
+                                "preview_page": 28,
+                                "preview_message": preview_message
+                            }
+                            
+                            if application_id:
+                                supabase.table("applications").update({
+                                    "preview_path": i129_preview_path,
+                                    "preview_message": preview_message
+                                }).eq("id", application_id).execute()
+                            
+                            supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
+                            logger.info("Updated database with preview information")
+                        except Exception as e:
+                            logger.error(f"Error handling preview: {str(e)}")
+                else:
+                    logger.warning("Failed to extract page 28 preview")
+            except Exception as e:
+                logger.error(f"Error extracting page 28 preview: {str(e)}")
+                
             # Update Supabase if available
             if supabase and application_id:
                 try:
@@ -1359,7 +1568,9 @@ class handler(BaseHTTPRequestHandler):
                         "can_proceed": True,
                         "document_summaries": document_summaries,
                         "field_stats": consolidated_field_stats,
-                        "application_id": application_id
+                        "application_id": application_id,
+                        "preview_path": i129_preview_path,
+                        "preview_message": preview_message
                     })
                 except Exception as e:
                     logger.error(f"Error updating database: {str(e)}")
@@ -1369,7 +1580,9 @@ class handler(BaseHTTPRequestHandler):
                         "message": f"Documents processed but database update failed: {str(e)}",
                         "can_proceed": True,
                         "document_summaries": document_summaries,
-                        "field_stats": consolidated_field_stats
+                        "field_stats": consolidated_field_stats,
+                        "preview_path": i129_preview_path,
+                        "preview_message": preview_message
                     })
             elif supabase: 
                 # No application ID provided
@@ -1385,7 +1598,9 @@ class handler(BaseHTTPRequestHandler):
                     "message": "Documents processed successfully (database not updated)",
                     "can_proceed": True,
                     "document_summaries": document_summaries,
-                    "field_stats": consolidated_field_stats
+                    "field_stats": consolidated_field_stats,
+                    "preview_path": i129_preview_path,
+                    "preview_message": preview_message
                 })
             
         except Exception as e:

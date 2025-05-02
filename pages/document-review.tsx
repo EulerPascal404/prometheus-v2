@@ -1953,8 +1953,9 @@ export default function DocumentReview() {
         <style>{SharedStyles}</style>
       </Head>
   
-      <Navbar />
       <BackgroundEffects />
+
+      <Navbar />
       
       {isLoading && <LoadingScreen />}
   
@@ -1981,6 +1982,36 @@ export default function DocumentReview() {
         
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Preview of O-1 Application Section */}
+            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10 mb-6">
+              <div className="flex justify-between items-center p-4">
+                <h2 className="text-xl font-semibold text-white flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Preview of O-1 Application
+                </h2>
+              </div>
+              
+              <div className="p-4 border-t border-slate-700/50">
+                <div className="flex flex-col items-center">
+                  <p className="text-slate-300 mb-4">This is a preview of your filled O-1 petition form. After matching with a visa expert, you'll be able to see the complete form.</p>
+                  
+                  <div className="w-full bg-white rounded-lg overflow-hidden shadow-xl">
+                    <iframe 
+                      src="/filled-o1-form-template.pdf#page=28" 
+                      // CHANGE 
+                      // src={apiResponseData?.preview_path || '/filled-o1-form-template.pdf#page=28'} 
+                      className="w-full h-[700px]" 
+                      title="O-1 Application Preview"
+                    ></iframe>
+                  </div>
+                  
+                </div>
+              </div>
+            </div>
+            
             {/* O-1 Petition Strength Analysis Section */}
             <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary-500/10">
               <div 

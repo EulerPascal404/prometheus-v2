@@ -406,6 +406,73 @@ def merge_json_from_file(file_path, handle_duplicates='overwrite'):
     return merged_data
 
 ### CHANGE ###
+def extract_page_28(input_pdf_path, output_pdf_path):
+    """
+    Extracts only page 28 from the input PDF and saves to output_pdf_path.
+    
+    Args:
+        input_pdf_path (str): Path to the input PDF file
+        output_pdf_path (str): Path where the extracted page will be saved
+        
+    Returns:
+        bool: True if extraction was successful, False otherwise
+    """
+    try:
+        print(f"[DEBUG] Extracting page 28 from: {input_pdf_path}")
+        print(f"[DEBUG] Output path for page 28: {output_pdf_path}")
+        
+        # Check if input file exists
+        if not os.path.exists(input_pdf_path):
+            print(f"[DEBUG] Error: Input PDF file does not exist at {input_pdf_path}")
+            return False
+            
+        reader = PdfReader(input_pdf_path)
+        
+        # Log PDF info
+        print(f"[DEBUG] PDF has {len(reader.pages)} pages total")
+        
+        # Check if the PDF has enough pages
+        if len(reader.pages) < 28:
+            print(f"[DEBUG] Error: PDF has only {len(reader.pages)} pages, cannot extract page 28")
+            return False
+        
+        # Page 28 has index 27 (0-indexed)
+        page_28 = reader.pages[27]
+        
+        # Ensure directory exists
+        output_dir = os.path.dirname(output_pdf_path)
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"[DEBUG] Created/verified directory: {output_dir}")
+        
+        # Create the single-page PDF
+        writer = PdfWriter()
+        writer.addpage(page_28)
+        writer.write(output_pdf_path)
+        
+        # Verify file was created and is accessible
+        if os.path.exists(output_pdf_path):
+            file_size = os.path.getsize(output_pdf_path)
+            print(f"[DEBUG] Successfully extracted page 28 to: {output_pdf_path}")
+            print(f"[DEBUG] File size: {file_size} bytes")
+            
+            # Try to verify the PDF is valid by opening it again
+            try:
+                verification_reader = PdfReader(output_pdf_path)
+                print(f"[DEBUG] PDF verification successful - extracted PDF has {len(verification_reader.pages)} pages")
+                return True
+            except Exception as ve:
+                print(f"[DEBUG] PDF verification failed: {str(ve)}")
+                return False
+        else:
+            print(f"[DEBUG] Error: File was not created at {output_pdf_path}")
+            return False
+    except Exception as e:
+        print(f"[DEBUG] Error extracting page 28: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+### CHANGE ###
 def extract_o1_relevant_pages(input_pdf_path, output_pdf_path):
     """
     Extracts only the O-1 relevant pages (1-7 and 28-30) from the input PDF and saves to output_pdf_path.
@@ -435,10 +502,37 @@ def run(user_info, doc_type=None, user_id=None, supabase=None):
     # Path to the full and trimmed template PDFs
     full_template_pdf_path = str(base_dir / "o1-form-template-cleaned.pdf")
     trimmed_template_pdf_path = str(base_dir / "o1-form-template-cleaned-o1only.pdf")
+    
+    # Create timestamp for unique filenames to prevent caching issues
+    timestamp = int(time.time())
+    
+    # Create public directory for web-accessible files if it doesn't exist
+    public_dir = base_dir / "public"
+    os.makedirs(public_dir, exist_ok=True)
+    
+    # New paths with timestamps for the generated PDFs
+    filled_pdf_filename = f"o1-form-filled-{timestamp}.pdf"
+    page_28_pdf_filename = f"o1-form-page28-{timestamp}.pdf"
+    
+    # Full paths for file system operations
+    filled_pdf_path = str(public_dir / filled_pdf_filename)
+    page_28_pdf_path = str(public_dir / page_28_pdf_filename)
+    
+    # Relative URL paths for browser access
+    filled_pdf_url = f"/{filled_pdf_filename}"
+    page_28_pdf_url = f"/{page_28_pdf_filename}"
+    
+    print(f"[DEBUG] Filled PDF path (filesystem): {filled_pdf_path}")
+    print(f"[DEBUG] Filled PDF URL (browser): {filled_pdf_url}")
+    print(f"[DEBUG] Page 28 PDF path (filesystem): {page_28_pdf_path}")
+    print(f"[DEBUG] Page 28 PDF URL (browser): {page_28_pdf_url}")
 
     # Ensure the trimmed PDF exists (create if not)
     if not os.path.exists(trimmed_template_pdf_path):
+        print("[DEBUG] Trimmed PDF doesn't exist, creating it now")
         extract_o1_relevant_pages(full_template_pdf_path, trimmed_template_pdf_path)
+    else:
+        print(f"[DEBUG] Trimmed PDF already exists at: {trimmed_template_pdf_path}")
 
     # Initial progress update for RAG generation
     if supabase and user_id:
@@ -446,9 +540,9 @@ def run(user_info, doc_type=None, user_id=None, supabase=None):
             supabase.table("user_documents").update({
                 "processing_status": "generating_rag_responses"
             }).eq("user_id", user_id).execute()
-            print(f"Updated status: generating_rag_responses")
+            print(f"[DEBUG] Updated status: generating_rag_responses")
         except Exception as e:
-            print(f"Error updating RAG progress: {str(e)}")
+            print(f"[DEBUG] Error updating RAG progress: {str(e)}")
     
     # Make sure the RAG responses directory exists before writing history file
     rag_responses_dir = base_dir / "rag_responses"
@@ -465,6 +559,7 @@ def run(user_info, doc_type=None, user_id=None, supabase=None):
     O1_RELEVANT_PAGES_1INDEXED = list(range(1, 8)) + list(range(28, 31))
     
     # Pass user_id and supabase to the RAG generation
+    print("[DEBUG] Starting RAG response generation")
     write_rag_responses(
         extra_info=f"User Info: {user_info}", 
         pages=O1_RELEVANT_PAGES_1INDEXED,  # Use 1-indexed pages for consistency
@@ -489,14 +584,14 @@ def run(user_info, doc_type=None, user_id=None, supabase=None):
             supabase.table("user_documents").update({
                 "processing_status": "preparing_pdf_fill"
             }).eq("user_id", user_id).execute()
-            print(f"Updated status: preparing_pdf_fill")
+            print(f"[DEBUG] Updated status: preparing_pdf_fill")
         except Exception as e:
-            print(f"Error updating PDF prep progress: {str(e)}")
+            print(f"[DEBUG] Error updating PDF prep progress: {str(e)}")
 
     response_dict = merge_json_from_file(response_dict_path, handle_duplicates="keep")
     
     # Add debug output for clarity
-    print(f"Starting PDF filling with {len(response_dict)} fields to {filled_pdf_path}")
+    print(f"[DEBUG] Starting PDF filling with {len(response_dict)} fields to {filled_pdf_path}")
     
     total_pages, field_stats = fill_and_check_pdf(
         template_pdf_path, 
@@ -507,18 +602,58 @@ def run(user_info, doc_type=None, user_id=None, supabase=None):
         supabase=supabase
     )
 
-    print(field_stats)
+    print(f"[DEBUG] PDF filling complete. Stats: {field_stats}")
+    
+    # Extract just page 28 after the full PDF is generated
+    print("[DEBUG] Extracting page 28 for preview")
+    page_28_extracted = extract_page_28(filled_pdf_path, page_28_pdf_path)
+    
+    if page_28_extracted:
+        print(f"[DEBUG] Page 28 extraction successful")
+        # Double check that the file exists and is readable
+        if os.path.exists(page_28_pdf_path):
+            print(f"[DEBUG] Page 28 PDF file exists at {page_28_pdf_path}")
+            print(f"[DEBUG] File size: {os.path.getsize(page_28_pdf_path)} bytes")
+            
+            # Check file permissions to ensure it's readable by the web server
+            try:
+                file_permissions = oct(os.stat(page_28_pdf_path).st_mode & 0o777)
+                print(f"[DEBUG] File permissions: {file_permissions}")
+            except Exception as e:
+                print(f"[DEBUG] Error checking file permissions: {str(e)}")
+        else:
+            print(f"[DEBUG] Warning: Page 28 PDF file does not exist at {page_28_pdf_path}")
+            page_28_extracted = False
+    else:
+        print("[DEBUG] Page 28 extraction failed")
     
     # Final completion update
     if supabase and user_id:
         try:
             status = f"completed_pdf_fill_{total_pages}_pages"
-            supabase.table("user_documents").update({
-                "processing_status": status,
-                "field_stats": json.dumps(field_stats)
-            }).eq("user_id", user_id).execute()
-            print(f"Updated status: {status}")
-        except Exception as e:
-            print(f"Error updating completion status: {str(e)}")
+            preview_message = "You can view page 28 now. The complete PDF will be available after matching with a visa expert."
             
-    return total_pages, field_stats
+            update_data = {
+                "processing_status": status,
+                "field_stats": json.dumps(field_stats),
+                "page_28_preview_path": page_28_pdf_url if page_28_extracted else None,
+                "preview_message": preview_message
+            }
+            
+            supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
+            print(f"[DEBUG] Updated status: {status} with preview message")
+            print(f"[DEBUG] Preview message: {preview_message}")
+            print(f"[DEBUG] Preview path URL: {page_28_pdf_url if page_28_extracted else None}")
+        except Exception as e:
+            print(f"[DEBUG] Error updating completion status: {str(e)}")
+    
+    # Return additional info about page 28 preview
+    result = {
+        "total_pages": total_pages,
+        "field_stats": field_stats,
+        "page_28_preview_path": page_28_pdf_url if page_28_extracted else None,
+        "preview_message": "You can view page 28 now. The complete PDF will be available after matching with a visa expert."
+    }
+    
+    print(f"[DEBUG] Returning result with page 28 preview info: {result}")
+    return result
