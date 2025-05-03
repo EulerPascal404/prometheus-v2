@@ -269,6 +269,9 @@ def log_page_progress(page_num, total_pages, user_id, supabase):
         except Exception as e:
             print(f"Error updating RAG page progress: {str(e)}")
 
+# Note to Ryan: 
+# currently only writing rag responses for the o-1 form
+# can modify the if/else statements at the beginning if we want to use this for other forms like entire i-129
 def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     # Use O1_RELEVANT_PAGES_1INDEXED to limit the number of pages processed
     if pages is None:
@@ -338,141 +341,170 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     except Exception as e:
         print(f"Warning: Could not create/clear history file: {str(e)}")
 
-    # Compile all text information in a single pass
+    # Compile all text information in batches
     all_text_content = ""
-    
-    # Process each page to collect text
-    for idx, page_num in enumerate(pages):
-        # Update progress before processing each page
-        if supabase and user_id:
-            log_page_progress(idx + 1, total_pages, user_id, supabase)
-        
-        form_data_file = str(base_dir + f"extracted_form_data/page_{page_num}.txt")
-        print(f"Looking for form data file: {form_data_file}")
-        
-        try:
-            # Read form data - handle missing files gracefully
-            form_data = ""
-            if os.path.exists(form_data_file):
-                try:
-                    form_data = read_text_file(form_data_file)
-                    print(f"Successfully read form data file: {form_data_file}")
-                except Exception as e:
-                    print(f"Warning: Could not read form data file: {str(e)}")
-            else:
-                print(f"Warning: Form data file not found: {form_data_file}")
-                # Try alternative path
-                alt_form_data_file = str(Path.cwd() / f"extracted_form_data/page_{page_num}.txt")
-                print(f"Trying alternative path: {alt_form_data_file}")
-                try:
-                    if os.path.exists(alt_form_data_file):
-                        form_data = read_text_file(alt_form_data_file)
-                        print(f"Successfully read form data from alternative path: {alt_form_data_file}")
-                    else:
-                        print(f"Alternative path also not found: {alt_form_data_file}")
-                        # Continue with empty form data instead of skipping
-                        form_data = "No form data available"
-                except Exception as e:
-                    print(f"Warning: Could not read form data from alternative path: {str(e)}")
-                    form_data = "No form data available"
-            
-            # Get the extracted text for this page
-            page_text = ""
-            try:
-                # Handle O-1 form pages (1-7 and 28-30)
-                # For pages 28-30, map them to appropriate files in the array
-                file_index = page_num - 1
-                # If page is 28, 29, or 30, map to indices 7, 8, 9 in the files array
-                if page_num >= 28 and page_num <= 30:
-                    file_index = 7 + (page_num - 28)
-                
-                if len(files) > 0 and file_index < len(files) and os.path.exists(files[file_index]):
-                    page_text = read_text_file(files[file_index])
-                    print(f"Successfully read page text from: {files[file_index]}")
-                else:
-                    print(f"Warning: Extracted text file not found for page {page_num}")
-                    # Try alternative path
-                    alt_page_file = str(Path.cwd() / f"extracted_text/page_{page_num}.txt")
-                    print(f"Trying alternative path: {alt_page_file}")
-                    if os.path.exists(alt_page_file):
-                        page_text = read_text_file(alt_page_file)
-                        print(f"Successfully read page text from alternative path: {alt_page_file}")
-                    else:
-                        print(f"Alternative path also not found: {alt_page_file}")
-                        # Use first file if available, or provide dummy text
-                        if len(files) > 0:
-                            page_text = read_text_file(files[0])
-                            print(f"Using first available file as fallback: {files[0]}")
-                        else:
-                            page_text = "No page text available for analysis"
-                            print("Using dummy text as fallback")
-            except Exception as e:
-                print(f"Warning: Error reading page text: {str(e)}")
-                page_text = "Error reading page text"
-            
-            # Add page content to the compiled text with clear page separator
-            page_content = form_data.strip() + "\n" + page_text.strip()
-            all_text_content += page_content
-            
-        except Exception as e:
-            print(f"Error processing page {page_num}: {e}")
-            all_text_content += f"\n\n=== PAGE {page_num} ===\nError processing page: {str(e)}"
-            continue
-
-        # Add progress update after each page is processed
-        if supabase and user_id and (idx % 3 == 0 or idx == len(pages) - 1):  # Update every 3 pages or on the last page
-            log_page_progress(idx + 1, total_pages, user_id, supabase)
-    
-    # Make a single API call with all compiled text
     response_dict = {}
-
-    print(all_text_content)
     
-    try:
-        print("Making a single API call with all compiled information...")
-        
-        
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You have been given compiled text content from multiple pages of a form, along with extracted form data. Each page is clearly marked with '=== PAGE X ==='. Your task is to analyze all this information together and fill out a response dictionary. It is very important that in the outputted dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Make sure the na type being used is correct and as accurate as possible.Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```." + extra_info},
-                {"role": "user", "content": all_text_content}
-            ]
-        )
-
-        # Check if the response output exists and has the expected structure
-        print("Response received from API")
-        if response and hasattr(response, 'choices') and len(response.choices) > 0:
-            response_text = response.choices[0].message.content
-            # Clean up the response if needed to ensure it's valid Python
-            response_text = response_text.strip()
-            if response_text.startswith('```python'):
-                response_text = response_text[9:]
-            if response_text.startswith('```'):
-                response_text = response_text[3:]
-            if response_text.endswith('```'):
-                response_text = response_text[:-3]
+    # Define page batches for processing
+    page_batches = [
+        pages[0:3] if len(pages) >= 3 else pages,  # Pages 1-3
+        pages[3:6] if len(pages) >= 6 else [],     # Pages 4-6
+        pages[6:10] if len(pages) >= 7 else []     # Pages 7-10
+    ]
+    
+    # Process each batch of pages
+    for batch_idx, batch_pages in enumerate(page_batches):
+        if not batch_pages:
+            continue
             
-            response_dict = eval(response_text)
-            print("Successfully evaluated response dictionary")
+        print(f"Processing batch {batch_idx+1} with pages: {batch_pages}")
+        batch_text_content = ""
+        
+        # Process each page in the current batch
+        for idx, page_num in enumerate(batch_pages):
+            # Update progress before processing each page
+            if supabase and user_id:
+                log_page_progress(idx + 1 + (batch_idx * 3), total_pages, user_id, supabase)
+            
+            form_data_file = str(base_dir + f"extracted_form_data/page_{page_num}.txt")
+            print(f"Looking for form data file: {form_data_file}")
+            
+            try:
+                # Read form data - handle missing files gracefully
+                form_data = ""
+                if os.path.exists(form_data_file):
+                    try:
+                        form_data = read_text_file(form_data_file)
+                        print(f"Successfully read form data file: {form_data_file}")
+                    except Exception as e:
+                        print(f"Warning: Could not read form data file: {str(e)}")
+                else:
+                    print(f"Warning: Form data file not found: {form_data_file}")
+                    # Try alternative path
+                    alt_form_data_file = str(Path.cwd() / f"extracted_form_data/page_{page_num}.txt")
+                    print(f"Trying alternative path: {alt_form_data_file}")
+                    try:
+                        if os.path.exists(alt_form_data_file):
+                            form_data = read_text_file(alt_form_data_file)
+                            print(f"Successfully read form data from alternative path: {alt_form_data_file}")
+                        else:
+                            print(f"Alternative path also not found: {alt_form_data_file}")
+                            # Continue with empty form data instead of skipping
+                            form_data = "No form data available"
+                    except Exception as e:
+                        print(f"Warning: Could not read form data from alternative path: {str(e)}")
+                        form_data = "No form data available"
+                
+                # Get the extracted text for this page
+                page_text = ""
+                try:
+                    # Handle O-1 form pages (1-7 and 28-30)
+                    # For pages 28-30, map them to appropriate files in the array
+                    file_index = page_num - 1
+                    # If page is 28, 29, or 30, map to indices 7, 8, 9 in the files array
+                    if page_num >= 28 and page_num <= 30:
+                        file_index = 7 + (page_num - 28)
+                    
+                    if len(files) > 0 and file_index < len(files) and os.path.exists(files[file_index]):
+                        page_text = read_text_file(files[file_index])
+                        print(f"Successfully read page text from: {files[file_index]}")
+                    else:
+                        print(f"Warning: Extracted text file not found for page {page_num}")
+                        # Try alternative path
+                        alt_page_file = str(Path.cwd() / f"extracted_text/page_{page_num}.txt")
+                        print(f"Trying alternative path: {alt_page_file}")
+                        if os.path.exists(alt_page_file):
+                            page_text = read_text_file(alt_page_file)
+                            print(f"Successfully read page text from alternative path: {alt_page_file}")
+                        else:
+                            print(f"Alternative path also not found: {alt_page_file}")
+                            # Use first file if available, or provide dummy text
+                            if len(files) > 0:
+                                page_text = read_text_file(files[0])
+                                print(f"Using first available file as fallback: {files[0]}")
+                            else:
+                                page_text = "No page text available for analysis"
+                                print("Using dummy text as fallback")
+                except Exception as e:
+                    print(f"Warning: Error reading page text: {str(e)}")
+                    page_text = "Error reading page text"
+                
+                # Add page content to the batch text with clear page separator
+                page_content = f"\n\n=== PAGE {page_num} ===\n" + form_data.strip() + "\n" + page_text.strip()
+                batch_text_content += page_content
+                
+            except Exception as e:
+                print(f"Error processing page {page_num}: {e}")
+                batch_text_content += f"\n\n=== PAGE {page_num} ===\nError processing page: {str(e)}"
+                continue
 
-    except Exception as e:
-        print(f"Error getting API response: {str(e)}")
-        # In case of failure, return an empty dictionary or appropriate error state
-        response_dict = {"error": f"Failed to process form: {str(e)}"}
+            # Add progress update after each page is processed
+            if supabase and user_id and (idx == len(batch_pages) - 1):  # Update on the last page of each batch
+                log_page_progress(idx + 1 + (batch_idx * 3), total_pages, user_id, supabase)
+        
+        # Add batch content to all text content
+        all_text_content += f"\n\n=== BATCH {batch_idx+1} ===\n" + batch_text_content
+        
+        # Make API call with the current batch
+        try:
+            print(f"Making API call for batch {batch_idx+1}...")
+            print(batch_text_content)
+            
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You have been given compiled text content from multiple pages of a form, along with extracted form data. Each page is clearly marked with '=== PAGE X ==='. Your task is to analyze all this information together and fill out a response dictionary. It is very important that in the outputted dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Make sure the na type being used is correct and as accurate as possible.Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```." + extra_info},
+                    {"role": "user", "content": batch_text_content}
+                ]
+            )
+
+            # Process the response
+            if response and hasattr(response, 'choices') and len(response.choices) > 0:
+                response_text = response.choices[0].message.content
+                # Clean up the response if needed to ensure it's valid Python
+                response_text = response_text.strip()
+                if response_text.startswith('```python'):
+                    response_text = response_text[9:]
+                if response_text.startswith('```'):
+                    response_text = response_text[3:]
+                if response_text.endswith('```'):
+                    response_text = response_text[:-3]
+                
+                batch_response_dict = eval(response_text)
+                print(f"Successfully evaluated response dictionary for batch {batch_idx+1}")
+                
+                # Merge the batch response with the overall response
+                response_dict = merge_dicts(response_dict, batch_response_dict)
+                print(f"Merged batch {batch_idx+1} results into overall response dictionary")
+                print(f"After merging, response_dict has {len(response_dict)} keys")
+
+        except Exception as e:
+            print(f"Error getting API response for batch {batch_idx+1}: {str(e)}")
+            # Continue with next batch instead of failing completely
     
-    print(f"Completed processing {total_pages} pages")
+    # If we didn't get any successful responses, return an error
+    if not response_dict:
+        response_dict = {"error": "Failed to process form: No successful API responses"}
+    
+    print(f"Completed processing {total_pages} pages in {len(page_batches)} batches")
     return response_dict
 
-def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None):
+# Note to Ryan: 
+# there's a line towards the end: PdfWriter().write(output_pdf, template)
+# I think based off the documentation, template is a clone of output_pdf
+# which when we call it is true since we pass in the same pdf for both
+# so I think based off of the annotations, we need to update the output_pdf by adding it?
+# this is the part I'm less clear on, not sure how to generate the output_pdf using the annotations
+def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None, o1=False):
     
     template = PdfReader(input_pdf)
     total_pages = len(template.pages)
-    
-    # Check if we're using the trimmed PDF (which contains only O-1 pages)
-    is_trimmed_pdf = "o1only" in input_pdf or total_pages <= 10
-    
-    print(f"Started filling PDF with {total_pages} pages" + (" (trimmed O-1 PDF)" if is_trimmed_pdf else ""))
+     # o-1 has 10 pages, so update_fill_progress will use 10
+    # also for error catching in for loop
+    if o1:
+        total_pages = 10
+
+    print(f"Started filling PDF with {total_pages} pages")
     
     # Create field stats dictionary to track filled fields
     field_stats = {
@@ -487,31 +519,25 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         "total_fields": 0
     }
     
-    # For O-1, we expect exactly 10 relevant pages
-    o1_total_pages = 10
-    
-    # Initial progress update - always use the O-1 page count for progress
-    if supabase and user_id:
-        update_fill_progress(0, o1_total_pages, doc_type, user_id, supabase)
-    
+
+
     # Track processed page count for progress reporting
     processed_page_count = 0
     
     for page_num, page in enumerate(template.pages):
-        # If using a full PDF, check if this page is one of the O-1 relevant ones
-        if not is_trimmed_pdf and page_num not in O1_RELEVANT_PAGES_0INDEXED:
-            continue  # Skip non-O1 pages
-        
         # Safety check - don't process more than the expected O-1 pages
-        if processed_page_count >= o1_total_pages:
+        if o1 and processed_page_count >= total_pages:
             break
-            
+        # If using a full PDF, check if this page is one of the O-1 relevant ones
+        if o1 and page_num not in O1_RELEVANT_PAGES_0INDEXED:
+            continue  # Skip non-O1 pages
+
         # Increment processed page counter for progress reporting
         processed_page_count += 1
         
-        # Update progress for each relevant page - report the sequential number (1 to 10) not the raw page index
+        # Update progress for each relevant page
         if supabase and user_id:
-            update_fill_progress(processed_page_count, o1_total_pages, doc_type, user_id, supabase)
+            update_fill_progress(processed_page_count, total_pages, doc_type, user_id, supabase)
             
         annotations = page.get('/Annots')
         if annotations:
@@ -525,7 +551,6 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
 
                     # Check if we have a response for this field
                     if original_name and original_name in response_dict:
-
 
                         field_value = response_dict[original_name]
                         
@@ -621,10 +646,6 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                                 val = random.choice(opts)[0].replace('(', '').replace(')', '')
                                 annotation.update(PdfDict(V=val, AS=val))
     
-    # Final progress update - with the correct O-1 page count (10)
-    if supabase and user_id:
-        update_fill_progress(o1_total_pages, o1_total_pages, doc_type, user_id, supabase)
-    
     # Write field stats to a report file
     base_dir = Path(output_pdf).parent
     stats_file = os.path.join(base_dir, "field_stats.json")
@@ -667,8 +688,9 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
     except Exception as e:
         print(f"Error saving field statistics: {str(e)}")
     
-  #  PdfWriter().write(output_pdf, template)
-    print(f"Completed filling PDF with {total_pages} pages")
+
+    #PdfWriter().write(output_pdf, template)
+    print(f"Completed filling PDF with {processed_page_count} pages")
     return total_pages, field_stats
 
 def update_fill_progress(current, total, doc_type, user_id, supabase):
@@ -788,7 +810,10 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
         "na_success": 3
     }
     
-    total_pages, field_stats = fill_and_check_pdf("data/o1-form-template-cleaned.pdf", "data/o1-form-template-cleaned.pdf", full_response_dict, doc_type, user_id, supabase)
+    # Note to Ryan:
+    # need to change the input_pdf and output_pdf to the correct paths
+    # that way, the application score/field_stats['user_info_filled'] can also be updated
+    total_pages, field_stats = fill_and_check_pdf("data/o1-form-template-cleaned.pdf", "data/o1-form-template-cleaned.pdf", full_response_dict, doc_type, user_id, supabase, o1=True)
     print(f"Field stats after filling for {doc_type}: {field_stats}")
     # Final completion update
     if supabase and user_id:
