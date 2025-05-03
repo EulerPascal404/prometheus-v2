@@ -298,7 +298,7 @@ export default function DocumentCollection() {
   
   // Add these refs for Google Maps autocomplete
   const addressInputRef = useRef<HTMLInputElement>(null);
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const autocompleteContainerRef = useRef<HTMLDivElement>(null);  const [autocomplete, setAutocomplete] = useState<any>(null); // Using any for compatibility with PlaceAutocompleteElement
   const [googleMapsReady, setGoogleMapsReady] = useState(false);
   
   // Add state for existing applications
@@ -790,29 +790,92 @@ export default function DocumentCollection() {
     }
   }, []);
 
-  // Initialize Google Places autocomplete
+  // Initialize Google Places autocomplete using the newer PlaceAutocompleteElement API
   useEffect(() => {
     if (googleMapsReady && addressInputRef.current && !autocomplete) {
-      const input = addressInputRef.current;
-      const options = {
-        componentRestrictions: { country: 'us' },
-        fields: ['formatted_address', 'address_components'],
-        types: ['address']
-      };
-      
-      const autocompleteInstance = new google.maps.places.Autocomplete(input, options);
-      setAutocomplete(autocompleteInstance);
+      try {
+        // Ensure that the PlaceAutocompleteElement constructor is available
+        if (!window.google?.maps?.places?.PlaceAutocompleteElement) {
+          console.error("PlaceAutocompleteElement is not available yet");
+          // Wait for the next render cycle and try again
+          setTimeout(() => setGoogleMapsReady(false), 100);
+          setTimeout(() => setGoogleMapsReady(true), 200);
+          return;
+        }
 
-      autocompleteInstance.addListener('place_changed', () => {
-        const place = autocompleteInstance.getPlace();
-        const newAddress = place.formatted_address || personalInfo.address || '';
-        setPersonalInfo(prev => ({
-          ...prev,
-          address: newAddress
-        }));
-      });
+        // Create container for the PlaceAutocompleteElement if it doesn't exist
+        let container = document.getElementById('place-autocomplete-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'place-autocomplete-container';
+          container.className = 'place-autocomplete-container w-full';
+          
+          // Insert container after the input
+          if (addressInputRef.current.parentNode) {
+            addressInputRef.current.parentNode.insertBefore(container, addressInputRef.current.nextSibling);
+          }
+        }
+        
+        // Create a simpler fallback if the new API fails
+        try {
+          // Create the PlaceAutocompleteElement
+          const autocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
+            inputElement: addressInputRef.current,
+          });
+          
+          // Set options for the autocomplete
+          autocompleteElement.type = "address";
+          autocompleteElement.componentRestrictions = { country: "us" };
+          autocompleteElement.fields = ["formatted_address", "address_components", "geometry"];
+          
+          // Add to DOM
+          container.appendChild(autocompleteElement);
+          
+          // Add event listener for place selection
+          autocompleteElement.addEventListener('place_changed', () => {
+            const place = autocompleteElement.getPlace();
+            if (place && place.formatted_address) {
+              const newAddress = place.formatted_address;
+              setPersonalInfo(prev => ({
+                ...prev,
+                address: newAddress
+              }));
+            }
+          });
+          
+          // Store reference to the element
+          setAutocomplete(autocompleteElement);
+          console.log('PlaceAutocompleteElement initialized successfully');
+        } catch (elementError) {
+          console.error('Error with PlaceAutocompleteElement, falling back to legacy Autocomplete:', elementError);
+          
+          // Fall back to the legacy Autocomplete
+          const input = addressInputRef.current;
+          const options = {
+            componentRestrictions: { country: 'us' },
+            fields: ['formatted_address', 'address_components'],
+            types: ['address']
+          };
+          
+          const autocompleteInstance = new google.maps.places.Autocomplete(input, options);
+          setAutocomplete(autocompleteInstance);
+
+          autocompleteInstance.addListener('place_changed', () => {
+            const place = autocompleteInstance.getPlace();
+            const newAddress = place.formatted_address || personalInfo.address || '';
+            setPersonalInfo(prev => ({
+              ...prev,
+              address: newAddress
+            }));
+          });
+          
+          console.log('Fallback to legacy Autocomplete successful');
+        }
+      } catch (error) {
+        console.error('Error initializing Google Places:', error);
+      }
     }
-  }, [googleMapsReady, autocomplete]);
+  }, [googleMapsReady, autocomplete, personalInfo.address]);
 
   // Add the missing handleFileUpload method inside the component
   const handleFileUpload = async (docType: string, file: File) => {
@@ -1367,6 +1430,30 @@ export default function DocumentCollection() {
         border-color: rgba(168, 85, 247, 0.4);
       }
       
+      /* PlaceAutocompleteElement styling */
+      gmpx-place-autocomplete-element {
+        width: 100% !important;
+        --gmpx-color-surface: rgba(15, 23, 42, 0.95) !important;
+        --gmpx-color-on-surface: #E2E8F0 !important;
+        --gmpx-color-primary: #A855F7 !important;
+        --gmpx-color-on-primary: white !important;
+        --gmpx-font-family: 'Inter', system-ui, sans-serif !important;
+        --gmpx-border-radius: 0.5rem !important;
+        --gmpx-border-width: 1px !important;
+        --gmpx-border-color: rgba(51, 65, 85, 0.5) !important;
+      }
+      
+      gmpx-place-autocomplete-element .place-result {
+        background-color: rgba(15, 23, 42, 0.95) !important;
+        color: #E2E8F0 !important;
+        border-color: rgba(56, 189, 248, 0.1) !important;
+      }
+      
+      gmpx-place-autocomplete-element .place-result:hover {
+        background-color: rgba(168, 85, 247, 0.15) !important;
+      }
+      
+      /* Keep existing Autocomplete dropdown styling for backwards compatibility */
       /* Autocomplete dropdown styling */
       .pac-container {
         background-color: rgba(15, 23, 42, 0.95);
@@ -1418,6 +1505,12 @@ export default function DocumentCollection() {
         color: #94A3B8;
         font-size: 0.75rem;
         padding: 4px 8px;
+      }
+      
+      /* Make sure place-autocomplete-container takes full width */
+      .place-autocomplete-container {
+        width: 100%;
+        margin-top: 8px;
       }
     `;
     

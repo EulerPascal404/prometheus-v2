@@ -170,7 +170,8 @@ export default function LawyerSearch() {
   const [additionalComments, setAdditionalComments] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const addressInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteContainerRef = useRef<HTMLDivElement>(null);
+  const autocompleteRef = useRef<any>(null);
   
   // Add style for any Google Maps elements
   useEffect(() => {
@@ -192,6 +193,35 @@ export default function LawyerSearch() {
       .gm-style button:hover {
         background: rgba(168, 85, 247, 0.15);
         border-color: rgba(168, 85, 247, 0.4);
+      }
+      
+      /* PlaceAutocompleteElement styling */
+      gmpx-place-autocomplete-element {
+        width: 100% !important;
+        --gmpx-color-surface: rgba(15, 23, 42, 0.95) !important;
+        --gmpx-color-on-surface: #E2E8F0 !important;
+        --gmpx-color-primary: #A855F7 !important;
+        --gmpx-color-on-primary: white !important;
+        --gmpx-font-family: 'Inter', system-ui, sans-serif !important;
+        --gmpx-border-radius: 0.5rem !important;
+        --gmpx-border-width: 1px !important;
+        --gmpx-border-color: rgba(51, 65, 85, 0.5) !important;
+      }
+      
+      gmpx-place-autocomplete-element .place-result {
+        background-color: rgba(15, 23, 42, 0.95) !important;
+        color: #E2E8F0 !important;
+        border-color: rgba(56, 189, 248, 0.1) !important;
+      }
+      
+      gmpx-place-autocomplete-element .place-result:hover {
+        background-color: rgba(168, 85, 247, 0.15) !important;
+      }
+      
+      /* Make sure place-autocomplete-container takes full width */
+      .place-autocomplete-container {
+        width: 100%;
+        margin-top: 8px;
       }
       
       /* Autocomplete dropdown styling */
@@ -291,39 +321,100 @@ export default function LawyerSearch() {
   useEffect(() => {
     if (googleMapsReady && addressInputRef.current && !autocompleteRef.current) {
       try {
-        // Initialize the Places Autocomplete with custom options
-        const autocomplete = new window.google.maps.places.Autocomplete(
-          addressInputRef.current,
-          { 
-            types: ['address'],
-            fields: ['formatted_address', 'geometry'],
-            componentRestrictions: { country: 'us' }, // Restrict to US addresses for better results
+        // Ensure that the PlaceAutocompleteElement constructor is available
+        if (!window.google?.maps?.places?.PlaceAutocompleteElement) {
+          console.error("PlaceAutocompleteElement is not available yet");
+          // Wait for the next render cycle and try again
+          setTimeout(() => setGoogleMapsReady(false), 100);
+          setTimeout(() => setGoogleMapsReady(true), 200);
+          return;
+        }
+        
+        // Create container for the PlaceAutocompleteElement if it doesn't exist
+        let container = document.getElementById('place-autocomplete-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'place-autocomplete-container';
+          container.className = 'place-autocomplete-container w-full';
+          
+          // Insert container after the input
+          if (addressInputRef.current.parentNode) {
+            addressInputRef.current.parentNode.insertBefore(container, addressInputRef.current.nextSibling);
           }
-        );
+        }
         
-        // Store reference
-        autocompleteRef.current = autocomplete;
-        
-        // Set up the event listener
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (place && place.formatted_address) {
-            console.log("Selected place:", place);
-            setAddress(place.formatted_address);
-            
-            // Auto-focus the additional comments field after selecting an address
-            const commentsField = document.getElementById('additionalComments');
-            if (commentsField) {
-              setTimeout(() => {
-                commentsField.focus();
-              }, 100);
+        // Try the new API first with a fallback to legacy
+        try {
+          // Create the PlaceAutocompleteElement
+          const autocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
+            inputElement: addressInputRef.current,
+          });
+          
+          // Set options for the autocomplete
+          autocompleteElement.type = "address";
+          autocompleteElement.componentRestrictions = { country: "us" };
+          autocompleteElement.fields = ["formatted_address", "geometry"];
+          
+          // Add to DOM
+          container.appendChild(autocompleteElement);
+          
+          // Add event listener for place selection
+          autocompleteElement.addEventListener('place_changed', () => {
+            const place = autocompleteElement.getPlace();
+            if (place && place.formatted_address) {
+              console.log("Selected place:", place);
+              setAddress(place.formatted_address);
+              
+              // Auto-focus the additional comments field after selecting an address
+              const commentsField = document.getElementById('additionalComments');
+              if (commentsField) {
+                setTimeout(() => {
+                  commentsField.focus();
+                }, 100);
+              }
             }
-          }
-        });
-        
-        console.log("Google Places Autocomplete initialized");
+          });
+          
+          // Store reference to the element
+          autocompleteRef.current = autocompleteElement;
+          console.log("Google Places PlaceAutocompleteElement initialized");
+        } catch (elementError) {
+          console.error('Error with PlaceAutocompleteElement, falling back to legacy Autocomplete:', elementError);
+          
+          // Fall back to the legacy Autocomplete
+          const autocomplete = new window.google.maps.places.Autocomplete(
+            addressInputRef.current,
+            { 
+              types: ['address'],
+              fields: ['formatted_address', 'geometry'],
+              componentRestrictions: { country: 'us' },
+            }
+          );
+          
+          // Store reference
+          autocompleteRef.current = autocomplete;
+          
+          // Set up the event listener
+          autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place && place.formatted_address) {
+              console.log("Selected place:", place);
+              setAddress(place.formatted_address);
+              
+              // Auto-focus the additional comments field after selecting an address
+              const commentsField = document.getElementById('additionalComments');
+              if (commentsField) {
+                setTimeout(() => {
+                  commentsField.focus();
+                }, 100);
+              }
+            }
+          });
+          
+          console.log("Fallback to legacy Autocomplete successful");
+        }
       } catch (error) {
-        console.error("Error initializing Places Autocomplete:", error);
+        console.error("Error initializing Google Places:", error);
       }
     }
   }, [googleMapsReady, addressInputRef.current]);
