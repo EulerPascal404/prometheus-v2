@@ -533,7 +533,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
       {totalMissingFields > 0 && (
         <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 mb-6">
           <div className="flex items-center mb-4">
-            <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-rose-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <h4 className="text-xl font-semibold text-white">Critical Issues</h4>
@@ -548,7 +548,8 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 value: safeStats.N_A_per,
                 icon: '👤',
                 importance: 'High priority - required for O-1 eligibility',
-                tip: 'Include personal information, including name, address, email, and phone number'
+                tip: 'Include personal information, including name, address, email, and phone number',
+                severity: safeStats.N_A_per >= 3 ? 'high' : safeStats.N_A_per >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Resume/CV', 
@@ -556,16 +557,17 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 value: safeStats.N_A_r,
                 icon: '📄',
                 importance: 'High priority - required for O-1 eligibility',
-                tip: 'Include all relevant work experience, education, and skills'
+                tip: 'Include all relevant work experience, education, and skills',
+                severity: safeStats.N_A_r >= 4 ? 'high' : safeStats.N_A_r >= 2 ? 'medium' : 'low'
               },
-              
               { 
                 name: 'Awards & Recognition', 
                 criticalThreshold: 3,
                 value: safeStats.N_A_ar,
                 icon: '🏆',
                 importance: 'High priority - required for O-1 eligibility',
-                tip: 'Include major awards, recognition, and press coverage'
+                tip: 'Include major awards, recognition, and press coverage',
+                severity: safeStats.N_A_ar >= 3 ? 'high' : safeStats.N_A_ar >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Publications', 
@@ -573,46 +575,63 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 value: safeStats.N_A_p,
                 icon: '📚',
                 importance: 'Key evidence for extraordinary ability',
-                tip: 'Include all published work, with proper citations'
+                tip: 'Include all published work, with proper citations',
+                severity: safeStats.N_A_p >= 2 ? 'high' : safeStats.N_A_p >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Recommendation Letters', 
-                criticalThreshold: 1,
+                criticalThreshold: 2,
                 value: safeStats.N_A_rl,
                 icon: '✉️',
                 importance: 'Essential validation from industry experts',
-                tip: 'Secure letters from prominent individuals in your field'
+                tip: 'Secure letters from prominent individuals in your field',
+                severity: safeStats.N_A_rl >= 2 ? 'high' : safeStats.N_A_rl >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Salary Evidence', 
-                criticalThreshold: 1,
+                criticalThreshold: 2,
                 value: safeStats.N_A_ss,
                 icon: '💰',
                 importance: 'Required for O-1 eligibility',
-                tip: 'Provide evidence of your salary or compensation'
+                tip: 'Provide evidence of your salary or compensation',
+                severity: safeStats.N_A_ss >= 2 ? 'high' : safeStats.N_A_ss >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Professional Memberships', 
-                criticalThreshold: 1,
+                criticalThreshold: 2,
                 value: safeStats.N_A_pm,
                 icon: '🔖',
                 importance: 'Essential for O-1 eligibility',
-                tip: 'Include proof of membership in professional organizations'
+                tip: 'Include proof of membership in professional organizations',
+                severity: safeStats.N_A_pm >= 2 ? 'high' : safeStats.N_A_pm >= 1 ? 'medium' : 'low'
               }
-
             ]
-            .filter(section => section.value >= section.criticalThreshold)
-            .map(section => (
-              <div key={section.name} className="bg-red-900/20 border border-red-800/30 rounded-lg p-4">
+            .filter(section => {
+              // Only show sections with significant issues
+              if (section.severity === 'high') return true;
+              if (section.severity === 'medium' && section.value >= section.criticalThreshold / 2) return true;
+              // Don't show low severity items or items with only a few missing values
+              return false;
+            })
+            .map(section => {
+              // Determine color scheme based on severity
+              const colorScheme = section.severity === 'high' 
+                ? { bg: 'bg-rose-900/20', border: 'border-rose-800/30', text: 'text-rose-300', icon: 'bg-rose-500/20', badge: 'bg-rose-500/30 text-rose-200' }
+                : section.severity === 'medium'
+                  ? { bg: 'bg-amber-900/20', border: 'border-amber-800/30', text: 'text-amber-300', icon: 'bg-amber-500/20', badge: 'bg-amber-500/30 text-amber-200' }
+                  : { bg: 'bg-emerald-900/20', border: 'border-emerald-800/30', text: 'text-emerald-300', icon: 'bg-emerald-500/20', badge: 'bg-emerald-500/30 text-emerald-200' };
+              
+              return (
+              <div key={section.name} className={`${colorScheme.bg} border ${colorScheme.border} rounded-lg p-4`}>
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 bg-red-500/20 rounded-full p-2 mr-3">
+                  <div className={`flex-shrink-0 ${colorScheme.icon} rounded-full p-2 mr-3`}>
                     <span className="text-xl">{section.icon}</span>
                   </div>
                   <div>
-                    <h5 className="text-lg font-medium text-red-300 flex items-center">
+                    <h5 className={`text-lg font-medium ${colorScheme.text} flex items-center`}>
                       {section.name}
-                      <span className="ml-2 px-2 py-0.5 bg-red-500/30 text-red-200 text-xs rounded-full">
-                        {section.value} missing
+                      <span className={`ml-2 px-2 py-0.5 ${colorScheme.badge} text-xs rounded-full`}>
+                        {section.severity === 'high' ? 'Critical' : 'Needs Attention'}: {section.value} {section.value === 1 ? 'field' : 'fields'} missing
                       </span>
                     </h5>
                     <p className="text-slate-300 text-sm mt-1">{section.importance}</p>
@@ -622,26 +641,36 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
             
             {/* Show if no critical issues */}
-            {![safeStats.N_A_ar >= 3, safeStats.N_A_p >= 2, safeStats.N_A_rl >= 1, safeStats.N_A_per >= 3, safeStats.N_A_r >= 3, safeStats.N_A_ss >= 1, safeStats.N_A_pm >= 1].some(Boolean) && (
-              <div className="bg-green-900/20 border border-green-800/30 rounded-lg p-4 text-center">
+            {![
+              // Check for high severity issues
+              safeStats.N_A_per >= 3, 
+              safeStats.N_A_r >= 4, 
+              safeStats.N_A_ar >= 3, 
+              safeStats.N_A_p >= 2, 
+              safeStats.N_A_rl >= 2, 
+              safeStats.N_A_ss >= 2, 
+              safeStats.N_A_pm >= 2
+            ].some(Boolean) && (
+              <div className="bg-emerald-900/20 border border-emerald-800/30 rounded-lg p-4 text-center">
                 <div className="flex justify-center mb-2">
-                  <div className="bg-green-500/20 rounded-full p-2">
-                    <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="bg-emerald-500/20 rounded-full p-2">
+                    <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                 </div>
-                <h5 className="text-lg font-medium text-green-300">No Critical Issues Found</h5>
+                <h5 className="text-lg font-medium text-emerald-300">No Critical Issues Found</h5>
                 <p className="text-slate-300 text-sm mt-1">
                   You've addressed all the most critical sections for your O-1 petition!
                 </p>
               </div>
-                  )}
-                </div>
-              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* New Document Upload Section to Address Missing Fields */}
@@ -668,7 +697,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 <h5 className="font-medium text-primary-300 flex items-center">
                   Personal Information
                   {hasMissingPersonalInfo && (
-                    <span className="ml-2 px-2 py-0.5 bg-red-500/20 text-red-300 text-xs rounded-full">Required</span>
+                    <span className="ml-2 px-2 py-0.5 bg-rose-500/20 text-rose-300 text-xs rounded-full">Required</span>
                   )}
                 </h5>
                 <p className="text-slate-400 text-sm mt-1">Your contact details for the O-1 application</p>
@@ -678,21 +707,21 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/50 p-4 rounded-lg">
               <div>
                 <h6 className="text-sm font-medium text-slate-400 mb-1">Full Name</h6>
-                <p className={`font-medium ${personalInfo.name ? 'text-white' : 'text-red-300'}`}>
+                <p className={`font-medium ${personalInfo.name ? 'text-white' : 'text-rose-300'}`}>
                   {personalInfo.name || "Not provided"}
                 </p>
               </div>
               
               <div>
                 <h6 className="text-sm font-medium text-slate-400 mb-1">Phone Number</h6>
-                <p className={`font-medium ${personalInfo.phone ? 'text-white' : 'text-red-300'}`}>
+                <p className={`font-medium ${personalInfo.phone ? 'text-white' : 'text-rose-300'}`}>
                   {personalInfo.phone || "Not provided"}
                 </p>
               </div>
               
               <div>
                 <h6 className="text-sm font-medium text-slate-400 mb-1">Address</h6>
-                <p className={`font-medium ${personalInfo.address ? 'text-white' : 'text-red-300'}`}>
+                <p className={`font-medium ${personalInfo.address ? 'text-white' : 'text-rose-300'}`}>
                   {personalInfo.address || "Not provided"}
                 </p>
               </div>
@@ -816,45 +845,45 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 key={doc.type}
                 className={`border rounded-lg p-4 transition-all duration-300 hover:shadow-md ${
                   isNotUploaded
-                    ? 'bg-red-900/20 border-red-800/30 hover:border-red-500/50' 
+                    ? 'bg-rose-900/20 border-rose-800/30 hover:border-rose-500/50' 
                     : completionStatus === 'high-missing'
-                      ? 'bg-red-900/20 border-red-800/30 hover:border-red-500/50'
+                      ? 'bg-rose-900/20 border-rose-800/30 hover:border-rose-500/50'
                       : completionStatus === 'medium-missing'
                         ? 'bg-amber-900/20 border-amber-800/30 hover:border-amber-500/50'
-                        : 'bg-green-900/20 border-green-800/30 hover:border-green-500/50'
+                        : 'bg-emerald-900/20 border-emerald-800/30 hover:border-emerald-500/50'
                 }`}
               >
                 <div className="flex items-start mb-3">
                   <div className={`flex-shrink-0 rounded-full p-2 mr-3 ${
                     isNotUploaded
-                      ? 'bg-red-500/20 text-red-400' 
+                      ? 'bg-rose-500/20 text-rose-400' 
                       : completionStatus === 'high-missing'
-                        ? 'bg-red-500/20 text-red-400'
+                        ? 'bg-rose-500/20 text-rose-400'
                         : completionStatus === 'medium-missing'
                           ? 'bg-amber-500/20 text-amber-400'
-                          : 'bg-green-500/20 text-green-400'
+                          : 'bg-emerald-500/20 text-emerald-400'
                   }`}>
                     {doc.icon}
                   </div>
                   <div>
                     <h5 className={`font-medium ${
                       isNotUploaded
-                        ? 'text-red-300' 
+                        ? 'text-rose-300' 
                         : completionStatus === 'high-missing'
-                          ? 'text-red-300'
+                          ? 'text-rose-300'
                           : completionStatus === 'medium-missing'
                             ? 'text-amber-300'
-                            : 'text-green-300'
+                            : 'text-emerald-300'
                     } flex items-center`}>
                       {doc.label}
                       <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
                         isNotUploaded
-                          ? 'bg-red-500/30 text-red-200' 
+                          ? 'bg-rose-500/30 text-rose-200' 
                           : completionStatus === 'high-missing'
-                            ? 'bg-red-500/30 text-red-200'
+                            ? 'bg-rose-500/30 text-rose-200'
                             : completionStatus === 'medium-missing'
                               ? 'bg-amber-500/30 text-amber-200'
-                              : 'bg-green-500/30 text-green-200'
+                              : 'bg-emerald-500/30 text-emerald-200'
                       }`}>
                         {isNotUploaded 
                           ? 'Not Uploaded'
@@ -869,16 +898,24 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 <label 
                   className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
                     isNotUploaded
-                      ? 'border-red-700/50 hover:bg-red-900/30' 
-                      : 'border-green-700/50 hover:bg-green-900/30'
+                      ? 'border-rose-700/50 hover:bg-rose-900/30' 
+                      : completionStatus === 'high-missing'
+                        ? 'border-rose-700/50 hover:bg-rose-900/30'
+                        : completionStatus === 'medium-missing'
+                          ? 'border-amber-700/50 hover:bg-amber-900/30'
+                          : 'border-emerald-700/50 hover:bg-emerald-900/30'
                   }`}
                 >
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <svg 
                       className={`w-8 h-8 mb-3 ${
                         isNotUploaded
-                          ? 'text-red-500' 
-                          : 'text-green-500'
+                          ? 'text-rose-500' 
+                          : completionStatus === 'high-missing'
+                            ? 'text-rose-500'
+                            : completionStatus === 'medium-missing'
+                              ? 'text-amber-500'
+                              : 'text-emerald-500'
                       }`} 
                       fill="none" 
                       stroke="currentColor" 
@@ -906,10 +943,10 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 {isUploaded && (
                   <div className={`flex justify-center mt-3 rounded-lg p-2 ${
                     completionStatus === 'high-missing'
-                      ? 'text-red-400 bg-red-900/20'
+                      ? 'text-rose-400 bg-rose-900/20'
                       : completionStatus === 'medium-missing'
                         ? 'text-amber-400 bg-amber-900/20'
-                        : 'text-green-400 bg-green-900/20'
+                        : 'text-emerald-400 bg-emerald-900/20'
                   }`}>
                     {completionStatus === 'complete' ? (
                       <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

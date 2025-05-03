@@ -784,31 +784,9 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
         except Exception as e:
             logger.error(f"Error updating PDF prep progress: {str(e)}")
     
-    # In serverless environment, we don't have a physical PDF to fill
-    # So we'll create mock field statistics
-    total_pages = NUM_PAGES  # Default page count
-    
-    # Create mock field statistics
-    field_stats = {
-        "user_info_filled": 25,
-        "N/A_per": 5,
-        "N/A_r": 3,
-        "N/A_rl": 2,
-        "N/A_ar": 1,
-        "N/A_p": 4,
-        "N/A_ss": 2,
-        "N/A_pm": 3,
-        "total_fields": 45,
-        "percent_filled": 55.56,
-        # Add the na_ fields needed for the O-1 criteria
-        "na_extraordinary": 5,
-        "na_recognition": 4,
-        "na_publications": 5,
-        "na_leadership": 3,
-        "na_contributions": 4,
-        "na_salary": 4,
-        "na_success": 3
-    }
+    # Calculate field statistics from the response dictionary
+    # Use these stats instead of the mock values
+    field_stats = calculate_field_statistics(full_response_dict)
     
     # Note to Ryan:
     # need to change the input_pdf and output_pdf to the correct paths
@@ -829,6 +807,86 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
     
     logger.info(f"PDF form filling completed: {total_pages} pages processed")
     return total_pages, field_stats
+
+# Add a function to calculate field statistics
+def calculate_field_statistics(response_dict):
+    """
+    Calculate field statistics from the response dictionary
+    
+    Args:
+        response_dict (dict): Dictionary of form field values
+        
+    Returns:
+        dict: Statistics about field completion
+    """
+    if not response_dict:
+        return {
+            "user_info_filled": 0,
+            "N_A_per": 0,
+            "N_A_r": 0,
+            "N_A_rl": 0,
+            "N_A_ar": 0,
+            "N_A_p": 0,
+            "N_A_ss": 0,
+            "N_A_pm": 0,
+            "total_fields": 0,
+            "percent_filled": 0
+        }
+    
+    # Initialize counters
+    stats = {
+        "user_info_filled": 0,
+        "N_A_per": 0,
+        "N_A_r": 0,
+        "N_A_rl": 0,
+        "N_A_ar": 0,
+        "N_A_p": 0,
+        "N_A_ss": 0,
+        "N_A_pm": 0,
+        "total_fields": len(response_dict),
+        "percent_filled": 0
+    }
+    
+    # Count different value types
+    for field_name, value in response_dict.items():
+        if not value:
+            continue
+            
+        value_str = str(value).lower()
+        
+        if "n/a_per" in value_str:
+            stats["N_A_per"] += 1
+        elif "n/a_r" in value_str:
+            stats["N_A_r"] += 1
+        elif "n/a_rl" in value_str:
+            stats["N_A_rl"] += 1
+        elif "n/a_ar" in value_str:
+            stats["N_A_ar"] += 1
+        elif "n/a_p" in value_str:
+            stats["N_A_p"] += 1
+        elif "n/a_ss" in value_str:
+            stats["N_A_ss"] += 1
+        elif "n/a_pm" in value_str:
+            stats["N_A_pm"] += 1
+        elif value_str and value_str != "n/a" and value_str != "":
+            stats["user_info_filled"] += 1
+    
+    # Calculate percentage filled
+    if stats["total_fields"] > 0:
+        stats["percent_filled"] = round((stats["user_info_filled"] / stats["total_fields"]) * 100, 2)
+    
+    # Add O-1 criteria specific fields
+    stats.update({
+        "na_extraordinary": stats["N_A_r"] + stats["N_A_rl"],
+        "na_recognition": stats["N_A_ar"],
+        "na_publications": stats["N_A_p"],
+        "na_leadership": stats["N_A_r"],
+        "na_contributions": stats["N_A_r"] + stats["N_A_p"],
+        "na_salary": stats["N_A_ss"],
+        "na_success": stats["N_A_ss"]
+    })
+    
+    return stats
 
 # ----- END OF INCORPORATED CODE -----
 
@@ -1319,9 +1377,27 @@ class handler(BaseHTTPRequestHandler):
                     if 'application_id' in request_data and request_data['application_id']:
                         application_id = request_data['application_id']
                         logger.info(f"Processing documents for application: {application_id}")
-                        response = supabase.table("user_documents").select("processing_status, last_validated").eq("user_id", user_id).eq("application_id", application_id).single().execute()
+                        try:
+                            response = supabase.table("user_documents").select("processing_status, last_validated").eq("user_id", user_id).eq("application_id", application_id).single().execute()
+                        except Exception as e:
+                            # Handle the case where no records exist yet
+                            if hasattr(e, 'code') and e.code == 'PGRST116':
+                                logger.info(f"No existing records found for user {user_id} with application {application_id}, will create new record")
+                                response = None
+                            else:
+                                # Re-raise if it's not the "no rows" error
+                                raise e
                     else:
-                        response = supabase.table("user_documents").select("processing_status, last_validated").eq("user_id", user_id).single().execute()
+                        try:
+                            response = supabase.table("user_documents").select("processing_status, last_validated").eq("user_id", user_id).single().execute()
+                        except Exception as e:
+                            # Handle the case where no records exist yet
+                            if hasattr(e, 'code') and e.code == 'PGRST116':
+                                logger.info(f"No existing records found for user {user_id}, will create new record")
+                                response = None
+                            else:
+                                # Re-raise if it's not the "no rows" error
+                                raise e
                     
                     # Update status to pending
                     update_data = {
@@ -1332,9 +1408,24 @@ class handler(BaseHTTPRequestHandler):
                     if 'application_id' in request_data and request_data['application_id']:
                         application_id = request_data['application_id']
                         update_data["application_id"] = application_id
-                        supabase.table("user_documents").update(update_data).eq("user_id", user_id).eq("application_id", application_id).execute()
+                        
+                        # Check if we need to insert or update
+                        if response is None:
+                            # Insert a new record
+                            update_data["user_id"] = user_id  # Need to include user_id for insert
+                            supabase.table("user_documents").insert(update_data).execute()
+                        else:
+                            # Update existing record
+                            supabase.table("user_documents").update(update_data).eq("user_id", user_id).eq("application_id", application_id).execute()
                     else:
-                        supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
+                        # Check if we need to insert or update
+                        if response is None:
+                            # Insert a new record
+                            update_data["user_id"] = user_id  # Need to include user_id for insert
+                            supabase.table("user_documents").insert(update_data).execute()
+                        else:
+                            # Update existing record
+                            supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
                 else:
                     logger.warning("Supabase connection not available, continuing without database updates")
                     response = None

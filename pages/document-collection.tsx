@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../config/supabase';
 import Head from 'next/head';
@@ -58,7 +58,14 @@ interface PersonalInfo {
 // Add this interface extension after the PersonalInfo interface
 interface Window {
   google: any; // Using any to avoid type conflicts
-  initializeGooglePlaces: () => void;
+  initializeGooglePlaces?: () => void;
+  initializeGoogleMaps?: () => void;
+  loadGoogleMaps?: () => Promise<void>;
+  googleMapsLoaded?: boolean;
+  googleMapsReadyCallback?: (callback: () => void) => void;
+  _googleMapsCallbacks?: Array<() => void>;
+  GOOGLE_MAPS_API_KEY?: string;
+  initDirectMaps?: () => void;
 }
 
 // Add this interface near the top with other interfaces
@@ -298,7 +305,8 @@ export default function DocumentCollection() {
   
   // Add these refs for Google Maps autocomplete
   const addressInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteContainerRef = useRef<HTMLDivElement>(null);  const [autocomplete, setAutocomplete] = useState<any>(null); // Using any for compatibility with PlaceAutocompleteElement
+  const autocompleteContainerRef = useRef<HTMLDivElement>(null);
+  const [autocomplete, setAutocomplete] = useState<any>(null);
   const [googleMapsReady, setGoogleMapsReady] = useState(false);
   
   // Add state for existing applications
@@ -776,106 +784,123 @@ export default function DocumentCollection() {
     }
   };
 
-  // Initialize Google Maps script
+  // Initialize Google Maps API
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setGoogleMapsReady(true);
-      document.head.appendChild(script);
-    } else {
-      setGoogleMapsReady(true);
+    // Handle case where window.loadGoogleMaps might not be defined yet
+    if (typeof window === 'undefined') return;
+    
+    // Function to ensure we can use loadGoogleMaps safely
+    const ensureMapsLoader = () => {
+      if (window.loadGoogleMaps) {
+        // Using timeout to ensure this runs after other initialization
+        console.log("Using global Google Maps loader in document-collection");
+        
+        // First check if Google Maps is already loaded
+        if (window.googleMapsLoaded && window.google?.maps?.places) {
+          console.log("Google Maps already loaded and ready");
+          setGoogleMapsReady(true);
+          return;
+        }
+        
+        // Start loading process
+        window.loadGoogleMaps()
+          .then(() => {
+            console.log("Maps loaded successfully via global loader");
+            
+            // Verify Places is available
+            if (window.google?.maps?.places) {
+              console.log("Places API is available");
+              setGoogleMapsReady(true);
+            } else {
+              console.error("Places API still not available after load");
+              // Register a callback for when Places becomes available
+              window.googleMapsReadyCallback?.(() => {
+                console.log("Places API became available via callback");
+                setGoogleMapsReady(true);
+              });
+            }
+          })
+          .catch(error => {
+            console.error("Error loading Google Maps:", error);
+          });
+      } else {
+        console.warn("Global Google Maps loader not available yet, waiting...");
+        // Try again after a short delay
+        setTimeout(ensureMapsLoader, 100);
+      }
+    };
+    
+    // Start the process
+    ensureMapsLoader();
+    
+    // Also register a direct callback as a backup
+    if (window.googleMapsReadyCallback) {
+      window.googleMapsReadyCallback(() => {
+        console.log("Maps loaded via callback registration");
+        setGoogleMapsReady(true);
+      });
     }
   }, []);
 
-  // Initialize Google Places autocomplete using the newer PlaceAutocompleteElement API
-  useEffect(() => {
-    if (googleMapsReady && addressInputRef.current && !autocomplete) {
-      try {
-        // Ensure that the PlaceAutocompleteElement constructor is available
-        if (!window.google?.maps?.places?.PlaceAutocompleteElement) {
-          console.error("PlaceAutocompleteElement is not available yet");
-          // Wait for the next render cycle and try again
-          setTimeout(() => setGoogleMapsReady(false), 100);
-          setTimeout(() => setGoogleMapsReady(true), 200);
-          return;
+  // Legacy Autocomplete fallback function (defined outside of useEffect to avoid strict mode errors)
+  const fallbackToLegacy = useCallback(() => {
+    try {
+      console.log("Using legacy Autocomplete API");
+      const input = addressInputRef.current;
+      if (!input) return;
+      
+      // Reset visibility of the input field (it might have been hidden)
+      input.style.display = '';
+      
+      const options = {
+        componentRestrictions: { country: 'us' },
+        fields: ['formatted_address', 'address_components', 'geometry'],
+        types: ['address']
+      };
+      
+      // Make sure google is defined
+      if (!window.google || !window.google.maps || !window.google.maps.places) {
+        console.error("Google Maps Places API not available for legacy fallback");
+        return;
+      }
+      
+      const autocompleteInstance = new window.google.maps.places.Autocomplete(input, options);
+      autocompleteInstance.addListener('place_changed', () => {
+        const place = autocompleteInstance.getPlace();
+        if (place && place.formatted_address) {
+          const newAddress = place.formatted_address;
+          setPersonalInfo(prev => ({
+            ...prev,
+            address: newAddress
+          }));
         }
-
-        // Create container for the PlaceAutocompleteElement if it doesn't exist
-        let container = document.getElementById('place-autocomplete-container');
-        if (!container) {
-          container = document.createElement('div');
-          container.id = 'place-autocomplete-container';
-          container.className = 'place-autocomplete-container w-full';
-          
-          // Insert container after the input
-          if (addressInputRef.current.parentNode) {
-            addressInputRef.current.parentNode.insertBefore(container, addressInputRef.current.nextSibling);
-          }
-        }
-        
-        // Create a simpler fallback if the new API fails
-        try {
-          // Create the PlaceAutocompleteElement
-          const autocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
-            inputElement: addressInputRef.current,
-          });
-          
-          // Set options for the autocomplete
-          autocompleteElement.type = "address";
-          autocompleteElement.componentRestrictions = { country: "us" };
-          autocompleteElement.fields = ["formatted_address", "address_components", "geometry"];
-          
-          // Add to DOM
-          container.appendChild(autocompleteElement);
-          
-          // Add event listener for place selection
-          autocompleteElement.addEventListener('place_changed', () => {
-            const place = autocompleteElement.getPlace();
-            if (place && place.formatted_address) {
-              const newAddress = place.formatted_address;
-              setPersonalInfo(prev => ({
-                ...prev,
-                address: newAddress
-              }));
-            }
-          });
-          
-          // Store reference to the element
-          setAutocomplete(autocompleteElement);
-          console.log('PlaceAutocompleteElement initialized successfully');
-        } catch (elementError) {
-          console.error('Error with PlaceAutocompleteElement, falling back to legacy Autocomplete:', elementError);
-          
-          // Fall back to the legacy Autocomplete
-          const input = addressInputRef.current;
-          const options = {
-            componentRestrictions: { country: 'us' },
-            fields: ['formatted_address', 'address_components'],
-            types: ['address']
-          };
-          
-          const autocompleteInstance = new google.maps.places.Autocomplete(input, options);
-          setAutocomplete(autocompleteInstance);
-
-          autocompleteInstance.addListener('place_changed', () => {
-            const place = autocompleteInstance.getPlace();
-            const newAddress = place.formatted_address || personalInfo.address || '';
-            setPersonalInfo(prev => ({
-              ...prev,
-              address: newAddress
-            }));
-          });
-          
-          console.log('Fallback to legacy Autocomplete successful');
-        }
-      } catch (error) {
-        console.error('Error initializing Google Places:', error);
+      });
+      
+      setAutocomplete(autocompleteInstance);
+      console.log('Legacy Autocomplete initialized successfully');
+    } catch (error) {
+      console.error('Error initializing legacy Google Places Autocomplete:', error);
+      
+      // If all else fails, just let users type manually
+      if (addressInputRef.current) {
+        addressInputRef.current.style.display = '';
       }
     }
-  }, [googleMapsReady, autocomplete, personalInfo.address]);
+  }, []);
+
+  // Handle the autocomplete setup
+  useEffect(() => {
+    if (!googleMapsReady || !addressInputRef.current) return;
+
+    try {
+      console.log("Initializing Google Maps autocomplete in document-collection");
+      
+      // Simple approach - just use the legacy Autocomplete API directly
+      fallbackToLegacy();
+    } catch (error) {
+      console.error('Error initializing Google Places:', error);
+    }
+  }, [googleMapsReady, fallbackToLegacy]);
 
   // Add the missing handleFileUpload method inside the component
   const handleFileUpload = async (docType: string, file: File) => {
@@ -1144,10 +1169,13 @@ export default function DocumentCollection() {
                   {getDocumentsOfType('resume').map((doc) => (
                     <li key={doc.id} className="p-3 flex items-center justify-between">
                       <div className="flex items-center">
-                        <svg className="text-primary-400 w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="text-primary-400 w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <span className="text-sm text-slate-300 truncate max-w-[180px]">{doc.filename}</span>
+                        <span className="text-sm text-slate-300 truncate max-w-[250px]">{doc.filename}</span>
+                        <span className="text-xs text-slate-500 ml-2">
+                          {new Date(doc.uploadedAt).toLocaleDateString()}
+                        </span>
                       </div>
                       <button 
                         onClick={() => removeDocument(doc)}
