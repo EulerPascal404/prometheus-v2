@@ -251,52 +251,66 @@ export default function ApplicationPortfolio() {
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="bg-slate-700/50 border border-primary-500/30 rounded px-2 py-1 text-white focus:outline-none focus:border-primary-500"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveName(app.id);
-                      if (e.key === 'Escape') setEditingName(null);
-                    }}
+                    className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-1 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    onKeyPress={(e) => e.key === 'Enter' && saveName(app.id)}
                   />
                   <button
                     onClick={() => saveName(app.id)}
                     className="text-primary-400 hover:text-primary-300"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setEditingName(null)}
-                    className="text-slate-400 hover:text-slate-300"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    Save
                   </button>
                 </div>
               ) : (
-                <div className="group">
-                  <span className="text-sm text-slate-400">Application Name</span>
-                  <h3 
-                    className="text-lg font-medium text-white cursor-pointer hover:text-primary-400 transition-colors"
-                    onClick={() => handleNameEdit(app.id, app.name)}
-                  >
-                    {app.name || 'Untitled Application'}
-                  </h3>
-                </div>
+                <h3 className="text-lg font-medium text-white">{app.name}</h3>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
-              {app.status.replace('_', ' ').toUpperCase()}
-            </span>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleNameEdit(app.id, app.name)}
+              className="text-slate-400 hover:text-white transition-colors duration-200"
+              title="Edit name"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => {
+                const shareUrl = `${window.location.origin}/share/${app.id}`;
+                // Copy to clipboard
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                  // Create and show a toast notification
+                  const toast = document.createElement('div');
+                  toast.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 z-50';
+                  toast.innerHTML = `
+                    <svg class="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Certificate link copied to clipboard!</span>
+                  `;
+                  document.body.appendChild(toast);
+                  setTimeout(() => {
+                    toast.remove();
+                  }, 3000);
+                });
+                // Open the certificate page in a new tab instead of navigating to it
+                window.open(`/share/${app.id}`, '_blank');
+              }}
+              className="text-slate-400 hover:text-white transition-colors duration-200"
+              title="Share certificate"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684zm0 0l-6.632-3.316m6.632 6l-6.632 3.316" />
+              </svg>
+            </button>
             <button
               onClick={() => setDeleteModal({ isOpen: true, applicationId: app.id, applicationName: app.name })}
-              className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors rounded-lg hover:bg-rose-500/10"
+              className="text-slate-400 hover:text-rose-400 transition-colors duration-200"
               title="Delete application"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
