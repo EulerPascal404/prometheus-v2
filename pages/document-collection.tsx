@@ -1120,10 +1120,12 @@ export default function DocumentCollection() {
             </button>
           </div>
         </div>
-      </div>
-      
-      <div className="text-center text-sm text-slate-500 max-w-lg mx-auto">
-        <p>Your resume is all we need to get started. Our AI will evaluate your qualifications and help identify the strongest evidence for your O-1 visa petition.</p>
+
+        <div className="text-center text-sm text-slate-500 max-w-lg mx-auto mt-4">
+          <p className="text-sm text-slate-400 max-w-lg mx-auto">
+            Your resume is all we need to get started. Our AI will evaluate your qualifications and help identify the strongest evidence for your O-1 visa petition.
+          </p>
+        </div>
       </div>
     </div>
   );
