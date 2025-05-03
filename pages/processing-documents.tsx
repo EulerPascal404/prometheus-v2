@@ -563,7 +563,7 @@ export default function ProcessingDocuments() {
 
         {/* Main Content - Fixed centering */}
         <div className="min-h-screen flex items-center justify-center px-4">
-          <div className="max-w-2xl w-full">
+          <div className="max-w-3xl w-full">
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold gradient-text mb-2">Processing Your Documents</h1>
               <p className="text-slate-300">
@@ -571,7 +571,7 @@ export default function ProcessingDocuments() {
               </p>
             </div>
             
-            <div className="card p-6 w-full border-primary-500/30 mb-8">
+            <div className="card p-8 w-full border-primary-500/30 mb-8">
               <p className="text-center text-sm text-slate-300 mb-6">
                 <strong className="text-primary-300">Expert Analysis:</strong> Our AI is evaluating your materials to find the strongest evidence of your extraordinary abilities.
               </p>
