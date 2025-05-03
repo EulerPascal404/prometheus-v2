@@ -426,6 +426,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     # Make a single API call with all compiled text
     response_dict = {}
 
+    print("All text content:")
     print(all_text_content)
     
     try:
@@ -464,15 +465,13 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     print(f"Completed processing {total_pages} pages")
     return response_dict
 
-def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None):
+def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None, needO1Only=False):
     
     template = PdfReader(input_pdf)
     total_pages = len(template.pages)
+    writer = PdfWriter()
     
-    # Check if we're using the trimmed PDF (which contains only O-1 pages)
-    is_trimmed_pdf = "o1only" in input_pdf or total_pages <= 10
-    
-    print(f"Started filling PDF with {total_pages} pages" + (" (trimmed O-1 PDF)" if is_trimmed_pdf else ""))
+    print(f"Started filling PDF with {total_pages} pages")
     
     # Create field stats dictionary to track filled fields
     field_stats = {
@@ -496,17 +495,19 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
     
     # Track processed page count for progress reporting
     processed_page_count = 0
-    
+
     for page_num, page in enumerate(template.pages):
-        # If using a full PDF, check if this page is one of the O-1 relevant ones
-        if not is_trimmed_pdf and page_num not in O1_RELEVANT_PAGES_0INDEXED:
+
+        # Currently only processing O-1 pages (change back to all 38 if needed)
+        if not needO1Only and page_num not in O1_RELEVANT_PAGES_0INDEXED:
             continue  # Skip non-O1 pages
         
         # Safety check - don't process more than the expected O-1 pages
-        if processed_page_count >= o1_total_pages:
+        if not needO1Only and processed_page_count >= o1_total_pages:
             break
             
         # Increment processed page counter for progress reporting
+        print(page_num, page)
         processed_page_count += 1
         
         # Update progress for each relevant page - report the sequential number (1 to 10) not the raw page index
@@ -525,7 +526,6 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
 
                     # Check if we have a response for this field
                     if original_name and original_name in response_dict:
-
 
                         field_value = response_dict[original_name]
                         
@@ -646,15 +646,14 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         print("\n=== O1 FORM FILLING STATISTICS ===")
         print(f"Total fields processed: {field_stats['total_fields']}")
         print(f"Fields filled with user info: {field_stats['user_info_filled']} ({field_stats['percent_filled']}%)")
-        print(f"Fields requiring personal info: {field_stats['N/A_per']}")
-        print(f"Fields requiring resume info: {field_stats['N/A_r']}")
-        print(f"Fields requiring recommendation letters: {field_stats['N/A_rl']}")
-        print(f"Fields requiring awards/recognition: {field_stats['N/A_ar']}")
-        print(f"Fields requiring publications: {field_stats['N/A_p']}")
-        print(f"Fields requiring salary/success info: {field_stats['N/A_ss']}")
-        print(f"Fields requiring professional membership: {field_stats['N/A_pm']}")
+        print(f"Fields requiring personal info: {field_stats['N_A_per']}")
+        print(f"Fields requiring resume info: {field_stats['N_A_r']}")
+        print(f"Fields requiring recommendation letters: {field_stats['N_A_rl']}")
+        print(f"Fields requiring awards/recognition: {field_stats['N_A_ar']}")
+        print(f"Fields requiring publications: {field_stats['N_A_p']}")
+        print(f"Fields requiring salary/success info: {field_stats['N_A_ss']}")
+        print(f"Fields requiring professional membership: {field_stats['N_A_pm']}")
         print("==================================\n")
-        
         # If supabase is provided, store stats there
         if supabase and user_id:
             try:
@@ -667,7 +666,9 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
     except Exception as e:
         print(f"Error saving field statistics: {str(e)}")
     
-  #  PdfWriter().write(output_pdf, template)
+    ### NEED TO CHANGE HERE ###
+    # remove second parameter, which copies is a clone when called later
+    PdfWriter().write(output_pdf, template)
     print(f"Completed filling PDF with {total_pages} pages")
     return total_pages, field_stats
 
@@ -788,7 +789,7 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
         "na_success": 3
     }
     
-    total_pages, field_stats = fill_and_check_pdf("data/o1-form-template-cleaned-filled.pdf", "data/o1-form-template-cleaned-filled.pdf", full_response_dict, doc_type, user_id, supabase)
+    total_pages, field_stats = fill_and_check_pdf("data/o1-form-template-cleaned-filled.pdf", "data/o1-form-template-cleaned-filled.pdf", full_response_dict, doc_type, user_id, supabase, needO1Only=False)
     print(f"Field stats after filling for {doc_type}: {field_stats}")
     # Final completion update
     if supabase and user_id:
