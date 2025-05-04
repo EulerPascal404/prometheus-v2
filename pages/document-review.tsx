@@ -473,6 +473,10 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   } else if (docItem.value > 2) {
                     status = 'Partially Complete'; 
                     statusClass = 'bg-amber-500/20 text-amber-400';
+                  // Special handling for publications to align with Critical Issues section
+                  } else if (docItem.label === 'Publications' && docItem.value >= 2) {
+                    status = 'Incomplete';
+                    statusClass = 'bg-red-500/20 text-red-400';
                   } else {
                     status = 'Mostly Complete';
                     statusClass = 'bg-green-500/20 text-green-400';
@@ -486,13 +490,16 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 
                 const iconColorClass = docItem.label === 'Recommendation Letters'
                   ? (docItem.value === -1 ? 'text-red-400' : 'text-green-400')
-                  : docItem.value === -1 
-                    ? 'text-red-400' 
-                    : docItem.value > 5 
-                      ? 'text-red-400'
-                      : docItem.value > 2 
-                        ? 'text-amber-400'
-                        : 'text-green-400';
+                  // Special handling for publications
+                  : docItem.label === 'Publications' && docItem.value >= 2
+                    ? 'text-red-400'
+                    : docItem.value === -1 
+                      ? 'text-red-400' 
+                      : docItem.value > 5 
+                        ? 'text-red-400'
+                        : docItem.value > 2 
+                          ? 'text-amber-400'
+                          : 'text-green-400';
                 
                 return (
                   <div key={docItem.label} className="flex items-center justify-between py-1.5 px-3 rounded-lg hover:bg-slate-700/30 transition-colors duration-200">
@@ -834,7 +841,9 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   </svg>
                 ),
                 missingValue: safeStats.N_A_p === undefined ? -1 : safeStats.N_A_p,
-                status: safeStats.N_A_p === -1 || safeStats.N_A_p === undefined ? 'not-uploaded' : 'uploaded'
+                status: safeStats.N_A_p === -1 || safeStats.N_A_p === undefined ? 'not-uploaded' : 'uploaded',
+                // Add critical threshold to match the Critical Issues section
+                criticalThreshold: 2
               },
               {
                 type: 'recommendation',
@@ -899,6 +908,11 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   completionStatus = 'complete';
                   statusLabel = 'Complete';
                 } 
+                // Publications need special handling to align with Critical Issues section
+                else if (doc.type === 'publications' && doc.missingValue >= 2) {
+                  completionStatus = 'high-missing';
+                  statusLabel = 'Incomplete';
+                }
                 // Regular handling for all other document types
                 else if (doc.missingValue > 5) {
                   completionStatus = 'high-missing';
@@ -906,6 +920,10 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 } else if (doc.missingValue > 2) {
                   completionStatus = 'medium-missing';
                   statusLabel = 'Partially Complete';
+                } else if (doc.type === 'publications' && doc.missingValue > 0) {
+                  // For publications, treat any missing fields as high-missing to match Critical Issues
+                  completionStatus = 'high-missing';
+                  statusLabel = 'Incomplete';
                 } else {
                   completionStatus = 'low-missing';
                   statusLabel = 'Mostly Complete';
@@ -2115,14 +2133,11 @@ export default function DocumentReview() {
                   <p className="text-slate-300 mb-4">We're stilling working on displaying a preview of your O-1 Application. Below is a placeholder for the preview.</p>
                   
                   <div className="w-full bg-white rounded-lg overflow-hidden shadow-xl">
-                    <iframe 
-                      // src needs to be public
-                      src="/o1-form-template-cleaned-filled.pdf#page=28" 
-                      // CHANGE 
-                      // src={apiResponseData?.preview_path || '/filled-o1-form-template.pdf#page=28'} 
-                      className="w-full h-[700px]" 
-                      title="O-1 Application Preview"
-                    ></iframe>
+                  <iframe
+                        src="/api/preview?page=28"  // Optional page param for scrolling
+                        className="w-full h-[700px]"
+                        title="O-1 Application Preview"
+                      />
                   </div>
                   
                 </div>

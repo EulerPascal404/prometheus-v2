@@ -525,12 +525,8 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
     processed_page_count = 0
     
     for page_num, page in enumerate(template.pages):
-        # Safety check - don't process more than the expected O-1 pages
-        if o1 and processed_page_count >= total_pages:
-            break
-        # If using a full PDF, check if this page is one of the O-1 relevant ones
-        if o1 and page_num not in O1_RELEVANT_PAGES_0INDEXED:
-            continue  # Skip non-O1 pages
+        if not (page_num in O1_RELEVANT_PAGES_0INDEXED):
+            continue
 
         # Increment processed page counter for progress reporting
         processed_page_count += 1
@@ -551,6 +547,8 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
 
                     # Check if we have a response for this field
                     if original_name and original_name in response_dict:
+
+                        print(f"Field {original_name} found in response_dict")
 
                         field_value = response_dict[original_name]
                         
@@ -689,7 +687,7 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         print(f"Error saving field statistics: {str(e)}")
     
 
-    #PdfWriter().write(output_pdf, template)
+    PdfWriter().write(output_pdf, template)
     print(f"Completed filling PDF with {processed_page_count} pages")
     return total_pages, field_stats
 
@@ -783,6 +781,18 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
         
         # Calculate field statistics
         field_stats = calculate_field_statistics(response_dict)
+        from pathlib import Path
+
+        # Get the root path (assuming script is in project root)
+        ROOT_DIR = Path(__file__).resolve().parent
+
+        # Construct the paths
+        template_path = ROOT_DIR.parent / "data" / "o1-form-template-cleaned.pdf"
+        output_path = ROOT_DIR.parent / "tmp" / "o1-form-template-cleaned-filled.pdf"
+
+        # Call your function
+        fill_and_check_pdf(str(template_path), str(output_path), response_dict, doc_type, user_id, supabase)
+
         
         # Update field_stats to ensure it has all the required properties including leadership and contributions
         if field_stats and isinstance(field_stats, dict):
