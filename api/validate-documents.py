@@ -1713,23 +1713,27 @@ class handler(BaseHTTPRequestHandler):
                 logger.info(f"Attempting to extract page 28 preview from {input_pdf}")
                 page_extracted = extract_page_28(input_pdf, output_pdf)
                 
-                print(f"Page extracted: {page_extracted}")
+                logger.info(f"Page extracted: {page_extracted}")
                 if page_extracted:
                     logger.info(f"Successfully extracted page 28 preview to {output_pdf}")
                     i129_preview_path = output_pdf
                     
                     # If Supabase is available, store the preview in storage
+                    logger.info(f"Supabase: {supabase}")
+                    logger.info(f"User ID: {user_id}")
                     if supabase and user_id:
                         try:
                             storage_path = f"{user_id}/preview"
+                            logger.info(f"Application ID: {application_id}")
                             if application_id:
                                 storage_path = f"{user_id}/applications/{application_id}/preview"
                             
+                            logger.info(f"Storage path: {storage_path}")
                             with open(output_pdf, 'rb') as f:
                                 preview_content = f.read()
                             
                             # Upload the preview to Supabase storage
-                            preview_filename = f"page28_preview.pdf"
+                            preview_filename = f"page28_preview_{application_id if application_id else user_id}_{int(time.time())}.pdf"
                             upload_path = f"{storage_path}/{preview_filename}"
                             upload_result = supabase.storage.from_('documents').upload(
                                 upload_path,
@@ -1744,15 +1748,21 @@ class handler(BaseHTTPRequestHandler):
                             # Update user_documents table with the preview path
                             update_data = {
                                 "preview_path": i129_preview_path,
-                                "preview_page": 28,
                                 "preview_message": preview_message
                             }
                             
+                            logger.info(f"Update data: {update_data}")
+
+                            # ERROR: this is where the error is coming from
+                            # ERROR - Error handling preview: 
+                            # {'code': 'PGRST204', 'details': None, 'hint': None, 'message': "Could not find the 'preview_path' column of 'applications' in the schema cache"}
                             if application_id:
                                 supabase.table("applications").update({
                                     "preview_path": i129_preview_path,
                                     "preview_message": preview_message
                                 }).eq("id", application_id).execute()
+
+                            logger.info(f"Update data 2: {update_data}")
                             
                             supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
                             logger.info("Updated database with preview information")

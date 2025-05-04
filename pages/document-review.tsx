@@ -2112,7 +2112,7 @@ export default function DocumentReview() {
               
               <div className="p-4 border-t border-slate-700/50">
                 <div className="flex flex-col items-center">
-                  <p className="text-slate-300 mb-4">This is a preview of your filled O-1 petition form. After matching with a visa expert, you'll be able to see the complete form.</p>
+                  <p className="text-slate-300 mb-4">We're stilling working on displaying a preview of your O-1 Application. Below is a placeholder for the preview.</p>
                   
                   <div className="w-full bg-white rounded-lg overflow-hidden shadow-xl">
                     <iframe 
