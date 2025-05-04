@@ -2090,15 +2090,11 @@ export default function DocumentReview() {
   
       <div className="min-h-screen bg-transparent p-6">
         <div className="max-w-6xl mx-auto pt-12">
-          <h1 className="text-3xl font-bold text-red-500">O-1 Visa Document Review</h1>
-          
-          <div className="p-4 border-b border-slate-700/50 bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-lg">
-            <div className="p-4 text-center">
-              <h1 className="text-xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-white bg-clip-text text-transparent inline-block">
-                Your O-1 Results!
-              </h1>
-            </div>
-          </div>
+        <div className="w-full text-center mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-sky-400 to-fuchsia-600 bg-clip-text text-transparent drop-shadow-md">
+            O-1 Visa Document Review
+          </h1>
+        </div>
                   
         {activeTab === 'overview' && (
           <div className="space-y-6">
