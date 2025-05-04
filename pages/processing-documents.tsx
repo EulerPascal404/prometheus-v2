@@ -564,11 +564,11 @@ export default function ProcessingDocuments() {
         {/* Main Content - Fixed centering */}
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="max-w-3xl w-full">
-          <div className="text-center mb-12 p-6 bg-slate-900 rounded-2xl shadow-lg">
+          <div className="text-center p-6 bg-slate-900 rounded-2xl shadow-lg">
             <h1 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-sky-400 to-purple-500 text-transparent bg-clip-text drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
               Processing Your Documents
             </h1>
-            <p className="text-slate-100 text-lg">
+            <p className="text-white text-lg opacity-50 drop-shadow-sm">
               Prometheus AI is analyzing your documents to identify your exceptional qualifications for an O-1 visa.
             </p>
           </div>
