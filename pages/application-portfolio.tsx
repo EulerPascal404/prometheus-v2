@@ -211,7 +211,58 @@ export default function ApplicationPortfolio() {
     try {
       setIsDeleting(true);
       
-      // Delete the application from Supabase
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+      
+      // First, delete all associated files from storage
+      const appStoragePath = `${user.id}/applications/${deleteModal.applicationId}`;
+      
+      try {
+        // Delete each file in the application directory recursively
+        const deleteFilesRecursively = async (path) => {
+          console.log(`Listing files in: ${path}`);
+          const { data, error } = await supabase.storage
+            .from('documents')
+            .list(path);
+            
+          if (error) {
+            console.error(`Error listing files in ${path}:`, error);
+            return;
+          }
+          
+          // Process each item (file or folder)
+          for (const item of data || []) {
+            const itemPath = `${path}/${item.name}`;
+            
+            // If it's a folder (doesn't have a file extension), recursively delete its contents
+            if (!item.name.includes('.')) {
+              await deleteFilesRecursively(itemPath);
+            } else {
+              // It's a file, delete it
+              console.log(`Deleting file: ${itemPath}`);
+              const { error: deleteError } = await supabase.storage
+                .from('documents')
+                .remove([itemPath]);
+                
+              if (deleteError) {
+                console.error(`Error deleting file ${itemPath}:`, deleteError);
+              }
+            }
+          }
+        };
+        
+        // Start the recursive deletion
+        await deleteFilesRecursively(appStoragePath);
+        
+      } catch (storageError) {
+        console.error('Error cleaning up storage:', storageError);
+        // Continue with application deletion
+      }
+      
+      // Now delete the application from the database
       const { error } = await supabase
         .from('applications')
         .delete()

@@ -406,6 +406,24 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   )
                 },
                 { 
+                  label: 'Leadership Evidence', 
+                  value: safeStats.na_leadership === undefined ? -1 : safeStats.na_leadership,
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  )
+                },
+                { 
+                  label: 'Field Contributions', 
+                  value: safeStats.na_contributions === undefined ? -1 : safeStats.na_contributions,
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                    </svg>
+                  )
+                },
+                { 
                   label: 'Salary & Success', 
                   value: safeStats.N_A_ss === undefined ? -1 : safeStats.N_A_ss,
                   icon: (
@@ -428,8 +446,20 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 let status: string;
                 let statusClass: string;
                 
-                // Check if document is not uploaded (value = -1)
-                if (docItem.value === -1) {
+                // Special handling for recommendation letters - only check if uploaded
+                if (docItem.label === 'Recommendation Letters') {
+                  if (docItem.value === -1) {
+                    // Not uploaded
+                    status = 'Not Uploaded';
+                    statusClass = 'bg-red-500/20 text-red-400';
+                  } else {
+                    // Uploaded, mark as complete regardless of missing fields
+                    status = 'Complete';
+                    statusClass = 'bg-green-500/20 text-green-400';
+                  }
+                }
+                // Regular handling for all other document types
+                else if (docItem.value === -1) {
                   status = 'Not Uploaded';
                   statusClass = 'bg-red-500/20 text-red-400';
                 } 
@@ -454,13 +484,15 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   statusClass = 'bg-green-500/20 text-green-400';
                 }
                 
-                const iconColorClass = docItem.value === -1 
-                  ? 'text-red-400' 
-                  : docItem.value > 5 
-                    ? 'text-red-400'
-                    : docItem.value > 2 
-                      ? 'text-amber-400'
-                      : 'text-green-400';
+                const iconColorClass = docItem.label === 'Recommendation Letters'
+                  ? (docItem.value === -1 ? 'text-red-400' : 'text-green-400')
+                  : docItem.value === -1 
+                    ? 'text-red-400' 
+                    : docItem.value > 5 
+                      ? 'text-red-400'
+                      : docItem.value > 2 
+                        ? 'text-amber-400'
+                        : 'text-green-400';
                 
                 return (
                   <div key={docItem.label} className="flex items-center justify-between py-1.5 px-3 rounded-lg hover:bg-slate-700/30 transition-colors duration-200">
@@ -549,7 +581,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 icon: '👤',
                 importance: 'High priority - required for O-1 eligibility',
                 tip: 'Include personal information, including name, address, email, and phone number',
-                severity: safeStats.N_A_per >= 3 ? 'high' : safeStats.N_A_per >= 1 ? 'medium' : 'low'
+                severity: safeStats.N_A_per === -1 ? 'high' : safeStats.N_A_per >= 3 ? 'high' : safeStats.N_A_per >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Resume/CV', 
@@ -558,7 +590,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 icon: '📄',
                 importance: 'High priority - required for O-1 eligibility',
                 tip: 'Include all relevant work experience, education, and skills',
-                severity: safeStats.N_A_r >= 4 ? 'high' : safeStats.N_A_r >= 2 ? 'medium' : 'low'
+                severity: safeStats.N_A_r === -1 ? 'high' : safeStats.N_A_r >= 4 ? 'high' : safeStats.N_A_r >= 2 ? 'medium' : 'low'
               },
               { 
                 name: 'Awards & Recognition', 
@@ -567,7 +599,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 icon: '🏆',
                 importance: 'High priority - required for O-1 eligibility',
                 tip: 'Include major awards, recognition, and press coverage',
-                severity: safeStats.N_A_ar >= 3 ? 'high' : safeStats.N_A_ar >= 1 ? 'medium' : 'low'
+                severity: safeStats.N_A_ar === -1 ? 'high' : safeStats.N_A_ar >= 3 ? 'high' : safeStats.N_A_ar >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Publications', 
@@ -576,16 +608,36 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 icon: '📚',
                 importance: 'Key evidence for extraordinary ability',
                 tip: 'Include all published work, with proper citations',
-                severity: safeStats.N_A_p >= 2 ? 'high' : safeStats.N_A_p >= 1 ? 'medium' : 'low'
+                severity: safeStats.N_A_p === -1 ? 'high' : safeStats.N_A_p >= 2 ? 'high' : safeStats.N_A_p >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Recommendation Letters', 
-                criticalThreshold: 2,
+                criticalThreshold: 1, // Even 1 recommendation letter is enough when uploaded
                 value: safeStats.N_A_rl,
                 icon: '✉️',
                 importance: 'Essential validation from industry experts',
                 tip: 'Secure letters from prominent individuals in your field',
-                severity: safeStats.N_A_rl >= 2 ? 'high' : safeStats.N_A_rl >= 1 ? 'medium' : 'low'
+                // Special handling for recommendation letters - only check if uploaded
+                severity: safeStats.N_A_rl === -1 ? 'high' : 'low',
+                isRecommendation: true
+              },
+              { 
+                name: 'Leadership Evidence', 
+                criticalThreshold: 3,
+                value: safeStats.na_leadership,
+                icon: '👥',
+                importance: 'Critical for demonstrating leadership in your field',
+                tip: 'Include evidence of leading teams, organizations, or initiatives in your field',
+                severity: safeStats.na_leadership === -1 ? 'high' : safeStats.na_leadership >= 3 ? 'high' : safeStats.na_leadership >= 1 ? 'medium' : 'low'
+              },
+              { 
+                name: 'Field Contributions', 
+                criticalThreshold: 3,
+                value: safeStats.na_contributions,
+                icon: '🔍',
+                importance: 'Essential for proving original contributions to your field',
+                tip: 'Document your unique contributions, innovations, or advancements in your field',
+                severity: safeStats.na_contributions === -1 ? 'high' : safeStats.na_contributions >= 3 ? 'high' : safeStats.na_contributions >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Salary Evidence', 
@@ -594,7 +646,7 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 icon: '💰',
                 importance: 'Required for O-1 eligibility',
                 tip: 'Provide evidence of your salary or compensation',
-                severity: safeStats.N_A_ss >= 2 ? 'high' : safeStats.N_A_ss >= 1 ? 'medium' : 'low'
+                severity: safeStats.N_A_ss === -1 ? 'high' : safeStats.N_A_ss >= 2 ? 'high' : safeStats.N_A_ss >= 1 ? 'medium' : 'low'
               },
               { 
                 name: 'Professional Memberships', 
@@ -603,10 +655,17 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                 icon: '🔖',
                 importance: 'Essential for O-1 eligibility',
                 tip: 'Include proof of membership in professional organizations',
-                severity: safeStats.N_A_pm >= 2 ? 'high' : safeStats.N_A_pm >= 1 ? 'medium' : 'low'
+                severity: safeStats.N_A_pm === -1 ? 'high' : safeStats.N_A_pm >= 2 ? 'high' : safeStats.N_A_pm >= 1 ? 'medium' : 'low'
               }
             ]
             .filter(section => {
+              // Special handling for recommendation letters
+              if (section.isRecommendation) {
+                // Only show recommendation letters if they are not uploaded
+                return section.severity === 'high';
+              }
+              
+              // Regular handling for all other document types
               // Only show sections with significant issues
               if (section.severity === 'high') return true;
               if (section.severity === 'medium' && section.value >= section.criticalThreshold / 2) return true;
@@ -628,15 +687,19 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                     <span className="text-xl">{section.icon}</span>
                   </div>
                   <div>
-                    <h5 className={`text-lg font-medium ${colorScheme.text} flex items-center`}>
+                    <h5 className={`text-lg font-medium ${colorScheme.text} flex items-center flex-wrap gap-2`}>
                       {section.name}
-                      <span className={`ml-2 px-2 py-0.5 ${colorScheme.badge} text-xs rounded-full`}>
-                        {section.severity === 'high' ? 'Critical' : 'Needs Attention'}: {section.value} {section.value === 1 ? 'field' : 'fields'} missing
+                      <span className={`px-2 py-0.5 ${colorScheme.badge} text-xs rounded-full`}>
+                        {section.isRecommendation 
+                          ? 'Not Uploaded' 
+                          : `${section.severity === 'high' ? 'Critical' : 'Needs Attention'}: ${section.value} ${section.value === 1 ? 'field' : 'fields'} missing`}
                       </span>
                     </h5>
                     <p className="text-slate-300 text-sm mt-1">{section.importance}</p>
                     <div className="mt-2 bg-slate-800/50 rounded p-3 text-slate-300 text-sm">
-                      <span className="font-medium text-primary-300">Tip:</span> {section.tip}
+                      <span className="font-medium text-primary-300">Tip:</span> {section.isRecommendation 
+                        ? 'Please upload recommendation letters from experts in your field to support your O-1 petition.'
+                        : section.tip}
                     </div>
                   </div>
                 </div>
@@ -646,14 +709,16 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
             
             {/* Show if no critical issues */}
             {![
-              // Check for high severity issues
-              safeStats.N_A_per >= 3, 
-              safeStats.N_A_r >= 4, 
-              safeStats.N_A_ar >= 3, 
-              safeStats.N_A_p >= 2, 
-              safeStats.N_A_rl >= 2, 
-              safeStats.N_A_ss >= 2, 
-              safeStats.N_A_pm >= 2
+              // Check for high severity issues - Not Uploaded or above thresholds
+              safeStats.N_A_per === -1 || safeStats.N_A_per >= 3, 
+              safeStats.N_A_r === -1 || safeStats.N_A_r >= 4, 
+              safeStats.N_A_ar === -1 || safeStats.N_A_ar >= 3, 
+              safeStats.N_A_p === -1 || safeStats.N_A_p >= 2, 
+              safeStats.N_A_rl === -1, // Only check if recommendation letters are uploaded
+              safeStats.na_leadership === -1 || safeStats.na_leadership >= 3,
+              safeStats.na_contributions === -1 || safeStats.na_contributions >= 3,
+              safeStats.N_A_ss === -1 || safeStats.N_A_ss >= 2, 
+              safeStats.N_A_pm === -1 || safeStats.N_A_pm >= 2
             ].some(Boolean) && (
               <div className="bg-emerald-900/20 border border-emerald-800/30 rounded-lg p-4 text-center">
                 <div className="flex justify-center mb-2">
@@ -781,7 +846,8 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                   </svg>
                 ),
                 missingValue: safeStats.N_A_rl === undefined ? -1 : safeStats.N_A_rl,
-                status: safeStats.N_A_rl === -1 || safeStats.N_A_rl === undefined ? 'not-uploaded' : 'uploaded'
+                status: safeStats.N_A_rl === -1 || safeStats.N_A_rl === undefined ? 'not-uploaded' : 'uploaded',
+                isRecommendation: true
               },
               {
                 type: 'resume',
@@ -828,7 +894,13 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
               let statusLabel = 'Complete';
               
               if (isUploaded && doc.missingValue > 0) {
-                if (doc.missingValue > 5) {
+                // Special handling for recommendation letters - always mark as complete
+                if (doc.isRecommendation) {
+                  completionStatus = 'complete';
+                  statusLabel = 'Complete';
+                } 
+                // Regular handling for all other document types
+                else if (doc.missingValue > 5) {
                   completionStatus = 'high-missing';
                   statusLabel = 'Incomplete';
                 } else if (doc.missingValue > 2) {
@@ -844,36 +916,54 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
               <div 
                 key={doc.type}
                 className={`border rounded-lg p-4 transition-all duration-300 hover:shadow-md ${
-                  isNotUploaded
-                    ? 'bg-rose-900/20 border-rose-800/30 hover:border-rose-500/50' 
-                    : completionStatus === 'high-missing'
+                  // Special handling for recommendation letters
+                  doc.isRecommendation 
+                    ? isNotUploaded
                       ? 'bg-rose-900/20 border-rose-800/30 hover:border-rose-500/50'
-                      : completionStatus === 'medium-missing'
-                        ? 'bg-amber-900/20 border-amber-800/30 hover:border-amber-500/50'
-                        : 'bg-emerald-900/20 border-emerald-800/30 hover:border-emerald-500/50'
+                      : 'bg-emerald-900/20 border-emerald-800/30 hover:border-emerald-500/50'
+                    : // Regular handling for other document types
+                    isNotUploaded
+                      ? 'bg-rose-900/20 border-rose-800/30 hover:border-rose-500/50' 
+                      : completionStatus === 'high-missing'
+                        ? 'bg-rose-900/20 border-rose-800/30 hover:border-rose-500/50'
+                        : completionStatus === 'medium-missing'
+                          ? 'bg-amber-900/20 border-amber-800/30 hover:border-amber-500/50'
+                          : 'bg-emerald-900/20 border-emerald-800/30 hover:border-emerald-500/50'
                 }`}
               >
                 <div className="flex items-start mb-3">
                   <div className={`flex-shrink-0 rounded-full p-2 mr-3 ${
-                    isNotUploaded
-                      ? 'bg-rose-500/20 text-rose-400' 
-                      : completionStatus === 'high-missing'
+                    // Special handling for recommendation letters
+                    doc.isRecommendation
+                      ? isNotUploaded
                         ? 'bg-rose-500/20 text-rose-400'
-                        : completionStatus === 'medium-missing'
-                          ? 'bg-amber-500/20 text-amber-400'
-                          : 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-emerald-500/20 text-emerald-400'
+                      : // Regular handling for other document types
+                      isNotUploaded
+                        ? 'bg-rose-500/20 text-rose-400' 
+                        : completionStatus === 'high-missing'
+                          ? 'bg-rose-500/20 text-rose-400'
+                          : completionStatus === 'medium-missing'
+                            ? 'bg-amber-500/20 text-amber-400'
+                            : 'bg-emerald-500/20 text-emerald-400'
                   }`}>
                     {doc.icon}
                   </div>
                   <div>
                     <h5 className={`font-medium ${
-                      isNotUploaded
-                        ? 'text-rose-300' 
-                        : completionStatus === 'high-missing'
+                      // Special handling for recommendation letters
+                      doc.isRecommendation
+                        ? isNotUploaded
                           ? 'text-rose-300'
-                          : completionStatus === 'medium-missing'
-                            ? 'text-amber-300'
-                            : 'text-emerald-300'
+                          : 'text-emerald-300'
+                        : // Regular handling for other document types
+                        isNotUploaded
+                          ? 'text-rose-300' 
+                          : completionStatus === 'high-missing'
+                            ? 'text-rose-300'
+                            : completionStatus === 'medium-missing'
+                              ? 'text-amber-300'
+                              : 'text-emerald-300'
                     } flex items-center`}>
                       {doc.label}
                       <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
@@ -887,7 +977,9 @@ function StatsSection({ stats, filledPdfUrl, apiResponseData, personalInfo }: {
                       }`}>
                         {isNotUploaded 
                           ? 'Not Uploaded'
-                          : statusLabel
+                          : doc.isRecommendation
+                            ? 'Complete' // Always show recommendation letters as Complete when uploaded
+                            : statusLabel
                         }
                       </span>
                     </h5>

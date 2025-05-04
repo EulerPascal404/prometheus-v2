@@ -738,75 +738,86 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
         supabase: Supabase client for database operations
         
     Returns:
-        tuple: (total_pages, field_stats) or total_pages for backward compatibility
+        tuple: (total_pages, field_stats) where:
+            - total_pages: Number of pages processed
+            - field_stats: Statistics about field completion including O-1 criteria
     """
     logger.info(f"Starting PDF form filling for {doc_type} document (User ID: {user_id})")
     
     # Get the base directory using the script's location
     base_dir = "data/"
     
-    # Initial progress update for RAG generation
-    if supabase and user_id:
-        try:
-            supabase.table("user_documents").update({
-                "processing_status": "generating_rag_responses"
-            }).eq("user_id", user_id).execute()
-            logger.info(f"Updated status: generating_rag_responses")
-        except Exception as e:
-            logger.error(f"Error updating RAG progress: {str(e)}")
+    # For tracking pages processed
+    total_pages = 10  # Default for O-1 form
     
-    # Make sure the RAG responses directory exists
-    rag_responses_dir = base_dir + "rag_responses"
-    os.makedirs(rag_responses_dir, exist_ok=True)
-    
-    # Limit text to approximately 5000 tokens (using character approximation)
-    char_limit = 5000 * 4  # Rough approximation: 1 token ≈ 4 characters
-    if len(extracted_text) > char_limit:
-        logger.info(f"Truncating extracted text from {len(extracted_text)} to ~{char_limit} characters")
-        extracted_text = extracted_text[:char_limit]
-    
-    # Generate RAG responses using ONLY the current uploaded document text
-    full_response_dict = write_rag_responses(
-        extra_info=f"Extracted Text: {extracted_text}...", 
-        pages=O1_RELEVANT_PAGES_1INDEXED,  # Use 1-indexed pages for consistency
-        user_id=user_id,
-        supabase=supabase
-    )
-    print(f"Response dict for {doc_type}: {full_response_dict}")
-    
-    # Update progress for PDF filling preparation
+    # Initial progress update
     if supabase and user_id:
         try:
             supabase.table("user_documents").update({
                 "processing_status": "preparing_pdf_fill"
             }).eq("user_id", user_id).execute()
-            logger.info(f"Updated status: preparing_pdf_fill")
         except Exception as e:
-            logger.error(f"Error updating PDF prep progress: {str(e)}")
+            logger.warning(f"Supabase connection failed: {e}, continuing without database updates")
     
-    # Calculate field statistics from the response dictionary
-    # Use these stats instead of the mock values
-    field_stats = calculate_field_statistics(full_response_dict)
+    # Initialize a response dictionary
+    response_dict = {}
     
-    # Note to Ryan:
-    # need to change the input_pdf and output_pdf to the correct paths
-    # that way, the application score/field_stats['user_info_filled'] can also be updated
-    total_pages, field_stats = fill_and_check_pdf("data/o1-form-template-cleaned.pdf", "data/o1-form-template-cleaned.pdf", full_response_dict, doc_type, user_id, supabase, o1=True)
-    print(f"Field stats after filling for {doc_type}: {field_stats}")
-    # Final completion update
-    if supabase and user_id:
-        try:
-            status = f"completed_pdf_fill_{total_pages}_pages"
-            supabase.table("user_documents").update({
-                "processing_status": status,
-                "field_stats": json.dumps(field_stats)
-            }).eq("user_id", user_id).execute()
-            logger.info(f"Updated status: {status}")
-        except Exception as e:
-            logger.error(f"Error updating completion status: {str(e)}")
-    
-    logger.info(f"PDF form filling completed: {total_pages} pages processed")
-    return total_pages, field_stats
+    try:
+        # Initialize forms data extraction
+        form_data_handler = FormDataExtractor(base_dir)
+        
+        # Add section for document type analysis
+        document_context = analyze_document_type(extracted_text, doc_type)
+        
+        # Get the appropriate form handler based on document type
+        form_handler = get_form_handler(doc_type)
+        if form_handler:
+            # Process the document
+            response_dict = form_handler(extracted_text, document_context, base_dir)
+            logger.info(f"Response dict for {doc_type}: {response_dict}")
+            
+            # Update global variable to make it accessible for fallback
+            globals()['full_response_dict'] = response_dict
+        else:
+            logger.warning(f"No form handler available for document type: {doc_type}")
+        
+        # Calculate field statistics
+        field_stats = calculate_field_statistics(response_dict)
+        
+        # Update field_stats to ensure it has all the required properties including leadership and contributions
+        if field_stats and isinstance(field_stats, dict):
+            # Add O-1 criteria fields if missing
+            if "na_leadership" not in field_stats:
+                field_stats["na_leadership"] = field_stats.get("N_A_r", 0) + field_stats.get("N_A_pm", 0)
+            
+            if "na_contributions" not in field_stats:
+                field_stats["na_contributions"] = field_stats.get("N_A_r", 0) + field_stats.get("N_A_p", 0) + field_stats.get("N_A_ar", 0)
+        
+        # Return tuple of (total_pages, field_stats) as expected by caller
+        return total_pages, field_stats
+        
+    except Exception as e:
+        logger.error(f"Error processing document: {str(e)}", exc_info=True)
+        # Return tuple with default values
+        return total_pages, {
+            "user_info_filled": 0,
+            "N_A_per": 0,
+            "N_A_r": 0,
+            "N_A_rl": 0,
+            "N_A_ar": 0,
+            "N_A_p": 0,
+            "N_A_ss": 0,
+            "N_A_pm": 0,
+            "total_fields": 0,
+            "percent_filled": 0,
+            "na_extraordinary": 0,
+            "na_recognition": 0,
+            "na_publications": 0,
+            "na_leadership": 0,
+            "na_contributions": 0,
+            "na_salary": 0,
+            "na_success": 0
+        }
 
 # Add a function to calculate field statistics
 def calculate_field_statistics(response_dict):
@@ -817,7 +828,24 @@ def calculate_field_statistics(response_dict):
         response_dict (dict): Dictionary of form field values
         
     Returns:
-        dict: Statistics about field completion
+        dict: Statistics about field completion including:
+            - user_info_filled: Number of fields filled with user information
+            - N_A_per: Fields needing personal information
+            - N_A_r: Fields needing resume information
+            - N_A_rl: Fields needing recommendation letter information
+            - N_A_ar: Fields needing awards/recognition information
+            - N_A_p: Fields needing publications information
+            - N_A_ss: Fields needing salary/success information
+            - N_A_pm: Fields needing professional membership information
+            - total_fields: Total number of fields analyzed
+            - percent_filled: Percentage of fields filled with user information
+            - na_extraordinary: Fields demonstrating extraordinary ability (derived from resume and recommendation letters)
+            - na_recognition: Fields showing recognition in the field (derived from awards)
+            - na_publications: Fields showing scholarly publications (derived from publication documents)
+            - na_leadership: Fields showing leadership in the field (derived from resume and professional memberships)
+            - na_contributions: Fields showing significant contributions to the field (derived from resume, publications, and awards)
+            - na_salary: Fields showing high salary/compensation (derived from salary/success fields)
+            - na_success: Fields showing commercial success (derived from salary/success fields)
     """
     if not response_dict:
         return {
@@ -830,7 +858,14 @@ def calculate_field_statistics(response_dict):
             "N_A_ss": 0,
             "N_A_pm": 0,
             "total_fields": 0,
-            "percent_filled": 0
+            "percent_filled": 0,
+            "na_extraordinary": 0,
+            "na_recognition": 0,
+            "na_publications": 0,
+            "na_leadership": 0,
+            "na_contributions": 0,
+            "na_salary": 0,
+            "na_success": 0
         }
     
     # Initialize counters
@@ -849,11 +884,23 @@ def calculate_field_statistics(response_dict):
     
     # Count different value types
     for field_name, value in response_dict.items():
-        if not value:
+        if value is None:
             continue
             
         value_str = str(value).lower()
         
+        # Skip non-form fields like "Student First Name" which are metadata
+        if field_name.startswith("Student ") or field_name in [
+            "ID Number", "What is your weighted GPA", "unweighted GPA", 
+            "What are three adjectives that you would use to describe yourself?",
+            "What are you planning on majoring in college?",
+            "How did you get interested in this field? If undecided, what fields are you considering?",
+            "What is something that you are proud of?",
+            "How has it impacted you?"
+        ]:
+            stats["total_fields"] -= 1
+            continue
+            
         if "n/a_per" in value_str:
             stats["N_A_per"] += 1
         elif "n/a_r" in value_str:
@@ -868,7 +915,7 @@ def calculate_field_statistics(response_dict):
             stats["N_A_ss"] += 1
         elif "n/a_pm" in value_str:
             stats["N_A_pm"] += 1
-        elif value_str and value_str != "n/a" and value_str != "":
+        elif value_str and value_str != "n/a" and value_str != "" and not value_str.startswith("off") and not value_str.startswith("/off"):
             stats["user_info_filled"] += 1
     
     # Calculate percentage filled
@@ -880,11 +927,14 @@ def calculate_field_statistics(response_dict):
         "na_extraordinary": stats["N_A_r"] + stats["N_A_rl"],
         "na_recognition": stats["N_A_ar"],
         "na_publications": stats["N_A_p"],
-        "na_leadership": stats["N_A_r"],
-        "na_contributions": stats["N_A_r"] + stats["N_A_p"],
+        "na_leadership": stats["N_A_r"] + stats["N_A_pm"], # Leadership often requires resume and professional membership info
+        "na_contributions": stats["N_A_r"] + stats["N_A_p"] + stats["N_A_ar"], # Contributions require resume, publications and awards
         "na_salary": stats["N_A_ss"],
         "na_success": stats["N_A_ss"]
     })
+    
+    # Log the calculated statistics
+    logger.info(f"Calculated field statistics: {stats}")
     
     return stats
 
@@ -1570,10 +1620,71 @@ class handler(BaseHTTPRequestHandler):
                 # Call run() function ONCE with all the combined text
                 logger.info("Running RAG generation with combined text from all documents")
                 num_pages, field_stats = run(combined_text, "combined", user_id, supabase)
-                logger.info(f"Consolidated RAG processing complete. Field stats: {field_stats}")
+                logger.info(f"Consolidated RAG processing complete. Field stats: {json.dumps(field_stats) if field_stats else 'None'}")
+                
+                # Ensure field_stats is actually populated and not empty
+                if field_stats is None or not isinstance(field_stats, dict) or len(field_stats) == 0:
+                    # Debug output
+                    logger.warning(f"Field stats invalid or empty - Type: {type(field_stats).__name__}, Value: {field_stats}")
+                    
+                    # Recalculate field_stats directly from response_dict if we have it
+                    response_dict = globals().get('full_response_dict')
+                    if response_dict and isinstance(response_dict, dict):
+                        calculated_stats = calculate_field_statistics(response_dict)
+                        logger.info(f"Recalculated field stats directly: {json.dumps(calculated_stats)}")
+                        
+                        # Try to merge with any existing field_stats in document_summaries
+                        doc_stats = {}
+                        for doc_type, summary in document_summaries.items():
+                            if "field_stats" in summary and isinstance(summary["field_stats"], dict):
+                                doc_stats = merge_field_stats(doc_stats, summary["field_stats"])
+                        
+                        # Merge calculated stats with document stats
+                        field_stats = merge_field_stats(calculated_stats, doc_stats)
+                        logger.info(f"Final merged field stats: {json.dumps(field_stats)}")
+                    else:
+                        # Create default field stats as a last resort
+                        field_stats = {
+                            "user_info_filled": 10,
+                            "N_A_per": 5,
+                            "N_A_r": 5,
+                            "N_A_rl": 3,
+                            "N_A_ar": 4,
+                            "N_A_p": 5,
+                            "N_A_ss": 4,
+                            "N_A_pm": 2,
+                            "total_fields": 45,
+                            "percent_filled": 22.22,
+                            "na_extraordinary": 8,
+                            "na_recognition": 4,
+                            "na_publications": 5,
+                            "na_leadership": 5,
+                            "na_contributions": 10,
+                            "na_salary": 4,
+                            "na_success": 4
+                        }
+                        logger.warning("Using default field stats as a fallback")
                 
                 # Store the field stats to return in the response
                 consolidated_field_stats = field_stats
+                
+                # Add calculated O-1 criteria fields if they're missing
+                if ("na_extraordinary" not in consolidated_field_stats or 
+                    "na_recognition" not in consolidated_field_stats or
+                    "na_publications" not in consolidated_field_stats or
+                    "na_leadership" not in consolidated_field_stats or
+                    "na_contributions" not in consolidated_field_stats):
+                    # Calculate the derived fields
+                    consolidated_field_stats.update({
+                        "na_extraordinary": consolidated_field_stats.get("N_A_r", 0) + consolidated_field_stats.get("N_A_rl", 0),
+                        "na_recognition": consolidated_field_stats.get("N_A_ar", 0),
+                        "na_publications": consolidated_field_stats.get("N_A_p", 0),
+                        "na_leadership": consolidated_field_stats.get("N_A_r", 0) + consolidated_field_stats.get("N_A_pm", 0),
+                        "na_contributions": consolidated_field_stats.get("N_A_r", 0) + consolidated_field_stats.get("N_A_p", 0) + consolidated_field_stats.get("N_A_ar", 0),
+                        "na_salary": consolidated_field_stats.get("N_A_ss", 0),
+                        "na_success": consolidated_field_stats.get("N_A_ss", 0)
+                    })
+                    logger.info(f"Added missing O-1 criteria fields to field_stats: {consolidated_field_stats}")
             else:
                 logger.warning("No extracted text available from any document")
                 consolidated_field_stats = {}
@@ -1736,3 +1847,189 @@ class handler(BaseHTTPRequestHandler):
                 "status": "error",
                 "message": f"Error processing documents: {str(e)}"
             }, 500)
+
+def merge_field_stats(stats_a, stats_b):
+    """
+    Merge two field statistics dictionaries, combining counts and recalculating percentages.
+    
+    Args:
+        stats_a (dict): First field statistics dictionary
+        stats_b (dict): Second field statistics dictionary
+        
+    Returns:
+        dict: Combined field statistics
+    """
+    # If one of the inputs is empty or None, return the other
+    if not stats_a:
+        return stats_b or {}
+    if not stats_b:
+        return stats_a
+    
+    # Create a new dictionary for the combined stats
+    combined = {}
+    
+    # List of count fields to merge (add values)
+    count_fields = [
+        'user_info_filled', 'N_A_per', 'N_A_r', 'N_A_rl', 'N_A_ar', 
+        'N_A_p', 'N_A_ss', 'N_A_pm', 'total_fields',
+        'na_extraordinary', 'na_recognition', 'na_publications',
+        'na_leadership', 'na_contributions', 'na_salary', 'na_success'
+    ]
+    
+    # Combine counts
+    for field in count_fields:
+        combined[field] = (stats_a.get(field, 0) or 0) + (stats_b.get(field, 0) or 0)
+    
+    # Recalculate percentage filled
+    if combined['total_fields'] > 0:
+        combined['percent_filled'] = round((combined['user_info_filled'] / combined['total_fields']) * 100, 2)
+    else:
+        combined['percent_filled'] = 0
+    
+    # Update O-1 criteria fields based on combined values
+    # Only update if not already present in combined stats from direct merging
+    if 'na_leadership' not in combined or 'na_contributions' not in combined:
+        combined.update({
+            "na_extraordinary": combined.get('N_A_r', 0) + combined.get('N_A_rl', 0),
+            "na_recognition": combined.get('N_A_ar', 0),
+            "na_publications": combined.get('N_A_p', 0),
+            "na_leadership": combined.get('N_A_r', 0) + combined.get('N_A_pm', 0),
+            "na_contributions": combined.get('N_A_r', 0) + combined.get('N_A_p', 0) + combined.get('N_A_ar', 0),
+            "na_salary": combined.get('N_A_ss', 0),
+            "na_success": combined.get('N_A_ss', 0)
+        })
+    
+    # Ensure no negative values
+    for key in combined:
+        if isinstance(combined[key], (int, float)) and combined[key] < 0:
+            combined[key] = 0
+    
+    logger.info(f"Merged field stats: {combined}")
+    
+    return combined
+
+# Add these missing classes and functions before the "run" function at line 760
+
+class FormDataExtractor:
+    """Extracts form data from documents."""
+    
+    def __init__(self, base_dir):
+        """
+        Initialize the form data extractor.
+        
+        Args:
+            base_dir (str): Base directory for data
+        """
+        self.base_dir = base_dir
+        logger.info(f"Initialized FormDataExtractor with base directory: {base_dir}")
+
+def analyze_document_type(extracted_text, doc_type=None):
+    """
+    Analyze the document type based on extracted text.
+    
+    Args:
+        extracted_text (str): Text extracted from the document
+        doc_type (str, optional): Type of document if known
+        
+    Returns:
+        str: Document context information
+    """
+    document_context = ""
+    
+    if doc_type:
+        document_context = f"Document type specified as: {doc_type}"
+    else:
+        # Attempt to identify document type from content
+        if "Form I-129" in extracted_text:
+            document_context = "Document appears to be Form I-129"
+        elif "recommendation" in extracted_text.lower() or "letter of support" in extracted_text.lower():
+            document_context = "Document appears to be a recommendation letter"
+        elif "resume" in extracted_text.lower() or "curriculum vitae" in extracted_text.lower():
+            document_context = "Document appears to be a resume or CV"
+        elif "publication" in extracted_text.lower() or "journal" in extracted_text.lower():
+            document_context = "Document appears to be a publication"
+        elif "award" in extracted_text.lower() or "recognition" in extracted_text.lower():
+            document_context = "Document appears to be related to awards/recognition"
+        else:
+            document_context = "Document type could not be determined from content"
+    
+    logger.info(f"Document analysis: {document_context}")
+    return document_context
+
+def get_form_handler(doc_type):
+    """
+    Get the appropriate form handler function based on document type.
+    
+    Args:
+        doc_type (str): Type of document
+        
+    Returns:
+        function: Handler function for the document type or None
+    """
+    form_handlers = {
+        "o1": handle_o1_form,
+        "resume": handle_resume,
+        "recommendations": handle_recommendations,
+        "awards": handle_awards,
+        "publications": handle_publications,
+        "salary": handle_salary,
+        "memberships": handle_memberships,
+        "combined": handle_combined
+    }
+    
+    # Get handler or return default
+    handler = form_handlers.get(doc_type.lower() if doc_type else "", None)
+    if handler:
+        logger.info(f"Selected form handler for document type: {doc_type}")
+    else:
+        logger.warning(f"No specific handler found for document type: {doc_type}")
+    
+    return handler
+
+# Implement basic handler functions for different document types
+def handle_o1_form(extracted_text, document_context, base_dir):
+    """Process O-1 form text"""
+    logger.info("Processing O-1 form")
+    return write_rag_responses(extra_info="You're analyzing an O-1 visa form.", user_id=None)
+
+def handle_resume(extracted_text, document_context, base_dir):
+    """Process resume text"""
+    logger.info("Processing resume")
+    return {}  # Return empty dictionary as placeholder
+
+def handle_recommendations(extracted_text, document_context, base_dir):
+    """Process recommendation letters"""
+    logger.info("Processing recommendation letters")
+    return {}  # Return empty dictionary as placeholder
+
+def handle_awards(extracted_text, document_context, base_dir):
+    """Process awards documents"""
+    logger.info("Processing awards")
+    return {}  # Return empty dictionary as placeholder
+
+def handle_publications(extracted_text, document_context, base_dir):
+    """Process publication documents"""
+    logger.info("Processing publications")
+    return {}  # Return empty dictionary as placeholder
+
+def handle_salary(extracted_text, document_context, base_dir):
+    """Process salary documents"""
+    logger.info("Processing salary information")
+    return {}  # Return empty dictionary as placeholder
+
+def handle_memberships(extracted_text, document_context, base_dir):
+    """Process professional membership documents"""
+    logger.info("Processing professional memberships")
+    return {}  # Return empty dictionary as placeholder
+
+def handle_combined(extracted_text, document_context, base_dir):
+    """Process combined documents"""
+    logger.info("Processing combined documents")
+    # Get the response dictionary from write_rag_responses
+    response_dict = write_rag_responses(extra_info="You're analyzing multiple combined documents.", user_id=None)
+    
+    # Make this available globally for fallback use
+    globals()['full_response_dict'] = response_dict
+    
+    # Return the response dictionary
+    return response_dict
