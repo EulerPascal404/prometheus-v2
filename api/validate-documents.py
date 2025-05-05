@@ -499,202 +499,106 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
     # Check if we're in a Lambda environment
     is_lambda = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
     
-    if is_lambda:
-        print("[DEBUG] Running in Lambda environment, using /tmp for file operations")
-        # In Lambda, use /tmp for all file operations
-        tmp_dir = "/tmp"
-        input_pdf = os.path.join(tmp_dir, os.path.basename(input_pdf))
-        output_pdf = os.path.join(tmp_dir, os.path.basename(output_pdf))
-        
-        # Copy input file to /tmp if it's not already there
-        if not os.path.exists(input_pdf):
-            print("[DEBUG] Copying input file to /tmp")
-            with open(input_pdf, 'rb') as src, open(os.path.join(tmp_dir, os.path.basename(input_pdf)), 'wb') as dst:
-                dst.write(src.read())
+    if not supabase:
+        print("[ERROR] Supabase client not available")
+        return 0, {}
     
-    template = PdfReader(input_pdf)
-    total_pages = len(template.pages)
-     # o-1 has 10 pages, so update_fill_progress will use 10
-    # also for error catching in for loop
-    if o1:
-        total_pages = 10
-
-    print(f"Started filling PDF with {total_pages} pages")
-    
-    # Create field stats dictionary to track filled fields
-    field_stats = {
-        "user_info_filled": 0,
-        "N_A_per": 0,  # personal info needed
-        "N_A_r": 0,    # resume info needed
-        "N_A_rl": 0,   # recommendation letters needed
-        "N_A_ar": 0,   # awards/recognition info needed
-        "N_A_p": 0,    # publications info needed
-        "N_A_ss": 0,   # salary/success info needed
-        "N_A_pm": 0,   # professional membership info needed
-        "total_fields": 0
-    }
-    
-
-
-    # Track processed page count for progress reporting
-    processed_page_count = 0
-    
-    for page_num, page in enumerate(template.pages):
-        if not (page_num in O1_RELEVANT_PAGES_0INDEXED):
-            continue
-
-        # Increment processed page counter for progress reporting
-        processed_page_count += 1
-        
-        # Update progress for each relevant page
-        if supabase and user_id:
-            update_fill_progress(processed_page_count, total_pages, doc_type, user_id, supabase)
-            
-        annotations = page.get('/Annots')
-        if annotations:
-            for annotation in annotations:
-                if annotation.get('/Subtype') == '/Widget':
-                    field_type = annotation.get('/FT')
-                    original_name = annotation.get('/T').replace("\\", "/")
-                    
-                    # Count total fillable fields
-                    field_stats["total_fields"] += 1
-
-                    # Check if we have a response for this field
-                    if original_name and original_name in response_dict:
-
-                        print(f"Field {original_name} found in response_dict")
-
-                        field_value = response_dict[original_name]
-                        
-                        # Check for NA field types in the value
-                        value_str = str(field_value).lower() if field_value else ""
-                        
-                        # Classify the field value
-                        if "n/a_per" in value_str:
-                            field_stats["N_A_per"] += 1
-                        elif "n/a_r" in value_str:
-                            field_stats["N_A_r"] += 1
-                        elif "n/a_rl" in value_str:
-                            field_stats["N_A_rl"] += 1
-                        elif "n/a_ar" in value_str:
-                            field_stats["N_A_ar"] += 1
-                        elif "n/a_p" in value_str:
-                            field_stats["N_A_p"] += 1
-                        elif "n/a_ss" in value_str:
-                            field_stats["N_A_ss"] += 1
-                        elif "n/a_pm" in value_str:
-                            field_stats["N_A_pm"] += 1
-                        elif value_str and value_str != "n/a" and value_str != "":
-                            # Count as user info filled if it's not empty and not an N/A type
-                            field_stats["user_info_filled"] += 1
-                        
-                        # Handle checkboxes
-                        if field_type == '/Btn':
-                            # Determine if this is a checkbox or radio button
-                            is_checkbox = annotation.get('/Ff') and int(annotation['/Ff']) & 0x10000
-                            
-                            if is_checkbox:
-                                # For checkboxes, check if the value is truthy
-                                if field_value in [True, 'True', 'Y', 'y', 1, '1']:
-                                    # Find the 'on' state for this checkbox
-                                    on_state = PdfName('Yes')
-                                    if annotation.get('/AP'):
-                                        ap_dict = annotation['/AP']
-                                        if isinstance(ap_dict, PdfDict) and ap_dict.get('/N'):
-                                            states = ap_dict['/N']
-                                            for state in states.keys():
-                                                if state != '/Off':
-                                                    on_state = PdfName(state)
-                                                    break
-                                    
-                                    # Set the checkbox to its 'on' state
-                                    annotation.update(PdfDict(V=on_state, AS=on_state))
-                                else:
-                                    # Ensure checkbox is off
-                                    annotation.update(PdfDict(V=PdfName('Off'), AS=PdfName('Off')))
-                            else:
-                                # For radio buttons, set the selected option     
-                                annotation.V = pdfrw.objects.pdfname.BasePdfName(field_value)
-                        
-                        # Handle text fields
-                        elif field_type == '/Tx':
-                            annotation.update(PdfDict(V=str(field_value), AS=str(field_value)))
-                        
-                        # Handle drop-down fields
-                        elif field_type == '/Ch':
-                            annotation.update(PdfDict(V=str(field_value), AS=str(field_value)))
-                    
-                    # Original logic for fields not in response_dict
-                    else:
-                        # Existing logic for unspecified fields
-                        if field_type == '/Btn':
-                            if annotation.get('/Ff') and int(annotation['/Ff']) & 0x10000:
-                                if annotation.get('/AS') is None:
-                                    opts = annotation.get('/Opt')
-                                    if opts:
-                                        annotation.update(PdfDict(V=opts[0], AS=opts[0]))
-                            else:
-                                
-                                on_state = None
-                                if annotation.get('/AP'):
-                                    ap_dict = annotation['/AP']
-                                    if isinstance(ap_dict, PdfDict) and ap_dict.get('/N'):
-                                        states = ap_dict['/N']
-                                        for state in states.keys():
-                                            if state != '/Off':
-                                                on_state = state
-                                                break
-                                on_state = on_state or PdfName('Yes')
-                                annotation.update(PdfDict(V=on_state, AS=on_state))
-                        
-                        # Handle text fields
-                        elif field_type == '/Tx':
-                            annotation.update(PdfDict(V="", AS=""))
-                        
-                        # Handle drop-down fields
-                        elif field_type == '/Ch':
-                            opts = annotation.get('/Opt')
-                            if opts:
-                                val = random.choice(opts)[0].replace('(', '').replace(')', '')
-                                annotation.update(PdfDict(V=val, AS=val))
-    
-    # Write field stats to a report file
-    base_dir = Path(output_pdf).parent
-    stats_file = os.path.join(base_dir, "field_stats.json")
-    
-    # In Lambda, use /tmp for the stats file
-    if is_lambda:
-        stats_file = os.path.join("/tmp", "field_stats.json")
-    
-    # Calculate percentages
-    percent_filled = 0
-    if field_stats["total_fields"] > 0:
-        percent_filled = (field_stats["user_info_filled"] / field_stats["total_fields"]) * 100
-    
-    field_stats["percent_filled"] = round(percent_filled, 2)
-    
-    # Save the field stats report
     try:
-        with open(stats_file, 'w', encoding='utf-8') as f:
-            json.dump(field_stats, f, indent=2)
-        print(f"Field statistics saved to {stats_file}")
+        # Get the template from Supabase storage
+        print("[DEBUG] Downloading O-1 form template from Supabase storage")
+        template_path = "templates/o1-form-template-cleaned-filled.pdf"
+        template_response = supabase.storage.from_('documents').download(template_path)
+        
+        if not template_response:
+            print("[ERROR] Failed to download template from Supabase storage")
+            return 0, {}
+        
+        # Create a temporary file for processing
+        tmp_dir = "/tmp" if is_lambda else os.path.dirname(os.path.abspath(__file__))
+        preview_dir = os.path.join(tmp_dir, "preview")
+        os.makedirs(preview_dir, exist_ok=True)
+        
+        # Save template to temporary file
+        template_file = os.path.join(tmp_dir, "template.pdf")
+        with open(template_file, 'wb') as f:
+            f.write(template_response)
+        
+        # Process the template
+        template = PdfReader(template_file)
+        total_pages = len(template.pages)
+        
+        # Calculate field statistics
+        field_stats = {
+            "user_info_filled": 0,
+            "N_A_per": 0,
+            "N_A_r": 0,
+            "N_A_rl": 0,
+            "N_A_ar": 0,
+            "N_A_p": 0,
+            "N_A_ss": 0,
+            "N_A_pm": 0,
+            "total_fields": 0
+        }
+        
+        # Process the template and update field stats
+        for page_num, page in enumerate(template.pages):
+            if not (page_num in O1_RELEVANT_PAGES_0INDEXED):
+                continue
+            
+            annotations = page.get('/Annots')
+            if annotations:
+                for annotation in annotations:
+                    if annotation.get('/Subtype') == '/Widget':
+                        field_type = annotation.get('/FT')
+                        original_name = annotation.get('/T').replace("\\", "/")
+                        
+                        # Count total fillable fields
+                        field_stats["total_fields"] += 1
+                        
+                        # Check if we have a response for this field
+                        if original_name and original_name in response_dict:
+                            field_value = response_dict[original_name]
+                            value_str = str(field_value).lower() if field_value else ""
+                            
+                            # Update field stats based on value
+                            if "n/a_per" in value_str:
+                                field_stats["N_A_per"] += 1
+                            elif "n/a_r" in value_str:
+                                field_stats["N_A_r"] += 1
+                            elif "n/a_rl" in value_str:
+                                field_stats["N_A_rl"] += 1
+                            elif "n/a_ar" in value_str:
+                                field_stats["N_A_ar"] += 1
+                            elif "n/a_p" in value_str:
+                                field_stats["N_A_p"] += 1
+                            elif "n/a_ss" in value_str:
+                                field_stats["N_A_ss"] += 1
+                            elif "n/a_pm" in value_str:
+                                field_stats["N_A_pm"] += 1
+                            elif value_str and value_str != "n/a" and value_str != "":
+                                field_stats["user_info_filled"] += 1
+        
+        # Calculate percentage filled
+        if field_stats["total_fields"] > 0:
+            field_stats["percent_filled"] = round((field_stats["user_info_filled"] / field_stats["total_fields"]) * 100, 2)
+        else:
+            field_stats["percent_filled"] = 0
         
         # Print summary to console
         print("\n=== O1 FORM FILLING STATISTICS ===")
         print(f"Total fields processed: {field_stats['total_fields']}")
         print(f"Fields filled with user info: {field_stats['user_info_filled']} ({field_stats['percent_filled']}%)")
-        print(f"Fields requiring personal info: {field_stats['N/A_per']}")
-        print(f"Fields requiring resume info: {field_stats['N/A_r']}")
-        print(f"Fields requiring recommendation letters: {field_stats['N/A_rl']}")
-        print(f"Fields requiring awards/recognition: {field_stats['N/A_ar']}")
-        print(f"Fields requiring publications: {field_stats['N/A_p']}")
-        print(f"Fields requiring salary/success info: {field_stats['N/A_ss']}")
-        print(f"Fields requiring professional membership: {field_stats['N/A_pm']}")
+        print(f"Fields requiring personal info: {field_stats['N_A_per']}")
+        print(f"Fields requiring resume info: {field_stats['N_A_r']}")
+        print(f"Fields requiring recommendation letters: {field_stats['N_A_rl']}")
+        print(f"Fields requiring awards/recognition: {field_stats['N_A_ar']}")
+        print(f"Fields requiring publications: {field_stats['N_A_p']}")
+        print(f"Fields requiring salary/success info: {field_stats['N_A_ss']}")
+        print(f"Fields requiring professional membership: {field_stats['N_A_pm']}")
         print("==================================\n")
         
-        # If supabase is provided, store stats there
-        if supabase and user_id:
+        # Store stats in Supabase
+        if user_id:
             try:
                 supabase.table("user_documents").update({
                     "field_stats": json.dumps(field_stats)
@@ -702,13 +606,19 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                 print("Field statistics stored in database")
             except Exception as e:
                 print(f"Error storing field statistics: {str(e)}")
+        
+        # Clean up temporary files
+        try:
+            if os.path.exists(template_file):
+                os.remove(template_file)
+        except Exception as cleanup_error:
+            print(f"[WARNING] Error cleaning up temporary files: {str(cleanup_error)}")
+        
+        return total_pages, field_stats
+        
     except Exception as e:
-        print(f"Error saving field statistics: {str(e)}")
-    
-
-    PdfWriter().write(output_pdf, template)
-    print(f"Completed filling PDF with {processed_page_count} pages")
-    return total_pages, field_stats
+        print(f"[ERROR] Error processing PDF: {str(e)}")
+        return 0, {}
 
 def update_fill_progress(current, total, doc_type, user_id, supabase):
     """Updates the progress status in the database"""
@@ -1724,110 +1634,89 @@ class handler(BaseHTTPRequestHandler):
             preview_message = "This is page 28 of your I-129 form. Match with a visa expert to see the complete filled form."
             
             try:
-                # Define paths for input and output PDFs using /tmp in deployment
-                base_dir = os.path.dirname(os.path.abspath(__file__))
-                
                 # Check if we're in a Lambda environment
                 is_lambda = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
                 
-                if is_lambda:
-                    print("[DEBUG] Running in Lambda environment, using /tmp for file operations")
-                    # In Lambda, use /tmp for all file operations
-                    tmp_dir = "/tmp"
-                    input_pdf = os.path.join(tmp_dir, "o1-form-template-cleaned-filled.pdf")
-                    preview_dir = os.path.join(tmp_dir, "preview")
-                    
-                    # Copy template to /tmp if it doesn't exist
-                    if not os.path.exists(input_pdf):
-                        print("[DEBUG] Copying template to /tmp")
-                        template_source = os.path.join(base_dir, "data", "o1-form-template-cleaned-filled.pdf")
-                        with open(template_source, 'rb') as src, open(input_pdf, 'wb') as dst:
-                            dst.write(src.read())
-                else:
-                    # In development, use the original paths
-                    input_pdf = os.path.join(base_dir, "data", "o1-form-template-cleaned-filled.pdf")
-                    preview_dir = os.path.join(base_dir, "data", "preview")
-                
-                # Ensure directories exist with proper permissions
-                os.makedirs(preview_dir, exist_ok=True)
-                os.chmod(preview_dir, 0o755)  # Ensure directory is readable and executable
-                
-                # Verify input file exists
-                if not os.path.exists(input_pdf):
-                    print(f"[ERROR] Input PDF file not found at {input_pdf}")
-                    raise FileNotFoundError(f"Input PDF file not found at {input_pdf}")
-                
-                # Use application_id if available, otherwise use user_id
-                preview_id = application_id if application_id else user_id
-                if preview_id:
-                    output_pdf = os.path.join(preview_dir, f"page28_preview_{preview_id}.pdf")
-                else:
-                    # Generate a unique ID if neither is available
-                    unique_id = str(uuid.uuid4())[:8]
-                    output_pdf = os.path.join(preview_dir, f"page28_preview_{unique_id}.pdf")
-                
-                print(f"[DEBUG] Input PDF path: {input_pdf}")
-                print(f"[DEBUG] Output PDF path: {output_pdf}")
-                
-                # Extract page 28 (the most relevant page)
-                print(f"[DEBUG] Attempting to extract page 28 preview from {input_pdf}")
-                page_extracted = extract_page_28(input_pdf, output_pdf)
-                
-                print(f"[DEBUG] Page extracted: {page_extracted}")
-                if page_extracted:
-                    # Verify the output file was created and is accessible
-                    if os.path.exists(output_pdf):
-                        file_size = os.path.getsize(output_pdf)
-                        print(f"[DEBUG] Successfully extracted page 28 preview to {output_pdf} (size: {file_size} bytes)")
-                        i129_preview_path = output_pdf
+                if supabase:
+                    try:
+                        # Get the template from Supabase storage
+                        print("[DEBUG] Downloading O-1 form template from Supabase storage")
+                        template_path = "templates/o1-form-template-cleaned-filled.pdf"
+                        template_response = supabase.storage.from_('documents').download(template_path)
                         
-                        # If Supabase is available, store the preview in storage
-                        print(f"[DEBUG] Supabase: {supabase}")
-                        print(f"[DEBUG] User ID: {user_id}")
-                        if supabase and user_id:
-                            try:
+                        if not template_response:
+                            print("[ERROR] Failed to download template from Supabase storage")
+                            raise Exception("Template not found in Supabase storage")
+                        
+                        # Create a temporary file for processing
+                        tmp_dir = "/tmp" if is_lambda else os.path.dirname(os.path.abspath(__file__))
+                        preview_dir = os.path.join(tmp_dir, "preview")
+                        os.makedirs(preview_dir, exist_ok=True)
+                        
+                        # Save template to temporary file
+                        template_file = os.path.join(tmp_dir, "template.pdf")
+                        with open(template_file, 'wb') as f:
+                            f.write(template_response)
+                        
+                        # Use application_id if available, otherwise use user_id
+                        preview_id = application_id if application_id else user_id
+                        if preview_id:
+                            output_pdf = os.path.join(preview_dir, f"page28_preview_{preview_id}.pdf")
+                        else:
+                            # Generate a unique ID if neither is available
+                            unique_id = str(uuid.uuid4())[:8]
+                            output_pdf = os.path.join(preview_dir, f"page28_preview_{unique_id}.pdf")
+                        
+                        print(f"[DEBUG] Template saved to: {template_file}")
+                        print(f"[DEBUG] Output PDF path: {output_pdf}")
+                        
+                        # Extract page 28 (the most relevant page)
+                        print(f"[DEBUG] Attempting to extract page 28 preview from template")
+                        page_extracted = extract_page_28(template_file, output_pdf)
+                        
+                        print(f"[DEBUG] Page extracted: {page_extracted}")
+                        if page_extracted:
+                            # Verify the output file was created and is accessible
+                            if os.path.exists(output_pdf):
+                                file_size = os.path.getsize(output_pdf)
+                                print(f"[DEBUG] Successfully extracted page 28 preview to {output_pdf} (size: {file_size} bytes)")
+                                
+                                # Upload the preview to Supabase storage
                                 storage_path = f"{user_id}/preview"
-                                print(f"[DEBUG] Application ID: {application_id}")
                                 if application_id:
                                     storage_path = f"{user_id}/applications/{application_id}/preview"
                                 
                                 print(f"[DEBUG] Storage path: {storage_path}")
                                 
-                                # Verify file is readable before uploading
-                                try:
-                                    with open(output_pdf, 'rb') as f:
-                                        preview_content = f.read()
-                                    print(f"[DEBUG] Successfully read preview file (size: {len(preview_content)} bytes)")
-                                except Exception as read_error:
-                                    print(f"[ERROR] Error reading preview file: {str(read_error)}")
-                                    raise
-                                
-                                # Upload the preview to Supabase storage
-                                print("[DEBUG] Uploading preview to Supabase storage")
-                                preview_filename = f"page28_preview_{application_id if application_id else user_id}_{int(time.time())}.pdf"
-                                upload_path = f"{storage_path}/{preview_filename}"
+                                # Read the preview file
+                                with open(output_pdf, 'rb') as f:
+                                    preview_content = f.read()
+                                print(f"[DEBUG] Successfully read preview file (size: {len(preview_content)} bytes)")
                                 
                                 # Upload with retry logic
                                 max_retries = 3
                                 for attempt in range(max_retries):
                                     try:
+                                        preview_filename = f"page28_preview_{application_id if application_id else user_id}_{int(time.time())}.pdf"
+                                        upload_path = f"{storage_path}/{preview_filename}"
+                                        
                                         upload_result = supabase.storage.from_('documents').upload(
                                             upload_path,
                                             preview_content,
                                             {"content-type": "application/pdf"}
                                         )
                                         print(f"[DEBUG] Successfully uploaded preview (attempt {attempt + 1})")
+                                        
+                                        # Get public URL for the preview
+                                        i129_preview_path = supabase.storage.from_('documents').get_public_url(upload_path)
+                                        print(f"[DEBUG] Preview uploaded to Supabase: {i129_preview_path}")
                                         break
                                     except Exception as upload_error:
                                         if attempt == max_retries - 1:
                                             print(f"[ERROR] Failed to upload preview after {max_retries} attempts: {str(upload_error)}")
                                             raise
                                         print(f"[WARNING] Upload attempt {attempt + 1} failed, retrying...")
-                                        time.sleep(1)  # Wait before retry
-                                
-                                # Get public URL for the preview
-                                i129_preview_path = supabase.storage.from_('documents').get_public_url(upload_path)
-                                print(f"[DEBUG] Preview uploaded to Supabase: {i129_preview_path}")
+                                        time.sleep(1)
                                 
                                 # Update user_documents table with the preview path
                                 update_data = {
@@ -1856,15 +1745,27 @@ class handler(BaseHTTPRequestHandler):
                                         print(f"[ERROR] Error updating applications table: {str(app_error)}")
                                         # Continue execution even if applications update fails
                                 
-                            except Exception as e:
-                                print(f"[ERROR] Error handling preview: {str(e)}")
-                                # Set preview path to None if there was an error
+                            else:
+                                print(f"[ERROR] Output file was not created at {output_pdf}")
                                 i129_preview_path = None
-                    else:
-                        print(f"[ERROR] Output file was not created at {output_pdf}")
+                        else:
+                            print("[WARNING] Failed to extract page 28 preview")
+                            i129_preview_path = None
+                            
+                        # Clean up temporary files
+                        try:
+                            if os.path.exists(template_file):
+                                os.remove(template_file)
+                            if os.path.exists(output_pdf):
+                                os.remove(output_pdf)
+                        except Exception as cleanup_error:
+                            print(f"[WARNING] Error cleaning up temporary files: {str(cleanup_error)}")
+                            
+                    except Exception as e:
+                        print(f"[ERROR] Error handling preview: {str(e)}")
                         i129_preview_path = None
                 else:
-                    print("[WARNING] Failed to extract page 28 preview")
+                    print("[ERROR] Supabase client not available")
                     i129_preview_path = None
             except Exception as e:
                 print(f"[ERROR] Error extracting page 28 preview: {str(e)}")
