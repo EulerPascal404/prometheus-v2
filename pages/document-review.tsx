@@ -1267,6 +1267,7 @@ export default function DocumentReview() {
   const [documentSummaries, setDocumentSummaries] = useState<DocumentSummaries>({});
   const [currentDocIndex, setCurrentDocIndex] = useState(0);
   const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [previewPath, setPreviewPath] = useState<string | null>(null);
   
   // Default mock stats to use when no data is available
   const defaultStats: FieldStats = {
@@ -1296,6 +1297,9 @@ export default function DocumentReview() {
         // Retrieve data from localStorage
         const apiResponseStr = localStorage.getItem('apiResponseData');
         const documentSummariesStr = localStorage.getItem('documentSummaries');
+        const previewPath = localStorage.getItem('previewPath');
+        setPreviewPath(previewPath);
+        console.log("Preview path:", previewPath);
         
         if (!apiResponseStr) {
           console.warn("No API response data found in localStorage");
@@ -1306,6 +1310,11 @@ export default function DocumentReview() {
         try {
           parsedData = JSON.parse(apiResponseStr);
           console.log("Raw parsed API response data:", parsedData);
+          
+          // Set the preview path if available
+          if (previewPath) {
+            setFilledPdfUrl(previewPath);
+          }
           
           // Ensure document_summaries exists
           if (!parsedData.document_summaries) {
@@ -1978,6 +1987,29 @@ export default function DocumentReview() {
           if (appData) {
             console.log('Loaded existing application:', appData);
             
+            // Try to get preview path from applications table first
+            let previewPath = appData.preview_path;
+            
+            // If not found in applications table, try user_documents table
+            if (!previewPath) {
+              const { data: docsData, error: docsError } = await supabase
+                .from('user_documents')
+                .select('preview_path')
+                .eq('user_id', user.id)
+                .eq('application_id', id)
+                .single();
+                
+              if (!docsError && docsData) {
+                previewPath = docsData.preview_path;
+              }
+            }
+            
+            // Set the preview path if found
+            if (previewPath) {
+              setPreviewPath(previewPath);
+              console.log('Loaded preview path:', previewPath);
+            }
+            
             // Always expand the strength-analysis section even if no documents exist
             setExpandedSections(prev => ({
               ...prev,
@@ -2134,7 +2166,7 @@ export default function DocumentReview() {
                   
                   <div className="w-full bg-white rounded-lg overflow-hidden shadow-xl">
                   <iframe
-                        src="/api/preview?page=28"  // Optional page param for scrolling
+                        src={previewPath || undefined}
                         className="w-full h-[700px]"
                         title="O-1 Application Preview"
                       />

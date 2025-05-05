@@ -1743,6 +1743,7 @@ class handler(BaseHTTPRequestHandler):
                                 preview_content = f.read()
                             
                             # Upload the preview to Supabase storage
+                            print("SAVING PREVIEW")
                             preview_filename = f"page28_preview_{application_id if application_id else user_id}_{int(time.time())}.pdf"
                             upload_path = f"{storage_path}/{preview_filename}"
                             upload_result = supabase.storage.from_('documents').upload(

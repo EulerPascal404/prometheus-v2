@@ -295,6 +295,10 @@ export default function ProcessingDocuments() {
             // Store the document summaries and full API response in localStorage
             localStorage.setItem('documentSummaries', JSON.stringify(result.document_summaries));
             localStorage.setItem('apiResponseData', JSON.stringify(result));
+            // Store the preview path if available
+            if (result.preview_path) {
+              localStorage.setItem('previewPath', result.preview_path);
+            }
             
             // Clear any existing intervals before navigation
             if (pollInterval.current) {
