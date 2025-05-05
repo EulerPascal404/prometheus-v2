@@ -496,6 +496,21 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
 # so I think based off of the annotations, we need to update the output_pdf by adding it?
 # this is the part I'm less clear on, not sure how to generate the output_pdf using the annotations
 def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None, o1=False):
+    # Check if we're in a Lambda environment
+    is_lambda = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
+    
+    if is_lambda:
+        print("[DEBUG] Running in Lambda environment, using /tmp for file operations")
+        # In Lambda, use /tmp for all file operations
+        tmp_dir = "/tmp"
+        input_pdf = os.path.join(tmp_dir, os.path.basename(input_pdf))
+        output_pdf = os.path.join(tmp_dir, os.path.basename(output_pdf))
+        
+        # Copy input file to /tmp if it's not already there
+        if not os.path.exists(input_pdf):
+            print("[DEBUG] Copying input file to /tmp")
+            with open(input_pdf, 'rb') as src, open(os.path.join(tmp_dir, os.path.basename(input_pdf)), 'wb') as dst:
+                dst.write(src.read())
     
     template = PdfReader(input_pdf)
     total_pages = len(template.pages)
@@ -647,6 +662,10 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
     # Write field stats to a report file
     base_dir = Path(output_pdf).parent
     stats_file = os.path.join(base_dir, "field_stats.json")
+    
+    # In Lambda, use /tmp for the stats file
+    if is_lambda:
+        stats_file = os.path.join("/tmp", "field_stats.json")
     
     # Calculate percentages
     percent_filled = 0
@@ -1705,10 +1724,29 @@ class handler(BaseHTTPRequestHandler):
             preview_message = "This is page 28 of your I-129 form. Match with a visa expert to see the complete filled form."
             
             try:
-                # Define paths for input and output PDFs using absolute paths
+                # Define paths for input and output PDFs using /tmp in deployment
                 base_dir = os.path.dirname(os.path.abspath(__file__))
-                input_pdf = os.path.join(base_dir, "data", "o1-form-template-cleaned-filled.pdf")
-                preview_dir = os.path.join(base_dir, "data", "preview")
+                
+                # Check if we're in a Lambda environment
+                is_lambda = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
+                
+                if is_lambda:
+                    print("[DEBUG] Running in Lambda environment, using /tmp for file operations")
+                    # In Lambda, use /tmp for all file operations
+                    tmp_dir = "/tmp"
+                    input_pdf = os.path.join(tmp_dir, "o1-form-template-cleaned-filled.pdf")
+                    preview_dir = os.path.join(tmp_dir, "preview")
+                    
+                    # Copy template to /tmp if it doesn't exist
+                    if not os.path.exists(input_pdf):
+                        print("[DEBUG] Copying template to /tmp")
+                        template_source = os.path.join(base_dir, "data", "o1-form-template-cleaned-filled.pdf")
+                        with open(template_source, 'rb') as src, open(input_pdf, 'wb') as dst:
+                            dst.write(src.read())
+                else:
+                    # In development, use the original paths
+                    input_pdf = os.path.join(base_dir, "data", "o1-form-template-cleaned-filled.pdf")
+                    preview_dir = os.path.join(base_dir, "data", "preview")
                 
                 # Ensure directories exist with proper permissions
                 os.makedirs(preview_dir, exist_ok=True)
