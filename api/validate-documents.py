@@ -21,6 +21,7 @@ from glob import glob
 from pdfrw import PdfReader, PdfWriter, PdfDict, PdfName
 import pdfrw
 import datetime
+from io import BytesIO
 
 # Standardize O-1 relevant pages representation
 # 1-indexed for human reference (pages 1-7 and 28-30 of the form as labeled)
@@ -496,9 +497,6 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
 # so I think based off of the annotations, we need to update the output_pdf by adding it?
 # this is the part I'm less clear on, not sure how to generate the output_pdf using the annotations
 def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None, o1=False):
-    # Check if we're in a Lambda environment
-    is_lambda = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
-    
     if not supabase:
         print("[ERROR] Supabase client not available")
         return 0, {}
@@ -513,18 +511,10 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
             print("[ERROR] Failed to download template from Supabase storage")
             return 0, {}
         
-        # Create a temporary file for processing
-        tmp_dir = "/tmp" if is_lambda else os.path.dirname(os.path.abspath(__file__))
-        preview_dir = os.path.join(tmp_dir, "preview")
-        os.makedirs(preview_dir, exist_ok=True)
-        
-        # Save template to temporary file
-        template_file = os.path.join(tmp_dir, "template.pdf")
-        with open(template_file, 'wb') as f:
-            f.write(template_response)
-        
-        # Process the template
-        template = PdfReader(template_file)
+        # Process the template directly from memory
+        from io import BytesIO
+        template_stream = BytesIO(template_response)
+        template = PdfReader(template_stream)
         total_pages = len(template.pages)
         
         # Calculate field statistics
@@ -606,13 +596,6 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                 print("Field statistics stored in database")
             except Exception as e:
                 print(f"Error storing field statistics: {str(e)}")
-        
-        # Clean up temporary files
-        try:
-            if os.path.exists(template_file):
-                os.remove(template_file)
-        except Exception as cleanup_error:
-            print(f"[WARNING] Error cleaning up temporary files: {str(cleanup_error)}")
         
         return total_pages, field_stats
         
@@ -1010,7 +993,7 @@ def process_pdf_content(file_content: bytes, doc_type: str, user_id: str = None,
         }
 
 ### CHANGE ###
-def extract_page_28(input_pdf_path, output_pdf_path):
+def extract_page_28(input_pdf_path, output_pdf_path, user_id=None, application_id=None):
     """
     Extracts only page 28 from the input PDF and saves to output_pdf_path.
     This is the most relevant page from the I-129 form which will be shown to users
@@ -1019,60 +1002,88 @@ def extract_page_28(input_pdf_path, output_pdf_path):
     Args:
         input_pdf_path (str): Path to the input PDF file
         output_pdf_path (str): Path where the extracted page will be saved
+        user_id (str, optional): User ID for storage path
+        application_id (str, optional): Application ID for storage path
         
     Returns:
-        bool: True if extraction was successful, False otherwise
+        tuple: (bool, str) where:
+            - bool: True if extraction was successful, False otherwise
+            - str: The public URL of the uploaded preview if successful, None otherwise
     """
     try:
-        logger.info(f"Extracting page 28 from: {input_pdf_path}")
+        print(f"[DEBUG] Extracting page 28 from template")
         
-        # Check if input file exists
-        if not os.path.exists(input_pdf_path):
-            logger.error(f"Input PDF file does not exist at {input_pdf_path}")
-            return False
+        # Get the template from Supabase storage
+        supabase = get_supabase()
+        if not supabase:
+            print("[ERROR] Supabase client not available")
+            return False, None
             
-        reader = PdfReader(input_pdf_path)
+        template_path = "templates/o1-form-template-cleaned-filled.pdf"
+        template_response = supabase.storage.from_('documents').download(template_path)
+        
+        if not template_response:
+            print("[ERROR] Failed to download template from Supabase storage")
+            return False, None
+        
+        # Process the template directly from memory
+        template_stream = BytesIO(template_response)
+        reader = PdfReader(template_stream)
         
         # Log PDF info
-        logger.info(f"PDF has {len(reader.pages)} pages total")
+        print(f"[DEBUG] PDF has {len(reader.pages)} pages total")
         
         # Check if the PDF has enough pages
         if len(reader.pages) < 28:
-            logger.error(f"PDF has only {len(reader.pages)} pages, cannot extract page 28")
-            return False
+            print(f"[ERROR] PDF has only {len(reader.pages)} pages, cannot extract page 28")
+            return False, None
         
         # Page 28 has index 27 (0-indexed)
         page_28 = reader.pages[27]
         
-        # Ensure directory exists
-        output_dir = os.path.dirname(output_pdf_path)
-        os.makedirs(output_dir, exist_ok=True)
-        logger.info(f"Created/verified directory: {output_dir}")
-        
-        # Create the single-page PDF
+        # Create the single-page PDF in memory
         writer = PdfWriter()
         writer.addpage(page_28)
-        writer.write(output_pdf_path)
         
-        # Verify file was created and is accessible
-        if os.path.exists(output_pdf_path):
-            file_size = os.path.getsize(output_pdf_path)
-            logger.info(f"Successfully extracted page 28 to: {output_pdf_path} (size: {file_size} bytes)")
-            
-            # Try to verify the PDF is valid by opening it again
+        # Save to memory buffer
+        output_buffer = BytesIO()
+        writer.write(output_buffer)
+        output_buffer.seek(0)
+        
+        # Upload directly to Supabase storage
+        storage_path = f"{user_id}/preview" if user_id else "preview"
+        if application_id:
+            storage_path = f"{user_id}/applications/{application_id}/preview"
+        
+        preview_filename = f"page28_preview_{application_id if application_id else user_id}_{int(time.time())}.pdf"
+        upload_path = f"{storage_path}/{preview_filename}"
+        
+        # Upload with retry logic
+        max_retries = 3
+        for attempt in range(max_retries):
             try:
-                verification_reader = PdfReader(output_pdf_path)
-                logger.info(f"PDF verification successful - extracted PDF has {len(verification_reader.pages)} pages")
-                return True
-            except Exception as ve:
-                logger.error(f"PDF verification failed: {str(ve)}")
-                return False
-        else:
-            logger.error(f"File was not created at {output_pdf_path}")
-            return False
+                upload_result = supabase.storage.from_('documents').upload(
+                    upload_path,
+                    output_buffer.getvalue(),
+                    {"content-type": "application/pdf"}
+                )
+                print(f"[DEBUG] Successfully uploaded preview (attempt {attempt + 1})")
+                
+                # Get public URL for the preview
+                preview_url = supabase.storage.from_('documents').get_public_url(upload_path)
+                print(f"[DEBUG] Preview URL: {preview_url}")
+                return True, preview_url
+            except Exception as upload_error:
+                if attempt == max_retries - 1:
+                    print(f"[ERROR] Failed to upload preview after {max_retries} attempts: {str(upload_error)}")
+                    return False, None
+                print(f"[WARNING] Upload attempt {attempt + 1} failed, retrying...")
+                time.sleep(1)
+        
+        return False, None
     except Exception as e:
-        logger.error(f"Error extracting page 28: {str(e)}")
-        return False
+        print(f"[ERROR] Error extracting page 28: {str(e)}")
+        return False, None
 
 ### CHANGE ###
 def get_application_details(application_id, user_id=None):
@@ -1639,127 +1650,47 @@ class handler(BaseHTTPRequestHandler):
                 
                 if supabase:
                     try:
-                        # Get the template from Supabase storage
-                        print("[DEBUG] Downloading O-1 form template from Supabase storage")
-                        template_path = "templates/o1-form-template-cleaned-filled.pdf"
-                        template_response = supabase.storage.from_('documents').download(template_path)
+                        # Extract and upload page 28
+                        success, preview_url = extract_page_28(
+                            None,  # input_pdf_path not needed anymore
+                            None,  # output_pdf_path not needed anymore
+                            user_id,
+                            application_id
+                        )
                         
-                        if not template_response:
-                            print("[ERROR] Failed to download template from Supabase storage")
-                            raise Exception("Template not found in Supabase storage")
-                        
-                        # Create a temporary file for processing
-                        tmp_dir = "/tmp" if is_lambda else os.path.dirname(os.path.abspath(__file__))
-                        preview_dir = os.path.join(tmp_dir, "preview")
-                        os.makedirs(preview_dir, exist_ok=True)
-                        
-                        # Save template to temporary file
-                        template_file = os.path.join(tmp_dir, "template.pdf")
-                        with open(template_file, 'wb') as f:
-                            f.write(template_response)
-                        
-                        # Use application_id if available, otherwise use user_id
-                        preview_id = application_id if application_id else user_id
-                        if preview_id:
-                            output_pdf = os.path.join(preview_dir, f"page28_preview_{preview_id}.pdf")
-                        else:
-                            # Generate a unique ID if neither is available
-                            unique_id = str(uuid.uuid4())[:8]
-                            output_pdf = os.path.join(preview_dir, f"page28_preview_{unique_id}.pdf")
-                        
-                        print(f"[DEBUG] Template saved to: {template_file}")
-                        print(f"[DEBUG] Output PDF path: {output_pdf}")
-                        
-                        # Extract page 28 (the most relevant page)
-                        print(f"[DEBUG] Attempting to extract page 28 preview from template")
-                        page_extracted = extract_page_28(template_file, output_pdf)
-                        
-                        print(f"[DEBUG] Page extracted: {page_extracted}")
-                        if page_extracted:
-                            # Verify the output file was created and is accessible
-                            if os.path.exists(output_pdf):
-                                file_size = os.path.getsize(output_pdf)
-                                print(f"[DEBUG] Successfully extracted page 28 preview to {output_pdf} (size: {file_size} bytes)")
-                                
-                                # Upload the preview to Supabase storage
-                                storage_path = f"{user_id}/preview"
-                                if application_id:
-                                    storage_path = f"{user_id}/applications/{application_id}/preview"
-                                
-                                print(f"[DEBUG] Storage path: {storage_path}")
-                                
-                                # Read the preview file
-                                with open(output_pdf, 'rb') as f:
-                                    preview_content = f.read()
-                                print(f"[DEBUG] Successfully read preview file (size: {len(preview_content)} bytes)")
-                                
-                                # Upload with retry logic
-                                max_retries = 3
-                                for attempt in range(max_retries):
-                                    try:
-                                        preview_filename = f"page28_preview_{application_id if application_id else user_id}_{int(time.time())}.pdf"
-                                        upload_path = f"{storage_path}/{preview_filename}"
-                                        
-                                        upload_result = supabase.storage.from_('documents').upload(
-                                            upload_path,
-                                            preview_content,
-                                            {"content-type": "application/pdf"}
-                                        )
-                                        print(f"[DEBUG] Successfully uploaded preview (attempt {attempt + 1})")
-                                        
-                                        # Get public URL for the preview
-                                        i129_preview_path = supabase.storage.from_('documents').get_public_url(upload_path)
-                                        print(f"[DEBUG] Preview uploaded to Supabase: {i129_preview_path}")
-                                        break
-                                    except Exception as upload_error:
-                                        if attempt == max_retries - 1:
-                                            print(f"[ERROR] Failed to upload preview after {max_retries} attempts: {str(upload_error)}")
-                                            raise
-                                        print(f"[WARNING] Upload attempt {attempt + 1} failed, retrying...")
-                                        time.sleep(1)
-                                
-                                # Update user_documents table with the preview path
-                                update_data = {
-                                    "preview_path": i129_preview_path,
-                                    "preview_message": preview_message
-                                }
-                                
-                                print(f"[DEBUG] Update data for user_documents: {update_data}")
-                                
-                                # First update user_documents table
-                                supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
-                                print("[DEBUG] Updated user_documents table with preview information")
-                                
-                                # Then update applications table if application_id exists
-                                if application_id:
-                                    try:
-                                        # Update applications table with preview information
-                                        app_update_data = {
-                                            "preview_path": i129_preview_path,
-                                            "preview_message": preview_message
-                                        }
-                                        print(f"[DEBUG] Updating applications table with: {app_update_data}")
-                                        supabase.table("applications").update(app_update_data).eq("id", application_id).execute()
-                                        print("[DEBUG] Successfully updated applications table with preview information")
-                                    except Exception as app_error:
-                                        print(f"[ERROR] Error updating applications table: {str(app_error)}")
-                                        # Continue execution even if applications update fails
-                                
-                            else:
-                                print(f"[ERROR] Output file was not created at {output_pdf}")
-                                i129_preview_path = None
-                        else:
-                            print("[WARNING] Failed to extract page 28 preview")
-                            i129_preview_path = None
+                        if success and preview_url:
+                            i129_preview_path = preview_url
+                            print(f"[DEBUG] Preview path set to: {i129_preview_path}")
                             
-                        # Clean up temporary files
-                        try:
-                            if os.path.exists(template_file):
-                                os.remove(template_file)
-                            if os.path.exists(output_pdf):
-                                os.remove(output_pdf)
-                        except Exception as cleanup_error:
-                            print(f"[WARNING] Error cleaning up temporary files: {str(cleanup_error)}")
+                            # Update user_documents table with the preview path
+                            update_data = {
+                                "preview_path": i129_preview_path,
+                                "preview_message": preview_message
+                            }
+                            
+                            print(f"[DEBUG] Update data for user_documents: {update_data}")
+                            
+                            # First update user_documents table
+                            supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
+                            print("[DEBUG] Updated user_documents table with preview information")
+                            
+                            # Then update applications table if application_id exists
+                            if application_id:
+                                try:
+                                    # Update applications table with preview information
+                                    app_update_data = {
+                                        "preview_path": i129_preview_path,
+                                        "preview_message": preview_message
+                                    }
+                                    print(f"[DEBUG] Updating applications table with: {app_update_data}")
+                                    supabase.table("applications").update(app_update_data).eq("id", application_id).execute()
+                                    print("[DEBUG] Successfully updated applications table with preview information")
+                                except Exception as app_error:
+                                    print(f"[ERROR] Error updating applications table: {str(app_error)}")
+                                    # Continue execution even if applications update fails
+                        else:
+                            print("[WARNING] Failed to extract and upload page 28 preview")
+                            i129_preview_path = None
                             
                     except Exception as e:
                         print(f"[ERROR] Error handling preview: {str(e)}")
