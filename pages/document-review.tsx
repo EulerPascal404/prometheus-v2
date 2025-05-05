@@ -1962,15 +1962,23 @@ export default function DocumentReview() {
           setIsLoading(true);
           setApplicationId(id);
           
-          // Get current user
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-            console.error('No authenticated user found');
+          // Get current user and session
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          if (userError || !user) {
+            console.error('No authenticated user found:', userError);
             router.push('/auth');
             return;
           }
-          
-          // Fetch the application data
+
+          // Get the session to access the access token
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError || !session) {
+            console.error('No active session found:', sessionError);
+            router.push('/auth');
+            return;
+          }
+
+          // Fetch the application data with proper authentication
           const { data: appData, error: appError } = await supabase
             .from('applications')
             .select('*')
