@@ -2015,6 +2015,23 @@ export default function DocumentReview() {
 
         if (previewPath) {
           setPreviewPath(previewPath);
+          
+          // Save the preview path to user_documents table
+          try {
+            const { error: updateError } = await supabase
+              .from('user_documents')
+              .update({ preview_path: previewPath })
+              .eq('user_id', user.id)
+              .eq('application_id', id);
+            
+            if (updateError) {
+              console.error('Error saving preview path to user_documents:', updateError);
+            } else {
+              console.log('Successfully saved preview path to user_documents');
+            }
+          } catch (error) {
+            console.error('Error updating user_documents:', error);
+          }
         }
 
         // Set the application data
