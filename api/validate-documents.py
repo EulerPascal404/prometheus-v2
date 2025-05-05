@@ -1705,93 +1705,131 @@ class handler(BaseHTTPRequestHandler):
             preview_message = "This is page 28 of your I-129 form. Match with a visa expert to see the complete filled form."
             
             try:
-                # Define paths for input and output PDFs
-                input_pdf = "data/o1-form-template-cleaned-filled.pdf"
-                preview_dir = "data/preview"
+                # Define paths for input and output PDFs using absolute paths
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                input_pdf = os.path.join(base_dir, "data", "o1-form-template-cleaned-filled.pdf")
+                preview_dir = os.path.join(base_dir, "data", "preview")
+                
+                # Ensure directories exist with proper permissions
                 os.makedirs(preview_dir, exist_ok=True)
+                os.chmod(preview_dir, 0o755)  # Ensure directory is readable and executable
+                
+                # Verify input file exists
+                if not os.path.exists(input_pdf):
+                    print(f"[ERROR] Input PDF file not found at {input_pdf}")
+                    raise FileNotFoundError(f"Input PDF file not found at {input_pdf}")
                 
                 # Use application_id if available, otherwise use user_id
                 preview_id = application_id if application_id else user_id
                 if preview_id:
-                    output_pdf = f"{preview_dir}/page28_preview_{preview_id}.pdf"
+                    output_pdf = os.path.join(preview_dir, f"page28_preview_{preview_id}.pdf")
                 else:
                     # Generate a unique ID if neither is available
                     unique_id = str(uuid.uuid4())[:8]
-                    output_pdf = f"{preview_dir}/page28_preview_{unique_id}.pdf"
+                    output_pdf = os.path.join(preview_dir, f"page28_preview_{unique_id}.pdf")
+                
+                print(f"[DEBUG] Input PDF path: {input_pdf}")
+                print(f"[DEBUG] Output PDF path: {output_pdf}")
                 
                 # Extract page 28 (the most relevant page)
-                logger.info(f"Attempting to extract page 28 preview from {input_pdf}")
+                print(f"[DEBUG] Attempting to extract page 28 preview from {input_pdf}")
                 page_extracted = extract_page_28(input_pdf, output_pdf)
                 
-                logger.info(f"Page extracted: {page_extracted}")
+                print(f"[DEBUG] Page extracted: {page_extracted}")
                 if page_extracted:
-                    logger.info(f"Successfully extracted page 28 preview to {output_pdf}")
-                    i129_preview_path = output_pdf
-                    
-                    # If Supabase is available, store the preview in storage
-                    logger.info(f"Supabase: {supabase}")
-                    logger.info(f"User ID: {user_id}")
-                    if supabase and user_id:
-                        try:
-                            storage_path = f"{user_id}/preview"
-                            logger.info(f"Application ID: {application_id}")
-                            if application_id:
-                                storage_path = f"{user_id}/applications/{application_id}/preview"
-                            
-                            logger.info(f"Storage path: {storage_path}")
-                            with open(output_pdf, 'rb') as f:
-                                preview_content = f.read()
-                            
-                            # Upload the preview to Supabase storage
-                            logger.info("Uploading preview to Supabase storage")
-                            preview_filename = f"page28_preview_{application_id if application_id else user_id}_{int(time.time())}.pdf"
-                            upload_path = f"{storage_path}/{preview_filename}"
-                            upload_result = supabase.storage.from_('documents').upload(
-                                upload_path,
-                                preview_content,
-                                {"content-type": "application/pdf"}
-                            )
-                            
-                            # Get public URL for the preview
-                            i129_preview_path = supabase.storage.from_('documents').get_public_url(upload_path)
-                            logger.info(f"Preview uploaded to Supabase: {i129_preview_path}")
-                            
-                            # Update user_documents table with the preview path
-                            update_data = {
-                                "preview_path": i129_preview_path,
-                                "preview_message": preview_message
-                            }
-                            
-                            logger.info(f"Update data for user_documents: {update_data}")
-                            
-                            # First update user_documents table
-                            supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
-                            logger.info("Updated user_documents table with preview information")
-                            
-                            # Then update applications table if application_id exists
-                            if application_id:
+                    # Verify the output file was created and is accessible
+                    if os.path.exists(output_pdf):
+                        file_size = os.path.getsize(output_pdf)
+                        print(f"[DEBUG] Successfully extracted page 28 preview to {output_pdf} (size: {file_size} bytes)")
+                        i129_preview_path = output_pdf
+                        
+                        # If Supabase is available, store the preview in storage
+                        print(f"[DEBUG] Supabase: {supabase}")
+                        print(f"[DEBUG] User ID: {user_id}")
+                        if supabase and user_id:
+                            try:
+                                storage_path = f"{user_id}/preview"
+                                print(f"[DEBUG] Application ID: {application_id}")
+                                if application_id:
+                                    storage_path = f"{user_id}/applications/{application_id}/preview"
+                                
+                                print(f"[DEBUG] Storage path: {storage_path}")
+                                
+                                # Verify file is readable before uploading
                                 try:
-                                    # Update applications table with preview information
-                                    app_update_data = {
-                                        "preview_path": i129_preview_path,
-                                        "preview_message": preview_message
-                                    }
-                                    logger.info(f"Updating applications table with: {app_update_data}")
-                                    supabase.table("applications").update(app_update_data).eq("id", application_id).execute()
-                                    logger.info("Successfully updated applications table with preview information")
-                                except Exception as app_error:
-                                    logger.error(f"Error updating applications table: {str(app_error)}")
-                                    # Continue execution even if applications update fails
-                            
-                        except Exception as e:
-                            logger.error(f"Error handling preview: {str(e)}")
-                            # Set preview path to None if there was an error
-                            i129_preview_path = None
+                                    with open(output_pdf, 'rb') as f:
+                                        preview_content = f.read()
+                                    print(f"[DEBUG] Successfully read preview file (size: {len(preview_content)} bytes)")
+                                except Exception as read_error:
+                                    print(f"[ERROR] Error reading preview file: {str(read_error)}")
+                                    raise
+                                
+                                # Upload the preview to Supabase storage
+                                print("[DEBUG] Uploading preview to Supabase storage")
+                                preview_filename = f"page28_preview_{application_id if application_id else user_id}_{int(time.time())}.pdf"
+                                upload_path = f"{storage_path}/{preview_filename}"
+                                
+                                # Upload with retry logic
+                                max_retries = 3
+                                for attempt in range(max_retries):
+                                    try:
+                                        upload_result = supabase.storage.from_('documents').upload(
+                                            upload_path,
+                                            preview_content,
+                                            {"content-type": "application/pdf"}
+                                        )
+                                        print(f"[DEBUG] Successfully uploaded preview (attempt {attempt + 1})")
+                                        break
+                                    except Exception as upload_error:
+                                        if attempt == max_retries - 1:
+                                            print(f"[ERROR] Failed to upload preview after {max_retries} attempts: {str(upload_error)}")
+                                            raise
+                                        print(f"[WARNING] Upload attempt {attempt + 1} failed, retrying...")
+                                        time.sleep(1)  # Wait before retry
+                                
+                                # Get public URL for the preview
+                                i129_preview_path = supabase.storage.from_('documents').get_public_url(upload_path)
+                                print(f"[DEBUG] Preview uploaded to Supabase: {i129_preview_path}")
+                                
+                                # Update user_documents table with the preview path
+                                update_data = {
+                                    "preview_path": i129_preview_path,
+                                    "preview_message": preview_message
+                                }
+                                
+                                print(f"[DEBUG] Update data for user_documents: {update_data}")
+                                
+                                # First update user_documents table
+                                supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
+                                print("[DEBUG] Updated user_documents table with preview information")
+                                
+                                # Then update applications table if application_id exists
+                                if application_id:
+                                    try:
+                                        # Update applications table with preview information
+                                        app_update_data = {
+                                            "preview_path": i129_preview_path,
+                                            "preview_message": preview_message
+                                        }
+                                        print(f"[DEBUG] Updating applications table with: {app_update_data}")
+                                        supabase.table("applications").update(app_update_data).eq("id", application_id).execute()
+                                        print("[DEBUG] Successfully updated applications table with preview information")
+                                    except Exception as app_error:
+                                        print(f"[ERROR] Error updating applications table: {str(app_error)}")
+                                        # Continue execution even if applications update fails
+                                
+                            except Exception as e:
+                                print(f"[ERROR] Error handling preview: {str(e)}")
+                                # Set preview path to None if there was an error
+                                i129_preview_path = None
+                    else:
+                        print(f"[ERROR] Output file was not created at {output_pdf}")
+                        i129_preview_path = None
                 else:
-                    logger.warning("Failed to extract page 28 preview")
+                    print("[WARNING] Failed to extract page 28 preview")
                     i129_preview_path = None
             except Exception as e:
-                logger.error(f"Error extracting page 28 preview: {str(e)}")
+                print(f"[ERROR] Error extracting page 28 preview: {str(e)}")
                 i129_preview_path = None
             
             # Update Supabase if available
