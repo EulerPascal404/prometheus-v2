@@ -512,10 +512,10 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
             return 0, {}
         
         # Process the template directly from memory
-        from io import BytesIO
         template_stream = BytesIO(template_response)
         template = PdfReader(template_stream)
         total_pages = len(template.pages)
+        print(f"[DEBUG] Template loaded with {total_pages} pages")
         
         # Calculate field statistics
         field_stats = {
@@ -530,11 +530,27 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
             "total_fields": 0
         }
         
+        # Get user info from Supabase
+        print(f"[DEBUG] Fetching user info for user_id: {user_id}")
+        user_info = {}
+        if user_id:
+            try:
+                user_response = supabase.table("user_documents").select("*").eq("user_id", user_id).single().execute()
+                if user_response and user_response.data:
+                    user_info = user_response.data
+                    print(f"[DEBUG] Found user info with {len(user_info)} fields")
+                else:
+                    print("[WARNING] No user info found in database")
+            except Exception as e:
+                print(f"[ERROR] Error fetching user info: {str(e)}")
+        
         # Process the template and update field stats
+        print("[DEBUG] Processing template fields")
         for page_num, page in enumerate(template.pages):
             if not (page_num in O1_RELEVANT_PAGES_0INDEXED):
                 continue
             
+            print(f"[DEBUG] Processing page {page_num + 1}")
             annotations = page.get('/Annots')
             if annotations:
                 for annotation in annotations:
@@ -545,10 +561,11 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                         # Count total fillable fields
                         field_stats["total_fields"] += 1
                         
-                        # Check if we have a response for this field
-                        if original_name and original_name in response_dict:
-                            field_value = response_dict[original_name]
+                        # Check if we have user info for this field
+                        if original_name and original_name in user_info:
+                            field_value = user_info[original_name]
                             value_str = str(field_value).lower() if field_value else ""
+                            print(f"[DEBUG] Field {original_name} has value: {value_str}")
                             
                             # Update field stats based on value
                             if "n/a_per" in value_str:
@@ -567,6 +584,8 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                                 field_stats["N_A_pm"] += 1
                             elif value_str and value_str != "n/a" and value_str != "":
                                 field_stats["user_info_filled"] += 1
+                        else:
+                            print(f"[DEBUG] No user info found for field: {original_name}")
         
         # Calculate percentage filled
         if field_stats["total_fields"] > 0:
@@ -590,12 +609,13 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         # Store stats in Supabase
         if user_id:
             try:
+                print(f"[DEBUG] Storing field stats for user_id: {user_id}")
                 supabase.table("user_documents").update({
                     "field_stats": json.dumps(field_stats)
                 }).eq("user_id", user_id).execute()
-                print("Field statistics stored in database")
+                print("[DEBUG] Field statistics stored in database")
             except Exception as e:
-                print(f"Error storing field statistics: {str(e)}")
+                print(f"[ERROR] Error storing field statistics: {str(e)}")
         
         return total_pages, field_stats
         
