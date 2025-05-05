@@ -1957,165 +1957,161 @@ export default function DocumentReview() {
   // Check for application ID in URL and load existing application data
   useEffect(() => {
     const loadExistingApplication = async () => {
-      if (id && typeof id === 'string') {
-        try {
-          setIsLoading(true);
-          setApplicationId(id);
-          
-          // Get current user and session
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
-          if (userError || !user) {
-            console.error('No authenticated user found:', userError);
-            router.push('/auth');
-            return;
-          }
+      if (!id || typeof id !== 'string') return;
 
-          // Get the session to access the access token
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          if (sessionError || !session) {
-            console.error('No active session found:', sessionError);
-            router.push('/auth');
-            return;
-          }
+      try {
+        setIsLoading(true);
+        setApplicationId(id);
 
-          // Fetch the application data with proper authentication
-          const { data: appData, error: appError } = await supabase
-            .from('applications')
-            .select('*')
-            .eq('id', id)
-            .eq('user_id', user.id)
-            .single();
-          
-          if (appError) {
-            console.error('Error fetching application:', appError);
-            setIsLoading(false);
-            return;
-          }
-          
-          if (appData) {
-            console.log('Loaded existing application:', appData);
-            
-            // Try to get preview path from applications table first
-            let previewPath = appData.preview_path;
-            
-            // If not found in applications table, try user_documents table
-            if (!previewPath) {
-              const { data: docsData, error: docsError } = await supabase
-                .from('user_documents')
-                .select('preview_path')
-                .eq('user_id', user.id)
-                .eq('application_id', id)
-                .single();
-                
-              if (!docsError && docsData) {
-                previewPath = docsData.preview_path;
-              }
-            }
-            
-            // Set the preview path if found
-            if (previewPath) {
-              setPreviewPath(previewPath);
-              console.log('Loaded preview path:', previewPath);
-            }
-            
-            // Always expand the strength-analysis section even if no documents exist
-            setExpandedSections(prev => ({
-              ...prev,
-              'strength-analysis': true
-            }));
-            
-            // Parse document summaries from application data if available
-            if (appData.document_summaries) {
-              try {
-                const parsedSummaries = typeof appData.document_summaries === 'string' 
-                  ? JSON.parse(appData.document_summaries) 
-                  : appData.document_summaries;
-                
-                if (parsedSummaries && Object.keys(parsedSummaries).length > 0) {
-                  setDocumentSummaries(parsedSummaries);
-                  console.log('Loaded document summaries:', parsedSummaries);
-                  
-                  // Expand document-summaries section
-                  setExpandedSections(prev => ({
-                    ...prev,
-                    'document-summaries': true
-                  }));
-                }
-              } catch (error) {
-                console.error('Error parsing document summaries:', error);
-              }
-            }
-            
-            // Parse field stats from application data if available
-            if (appData.field_stats) {
-              try {
-                const parsedStats = typeof appData.field_stats === 'string' 
-                  ? JSON.parse(appData.field_stats) 
-                  : appData.field_stats;
-                
-                if (parsedStats) {
-                  setFieldStats(parsedStats);
-                  console.log('Loaded field stats:', parsedStats);
-                }
-              } catch (error) {
-                console.error('Error parsing field stats:', error);
-              }
-            }
-            
-            // Fetch the application's documents from storage
-            const { data: files, error: filesError } = await supabase.storage
-              .from('documents')
-              .list(`${user.id}/applications/${id}`);
-              
-            if (filesError) {
-              console.error('Error fetching files:', filesError);
-            } else if (files && files.length > 0) {
-              // Process documents
-              const documentsByType: DocumentInfo[] = [];
-              
-              // For each docType folder
-              for (const folder of files) {
-                if (folder.name && !folder.name.includes('.')) { // It's a folder, not a file
-                  const { data: docFiles, error: docError } = await supabase.storage
-                    .from('documents')
-                    .list(`${user.id}/applications/${id}/${folder.name}`);
-                    
-                  if (docError) {
-                    console.error(`Error fetching files for ${folder.name}:`, docError);
-                    continue;
-                  }
-                  
-                  if (docFiles && docFiles.length > 0) {
-                    for (const file of docFiles) {
-                      const fileUrl = supabase.storage.from('documents')
-                        .getPublicUrl(`${user.id}/applications/${id}/${folder.name}/${file.name}`).data.publicUrl;
-                        
-                      documentsByType.push({
-                        fileName: file.name,
-                        fileUrl,
-                        uploadedAt: file.created_at || new Date().toISOString(),
-                        fileType: folder.name,
-                      });
-                    }
-                  }
-                }
-              }
-              
-              // Set documents and select first document if available
-              setDocuments(documentsByType);
-              
-              // Set selected document to first document in summaries if available
-              if (Object.keys(documentSummaries).length > 0) {
-                setSelectedDoc(Object.keys(documentSummaries)[0]);
-                setCurrentDocIndex(0);
-              }
-            }
-          }
-        } catch (loadErr) {
-          console.error('Error loading existing application:', loadErr);
-        } finally {
-          setIsLoading(false);
+        // Get current user and session
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (userError || sessionError || !user || !session) {
+          console.error('Authentication error:', userError || sessionError);
+          router.push('/auth');
+          return;
         }
+
+        // First try to get the application data
+        const { data: appData, error: appError } = await supabase
+          .from('applications')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (appError) {
+          console.error('Error fetching application:', appError);
+          return;
+        }
+
+        if (!appData) {
+          console.error('Application not found');
+          return;
+        }
+
+        // Try to get preview path from applications table first
+        let previewPath = appData.preview_path;
+
+        // If not found in applications table, try user_documents table
+        if (!previewPath) {
+          const { data: docsData, error: docsError } = await supabase
+            .from('user_documents')
+            .select('preview_path')
+            .eq('user_id', user.id)
+            .eq('application_id', id)
+            .maybeSingle(); // Use maybeSingle instead of single to handle no results case
+          
+          if (docsError) {
+            console.error('Error fetching user_documents:', docsError);
+          } else if (docsData) {
+            previewPath = docsData.preview_path;
+            console.log('Found preview path in user_documents:', previewPath);
+          } else {
+            console.log('No preview path found in user_documents');
+          }
+        }
+
+        if (previewPath) {
+          setPreviewPath(previewPath);
+        }
+
+        // Set the application data
+        setApplicationId(appData.id);
+        setExpandedSections({ 'strength-analysis': true });
+
+        // Parse document summaries from application data if available
+        if (appData.document_summaries) {
+          try {
+            const parsedSummaries = typeof appData.document_summaries === 'string' 
+              ? JSON.parse(appData.document_summaries) 
+              : appData.document_summaries;
+            
+            if (parsedSummaries && Object.keys(parsedSummaries).length > 0) {
+              setDocumentSummaries(parsedSummaries);
+              console.log('Loaded document summaries:', parsedSummaries);
+              
+              // Expand document-summaries section
+              setExpandedSections(prev => ({
+                ...prev,
+                'document-summaries': true
+              }));
+            }
+          } catch (error) {
+            console.error('Error parsing document summaries:', error);
+          }
+        }
+
+        // Parse field stats from application data if available
+        if (appData.field_stats) {
+          try {
+            const parsedStats = typeof appData.field_stats === 'string' 
+              ? JSON.parse(appData.field_stats) 
+              : appData.field_stats;
+            
+            if (parsedStats) {
+              setFieldStats(parsedStats);
+              console.log('Loaded field stats:', parsedStats);
+            }
+          } catch (error) {
+            console.error('Error parsing field stats:', error);
+          }
+        }
+
+        // Fetch the application's documents from storage
+        const { data: files, error: filesError } = await supabase.storage
+          .from('documents')
+          .list(`${user.id}/applications/${id}`);
+          
+        if (filesError) {
+          console.error('Error fetching files:', filesError);
+        } else if (files && files.length > 0) {
+          // Process documents
+          const documentsByType: DocumentInfo[] = [];
+          
+          // For each docType folder
+          for (const folder of files) {
+            if (folder.name && !folder.name.includes('.')) { // It's a folder, not a file
+              const { data: docFiles, error: docError } = await supabase.storage
+                .from('documents')
+                .list(`${user.id}/applications/${id}/${folder.name}`);
+                
+              if (docError) {
+                console.error(`Error fetching files for ${folder.name}:`, docError);
+                continue;
+              }
+              
+              if (docFiles && docFiles.length > 0) {
+                for (const file of docFiles) {
+                  const fileUrl = supabase.storage.from('documents')
+                    .getPublicUrl(`${user.id}/applications/${id}/${folder.name}/${file.name}`).data.publicUrl;
+                    
+                  documentsByType.push({
+                    fileName: file.name,
+                    fileUrl,
+                    uploadedAt: file.created_at || new Date().toISOString(),
+                    fileType: folder.name,
+                  });
+                }
+              }
+            }
+          }
+          
+          // Set documents and select first document if available
+          setDocuments(documentsByType);
+          
+          // Set selected document to first document in summaries if available
+          if (Object.keys(documentSummaries).length > 0) {
+            setSelectedDoc(Object.keys(documentSummaries)[0]);
+            setCurrentDocIndex(0);
+          }
+        }
+
+      } catch (error) {
+        console.error('Error loading application:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
