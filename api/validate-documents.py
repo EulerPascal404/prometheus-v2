@@ -1743,7 +1743,7 @@ class handler(BaseHTTPRequestHandler):
                                 preview_content = f.read()
                             
                             # Upload the preview to Supabase storage
-                            print("SAVING PREVIEW")
+                            logger.info("Uploading preview to Supabase storage")
                             preview_filename = f"page28_preview_{application_id if application_id else user_id}_{int(time.time())}.pdf"
                             upload_path = f"{storage_path}/{preview_filename}"
                             upload_result = supabase.storage.from_('documents').upload(
@@ -1762,28 +1762,38 @@ class handler(BaseHTTPRequestHandler):
                                 "preview_message": preview_message
                             }
                             
-                            logger.info(f"Update data: {update_data}")
-
-                            # ERROR: this is where the error is coming from
-                            # ERROR - Error handling preview: 
-                            # {'code': 'PGRST204', 'details': None, 'hint': None, 'message': "Could not find the 'preview_path' column of 'applications' in the schema cache"}
-                            if application_id:
-                                supabase.table("applications").update({
-                                    "preview_path": i129_preview_path,
-                                    "preview_message": preview_message
-                                }).eq("id", application_id).execute()
-
-                            logger.info(f"Update data 2: {update_data}")
+                            logger.info(f"Update data for user_documents: {update_data}")
                             
+                            # First update user_documents table
                             supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
-                            logger.info("Updated database with preview information")
+                            logger.info("Updated user_documents table with preview information")
+                            
+                            # Then update applications table if application_id exists
+                            if application_id:
+                                try:
+                                    # Update applications table with preview information
+                                    app_update_data = {
+                                        "preview_path": i129_preview_path,
+                                        "preview_message": preview_message
+                                    }
+                                    logger.info(f"Updating applications table with: {app_update_data}")
+                                    supabase.table("applications").update(app_update_data).eq("id", application_id).execute()
+                                    logger.info("Successfully updated applications table with preview information")
+                                except Exception as app_error:
+                                    logger.error(f"Error updating applications table: {str(app_error)}")
+                                    # Continue execution even if applications update fails
+                            
                         except Exception as e:
                             logger.error(f"Error handling preview: {str(e)}")
+                            # Set preview path to None if there was an error
+                            i129_preview_path = None
                 else:
                     logger.warning("Failed to extract page 28 preview")
+                    i129_preview_path = None
             except Exception as e:
                 logger.error(f"Error extracting page 28 preview: {str(e)}")
-                
+                i129_preview_path = None
+            
             # Update Supabase if available
             if supabase and application_id:
                 try:
