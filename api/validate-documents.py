@@ -497,6 +497,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
 # so I think based off of the annotations, we need to update the output_pdf by adding it?
 # this is the part I'm less clear on, not sure how to generate the output_pdf using the annotations
 def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None, o1=False, application_id=None):
+    print("\n=== STARTING FILL_AND_CHECK_PDF ===")
     if not supabase:
         print("[ERROR] Supabase client not available")
         return 0, {}
@@ -515,14 +516,22 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         # Get the template from Supabase storage
         print("[DEBUG] Downloading O-1 form template from Supabase storage")
         template_path = "templates/o1-form-template-cleaned-filled.pdf"
-        template_response = supabase.storage.from_('documents').download(template_path)
+        try:
+            template_response = supabase.storage.from_('documents').download(template_path)
+            print(f"[DEBUG] Template download response type: {type(template_response)}")
+            print(f"[DEBUG] Template download response length: {len(template_response) if template_response else 0}")
+        except Exception as e:
+            print(f"[ERROR] Failed to download template: {str(e)}")
+            return 0, {}
         
         if not template_response:
-            print("[ERROR] Failed to download template from Supabase storage")
+            print("[ERROR] Failed to download template from Supabase storage - empty response")
             return 0, {}
         
         # Process the template directly from memory
+        print("[DEBUG] Creating BytesIO stream from template response")
         template_stream = BytesIO(template_response)
+        print("[DEBUG] Creating PDF reader from stream")
         template = PdfReader(template_stream)
         total_pages = len(template.pages)
         print(f"[DEBUG] Template loaded with {total_pages} pages")
@@ -545,28 +554,37 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         }
         
         # Process the template and fill fields
-        print("[DEBUG] Processing template fields and filling form")
+        print("[DEBUG] Starting to process template fields and fill form")
         for page_num, page in enumerate(template.pages):
             if not (page_num in O1_RELEVANT_PAGES_0INDEXED):
+                print(f"[DEBUG] Skipping page {page_num + 1} as it's not in relevant pages")
                 continue
             
             print(f"[DEBUG] Processing page {page_num + 1}")
             annotations = page.get('/Annots')
-            if annotations:
-                for annotation in annotations:
-                    if annotation.get('/Subtype') == '/Widget':
-                        field_type = annotation.get('/FT')
-                        original_name = annotation.get('/T').replace("\\", "/")
+            if not annotations:
+                print(f"[DEBUG] No annotations found on page {page_num + 1}")
+                continue
+                
+            print(f"[DEBUG] Found {len(annotations)} annotations on page {page_num + 1}")
+            for annotation in annotations:
+                if annotation.get('/Subtype') == '/Widget':
+                    field_type = annotation.get('/FT')
+                    original_name = annotation.get('/T')
+                    if original_name:
+                        original_name = original_name.replace("\\", "/")
+                    print(f"[DEBUG] Processing field: {original_name} (type: {field_type})")
+                    
+                    # Count total fillable fields
+                    field_stats["total_fields"] += 1
+                    
+                    # Fill the field if we have a response
+                    if original_name and original_name in response_dict:
+                        field_value = response_dict[original_name]
+                        value_str = str(field_value).lower() if field_value else ""
+                        print(f"[DEBUG] Filling field {original_name} with value: {value_str}")
                         
-                        # Count total fillable fields
-                        field_stats["total_fields"] += 1
-                        
-                        # Fill the field if we have a response
-                        if original_name and original_name in response_dict:
-                            field_value = response_dict[original_name]
-                            value_str = str(field_value).lower() if field_value else ""
-                            print(f"[DEBUG] Filling field {original_name} with value: {value_str}")
-                            
+                        try:
                             # Update the annotation with the field value
                             if field_type == '/Tx':  # Text field
                                 print(f"[FORM FILL] Text field '{original_name}' filled with: '{value_str}'")
@@ -581,36 +599,40 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                                 else:
                                     print(f"[FORM FILL] Checkbox '{original_name}' value '{value_str}' not recognized, setting to 'Off'")
                                     annotation.update(pdfrw.objects.pdfname.BasePdfName('/Off'))
-                            
-                            # Update field stats based on value
-                            if "n/a_per" in value_str:
-                                print(f"[FORM FILL] Field '{original_name}' marked as requiring personal info")
-                                field_stats["N_A_per"] += 1
-                            elif "n/a_r" in value_str:
-                                print(f"[FORM FILL] Field '{original_name}' marked as requiring resume info")
-                                field_stats["N_A_r"] += 1
-                            elif "n/a_rl" in value_str:
-                                print(f"[FORM FILL] Field '{original_name}' marked as requiring recommendation letters")
-                                field_stats["N_A_rl"] += 1
-                            elif "n/a_ar" in value_str:
-                                print(f"[FORM FILL] Field '{original_name}' marked as requiring awards/recognition")
-                                field_stats["N_A_ar"] += 1
-                            elif "n/a_p" in value_str:
-                                print(f"[FORM FILL] Field '{original_name}' marked as requiring publications")
-                                field_stats["N_A_p"] += 1
-                            elif "n/a_ss" in value_str:
-                                print(f"[FORM FILL] Field '{original_name}' marked as requiring salary/success info")
-                                field_stats["N_A_ss"] += 1
-                            elif "n/a_pm" in value_str:
-                                print(f"[FORM FILL] Field '{original_name}' marked as requiring professional membership")
-                                field_stats["N_A_pm"] += 1
-                            elif value_str and value_str != "n/a" and value_str != "":
-                                print(f"[FORM FILL] Field '{original_name}' successfully filled with user info")
-                                field_stats["user_info_filled"] += 1
-                        else:
-                            print(f"[FORM FILL] No value found in response_dict for field: '{original_name}'")
+                        except Exception as e:
+                            print(f"[ERROR] Error updating field {original_name}: {str(e)}")
+                            continue
+                        
+                        # Update field stats based on value
+                        if "n/a_per" in value_str:
+                            print(f"[FORM FILL] Field '{original_name}' marked as requiring personal info")
+                            field_stats["N_A_per"] += 1
+                        elif "n/a_r" in value_str:
+                            print(f"[FORM FILL] Field '{original_name}' marked as requiring resume info")
+                            field_stats["N_A_r"] += 1
+                        elif "n/a_rl" in value_str:
+                            print(f"[FORM FILL] Field '{original_name}' marked as requiring recommendation letters")
+                            field_stats["N_A_rl"] += 1
+                        elif "n/a_ar" in value_str:
+                            print(f"[FORM FILL] Field '{original_name}' marked as requiring awards/recognition")
+                            field_stats["N_A_ar"] += 1
+                        elif "n/a_p" in value_str:
+                            print(f"[FORM FILL] Field '{original_name}' marked as requiring publications")
+                            field_stats["N_A_p"] += 1
+                        elif "n/a_ss" in value_str:
+                            print(f"[FORM FILL] Field '{original_name}' marked as requiring salary/success info")
+                            field_stats["N_A_ss"] += 1
+                        elif "n/a_pm" in value_str:
+                            print(f"[FORM FILL] Field '{original_name}' marked as requiring professional membership")
+                            field_stats["N_A_pm"] += 1
+                        elif value_str and value_str != "n/a" and value_str != "":
+                            print(f"[FORM FILL] Field '{original_name}' successfully filled with user info")
+                            field_stats["user_info_filled"] += 1
+                    else:
+                        print(f"[FORM FILL] No value found in response_dict for field: '{original_name}'")
             
             # Add the processed page to the writer
+            print(f"[DEBUG] Adding processed page {page_num + 1} to writer")
             writer.addpage(page)
         
         # Calculate percentage filled
@@ -635,8 +657,13 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         # Save the filled PDF to memory
         print("[DEBUG] Saving filled PDF to memory")
         output_buffer = BytesIO()
-        writer.write(output_buffer)
-        output_buffer.seek(0)
+        try:
+            writer.write(output_buffer)
+            output_buffer.seek(0)
+            print(f"[DEBUG] Filled PDF size: {len(output_buffer.getvalue())} bytes")
+        except Exception as e:
+            print(f"[ERROR] Error writing PDF to buffer: {str(e)}")
+            return 0, field_stats
         
         # Upload the filled PDF to Supabase
         print("[DEBUG] Uploading filled PDF to Supabase")
@@ -671,10 +698,13 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         except Exception as e:
             print(f"[ERROR] Error uploading filled PDF: {str(e)}")
         
+        print("[DEBUG] FILL_AND_CHECK_PDF completed successfully")
         return total_pages, field_stats
         
     except Exception as e:
-        print(f"[ERROR] Error processing PDF: {str(e)}")
+        print(f"[ERROR] Error in fill_and_check_pdf: {str(e)}")
+        import traceback
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         return 0, {}
 
 def update_fill_progress(current, total, doc_type, user_id, supabase):
