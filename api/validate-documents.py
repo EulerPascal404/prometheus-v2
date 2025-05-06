@@ -502,6 +502,16 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         return 0, {}
     
     try:
+        # Print response dictionary contents
+        print("\n=== RESPONSE DICTIONARY CONTENTS ===")
+        if response_dict:
+            print(f"Response dict has {len(response_dict)} fields:")
+            for key, value in response_dict.items():
+                print(f"  {key}: {value}")
+        else:
+            print("Response dictionary is empty or None")
+        print("==================================\n")
+        
         # Get the template from Supabase storage
         print("[DEBUG] Downloading O-1 form template from Supabase storage")
         template_path = "templates/o1-form-template-cleaned-filled.pdf"
@@ -539,6 +549,10 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                 if user_response and user_response.data:
                     user_info = user_response.data
                     print(f"[DEBUG] Found user info with {len(user_info)} fields")
+                    print("\n=== USER INFO CONTENTS ===")
+                    for key, value in user_info.items():
+                        print(f"  {key}: {value}")
+                    print("==========================\n")
                 else:
                     print("[WARNING] No user info found in database")
             except Exception as e:
