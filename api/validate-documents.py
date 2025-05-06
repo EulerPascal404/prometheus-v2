@@ -496,7 +496,7 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
 # which when we call it is true since we pass in the same pdf for both
 # so I think based off of the annotations, we need to update the output_pdf by adding it?
 # this is the part I'm less clear on, not sure how to generate the output_pdf using the annotations
-def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None, o1=False):
+def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None, o1=False, application_id=None):
     if not supabase:
         print("[ERROR] Supabase client not available")
         return 0, {}
@@ -527,6 +527,10 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         total_pages = len(template.pages)
         print(f"[DEBUG] Template loaded with {total_pages} pages")
         
+        # Create a new PDF writer for the filled form
+        print("[DEBUG] Creating new PDF writer for filled form")
+        writer = PdfWriter()
+        
         # Calculate field statistics
         field_stats = {
             "user_info_filled": 0,
@@ -540,26 +544,8 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
             "total_fields": 0
         }
         
-        # Get user info from Supabase
-        print(f"[DEBUG] Fetching user info for user_id: {user_id}")
-        user_info = {}
-        if user_id:
-            try:
-                user_response = supabase.table("user_documents").select("*").eq("user_id", user_id).single().execute()
-                if user_response and user_response.data:
-                    user_info = user_response.data
-                    print(f"[DEBUG] Found user info with {len(user_info)} fields")
-                    print("\n=== USER INFO CONTENTS ===")
-                    for key, value in user_info.items():
-                        print(f"  {key}: {value}")
-                    print("==========================\n")
-                else:
-                    print("[WARNING] No user info found in database")
-            except Exception as e:
-                print(f"[ERROR] Error fetching user info: {str(e)}")
-        
-        # Process the template and update field stats
-        print("[DEBUG] Processing template fields")
+        # Process the template and fill fields
+        print("[DEBUG] Processing template fields and filling form")
         for page_num, page in enumerate(template.pages):
             if not (page_num in O1_RELEVANT_PAGES_0INDEXED):
                 continue
@@ -575,11 +561,20 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                         # Count total fillable fields
                         field_stats["total_fields"] += 1
                         
-                        # Check if we have user info for this field
-                        if original_name and original_name in user_info:
-                            field_value = user_info[original_name]
+                        # Fill the field if we have a response
+                        if original_name and original_name in response_dict:
+                            field_value = response_dict[original_name]
                             value_str = str(field_value).lower() if field_value else ""
-                            print(f"[DEBUG] Field {original_name} has value: {value_str}")
+                            print(f"[DEBUG] Filling field {original_name} with value: {value_str}")
+                            
+                            # Update the annotation with the field value
+                            if field_type == '/Tx':  # Text field
+                                annotation.update(pdfrw.objects.pdfstring.PdfString.encode(value_str))
+                            elif field_type == '/Btn':  # Button/Checkbox
+                                if value_str.lower() in ['yes', 'true', '1']:
+                                    annotation.update(pdfrw.objects.pdfname.BasePdfName('/Yes'))
+                                elif value_str.lower() in ['no', 'false', '0']:
+                                    annotation.update(pdfrw.objects.pdfname.BasePdfName('/Off'))
                             
                             # Update field stats based on value
                             if "n/a_per" in value_str:
@@ -599,7 +594,10 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                             elif value_str and value_str != "n/a" and value_str != "":
                                 field_stats["user_info_filled"] += 1
                         else:
-                            print(f"[DEBUG] No user info found for field: {original_name}")
+                            print(f"[DEBUG] No value found for field: {original_name}")
+            
+            # Add the processed page to the writer
+            writer.addpage(page)
         
         # Calculate percentage filled
         if field_stats["total_fields"] > 0:
@@ -620,16 +618,44 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         print(f"Fields requiring professional membership: {field_stats['N_A_pm']}")
         print("==================================\n")
         
-        # Store stats in Supabase
-        if user_id:
-            try:
-                print(f"[DEBUG] Storing field stats for user_id: {user_id}")
-                supabase.table("user_documents").update({
-                    "field_stats": json.dumps(field_stats)
-                }).eq("user_id", user_id).execute()
-                print("[DEBUG] Field statistics stored in database")
-            except Exception as e:
-                print(f"[ERROR] Error storing field statistics: {str(e)}")
+        # Save the filled PDF to memory
+        print("[DEBUG] Saving filled PDF to memory")
+        output_buffer = BytesIO()
+        writer.write(output_buffer)
+        output_buffer.seek(0)
+        
+        # Upload the filled PDF to Supabase
+        print("[DEBUG] Uploading filled PDF to Supabase")
+        storage_path = f"{user_id}/applications/{application_id}/filled_form.pdf" if application_id else f"{user_id}/filled_form.pdf"
+        try:
+            upload_result = supabase.storage.from_('documents').upload(
+                storage_path,
+                output_buffer.getvalue(),
+                {"content-type": "application/pdf"}
+            )
+            print(f"[DEBUG] Successfully uploaded filled PDF to: {storage_path}")
+            
+            # Get public URL for the filled form
+            filled_form_url = supabase.storage.from_('documents').get_public_url(storage_path)
+            print(f"[DEBUG] Filled form URL: {filled_form_url}")
+            
+            # Update user_documents table with the filled form path
+            if user_id:
+                try:
+                    print(f"[DEBUG] Updating user_documents with filled form path")
+                    update_data = {
+                        "field_stats": json.dumps(field_stats),
+                        "filled_form_path": filled_form_url
+                    }
+                    if application_id:
+                        update_data["application_id"] = application_id
+                    
+                    supabase.table("user_documents").update(update_data).eq("user_id", user_id).execute()
+                    print("[DEBUG] Updated user_documents with filled form path")
+                except Exception as e:
+                    print(f"[ERROR] Error updating user_documents: {str(e)}")
+        except Exception as e:
+            print(f"[ERROR] Error uploading filled PDF: {str(e)}")
         
         return total_pages, field_stats
         
