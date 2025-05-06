@@ -569,32 +569,46 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                             
                             # Update the annotation with the field value
                             if field_type == '/Tx':  # Text field
+                                print(f"[FORM FILL] Text field '{original_name}' filled with: '{value_str}'")
                                 annotation.update(pdfrw.objects.pdfstring.PdfString.encode(value_str))
                             elif field_type == '/Btn':  # Button/Checkbox
                                 if value_str.lower() in ['yes', 'true', '1']:
+                                    print(f"[FORM FILL] Checkbox '{original_name}' set to: 'Yes'")
                                     annotation.update(pdfrw.objects.pdfname.BasePdfName('/Yes'))
                                 elif value_str.lower() in ['no', 'false', '0']:
+                                    print(f"[FORM FILL] Checkbox '{original_name}' set to: 'No'")
+                                    annotation.update(pdfrw.objects.pdfname.BasePdfName('/Off'))
+                                else:
+                                    print(f"[FORM FILL] Checkbox '{original_name}' value '{value_str}' not recognized, setting to 'Off'")
                                     annotation.update(pdfrw.objects.pdfname.BasePdfName('/Off'))
                             
                             # Update field stats based on value
                             if "n/a_per" in value_str:
+                                print(f"[FORM FILL] Field '{original_name}' marked as requiring personal info")
                                 field_stats["N_A_per"] += 1
                             elif "n/a_r" in value_str:
+                                print(f"[FORM FILL] Field '{original_name}' marked as requiring resume info")
                                 field_stats["N_A_r"] += 1
                             elif "n/a_rl" in value_str:
+                                print(f"[FORM FILL] Field '{original_name}' marked as requiring recommendation letters")
                                 field_stats["N_A_rl"] += 1
                             elif "n/a_ar" in value_str:
+                                print(f"[FORM FILL] Field '{original_name}' marked as requiring awards/recognition")
                                 field_stats["N_A_ar"] += 1
                             elif "n/a_p" in value_str:
+                                print(f"[FORM FILL] Field '{original_name}' marked as requiring publications")
                                 field_stats["N_A_p"] += 1
                             elif "n/a_ss" in value_str:
+                                print(f"[FORM FILL] Field '{original_name}' marked as requiring salary/success info")
                                 field_stats["N_A_ss"] += 1
                             elif "n/a_pm" in value_str:
+                                print(f"[FORM FILL] Field '{original_name}' marked as requiring professional membership")
                                 field_stats["N_A_pm"] += 1
                             elif value_str and value_str != "n/a" and value_str != "":
+                                print(f"[FORM FILL] Field '{original_name}' successfully filled with user info")
                                 field_stats["user_info_filled"] += 1
                         else:
-                            print(f"[DEBUG] No value found for field: {original_name}")
+                            print(f"[FORM FILL] No value found in response_dict for field: '{original_name}'")
             
             # Add the processed page to the writer
             writer.addpage(page)
