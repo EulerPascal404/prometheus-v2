@@ -273,7 +273,7 @@ def log_page_progress(page_num, total_pages, user_id, supabase):
 # Note to Ryan: 
 # currently only writing rag responses for the o-1 form
 # can modify the if/else statements at the beginning if we want to use this for other forms like entire i-129
-def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
+def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None, extracted_text=None):
     # Use O1_RELEVANT_PAGES_1INDEXED to limit the number of pages processed
     if pages is None:
         # Only process the O-1 relevant pages
@@ -284,6 +284,15 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
     
     total_pages = len(pages)
     print(f"Will process {total_pages} O-1 relevant pages")
+    
+    # Log if extracted_text is provided
+    if extracted_text:
+        print(f"Using provided extracted text (length: {len(extracted_text)} chars)")
+        print(f"Text preview: {extracted_text[:200]}...")
+        logger.info(f"User document provided with {len(extracted_text)} chars")
+    else:
+        print("No extracted text provided, will use form data only")
+        logger.info("No user document provided, using form data only")
     
     # Get the base directory (demo folder) using the script's location
     base_dir = "data/"
@@ -446,15 +455,32 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
         # Add batch content to all text content
         all_text_content += f"\n\n=== BATCH {batch_idx+1} ===\n" + batch_text_content
         
+        # If extracted_text is provided, add it to the batch text content
+        if extracted_text:
+            # Add user document with clear separator for each batch
+            batch_text_content += f"\n\n=== USER DOCUMENT ===\n{extracted_text}\n=== END USER DOCUMENT ===\n"
+            print(f"Added user document content to batch {batch_idx+1}")
+        
         # Make API call with the current batch
         try:
             print(f"Making API call for batch {batch_idx+1}...")
-            print(batch_text_content)
+            # Print a sample of what's being sent to the API for debugging
+            if extracted_text:
+                print(f"Batch text with user document (sample): {batch_text_content[:200]}...")
+            else:
+                print(f"Batch text content (sample): {batch_text_content[:200]}...")
+            
+            # Update the system prompt to include user document instructions if extracted_text is provided
+            system_prompt = "You have been given compiled text content from multiple pages of a form, along with extracted form data."
+            if extracted_text:
+                system_prompt = "You have been given compiled text content from multiple pages of a form, along with extracted form data AND user document information marked with '=== USER DOCUMENT ==='. USE THE USER DOCUMENT INFORMATION to fill in the form fields wherever possible."
+            
+            system_prompt += " Each page is clearly marked with '=== PAGE X ==='. Your task is to analyze all this information together and fill out a response dictionary. It is very important that in the outputted dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Make sure the na type being used is correct and as accurate as possible. Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```." + extra_info
             
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "You have been given compiled text content from multiple pages of a form, along with extracted form data. Each page is clearly marked with '=== PAGE X ==='. Your task is to analyze all this information together and fill out a response dictionary. It is very important that in the outputted dictionary, the keys are EXACTLY the same as the original keys. For select either yes or no, make sure to only check one of the boxes. Make sure written responses are clear, and detailed making a strong argument. For fields without enough information, fill N/A and specify the type: N/A_per = needs personal info, N/A_r = resume info needed, N/A_rl = recommendation letter info needed, N/A_p = publication info needed, N/A_ss = salary/success info needed, N/A_pm = professional membership info needed. Make sure the na type being used is correct and as accurate as possible.Only fill out fields that can be entirely filled out with the user info provided, do not infer anything. Only output the dictionary. Don't include the word python or ```." + extra_info},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": batch_text_content}
                 ]
             )
@@ -470,6 +496,9 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
                     response_text = response_text[3:]
                 if response_text.endswith('```'):
                     response_text = response_text[:-3]
+                
+                # Log a sample of the response for debugging
+                print(f"API response sample: {response_text[:200] if response_text else 'Empty response'}...")
                 
                 batch_response_dict = eval(response_text)
                 print(f"Successfully evaluated response dictionary for batch {batch_idx+1}")
@@ -488,6 +517,18 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
         response_dict = {"error": "Failed to process form: No successful API responses"}
     
     print(f"Completed processing {total_pages} pages in {len(page_batches)} batches")
+    
+    # Add a special log message to identify if user document was used
+    if extracted_text:
+        na_fields = sum(1 for v in response_dict.values() if v and "n/a" in str(v).lower())
+        total_fields = len(response_dict)
+        filled_fields = total_fields - na_fields
+        logger.info(f"USER DOCUMENT INTEGRATION: Processed with user document data. Fields: {total_fields}, Filled: {filled_fields}, N/A: {na_fields}")
+        # Add a special marker to the response dict to show it was processed with user document data
+        response_dict["_processed_with_user_data"] = "true"
+    else:
+        logger.info("FORM ONLY PROCESSING: No user document data was included in processing")
+    
     return response_dict
 
 # Note to Ryan: 
@@ -496,11 +537,69 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None):
 # which when we call it is true since we pass in the same pdf for both
 # so I think based off of the annotations, we need to update the output_pdf by adding it?
 # this is the part I'm less clear on, not sure how to generate the output_pdf using the annotations
+def clean_field_name(field_name):
+    """Cleans problematic characters from field names."""
+    if not field_name:
+        return field_name
+        
+    # Replace any backslashes in field names with forward slashes
+    cleaned_name = field_name.replace('\\', '/')
+    
+    # Remove any special escape sequences
+    cleaned_name = re.sub(r'\\(\d+)', '', cleaned_name)
+    
+    # Handle complex field names with multiple parts (e.g., "Line1b/137DateofSignature/1331/135")
+    # Sometimes we need to try variations
+    if '/' in cleaned_name:
+        # Store the original for reference
+        original_cleaned = cleaned_name
+        
+        # Create alternative versions for lookup
+        parts = cleaned_name.split('/')
+        alternatives = []
+        
+        # First part only
+        if len(parts) > 0:
+            alternatives.append(parts[0])
+            
+        # First and second parts
+        if len(parts) > 1:
+            alternatives.append(f"{parts[0]}/{parts[1]}")
+            
+        # Main part without numbers if it contains letters followed by numbers
+        for part in parts:
+            match = re.match(r'([a-zA-Z]+)(\d+)', part)
+            if match:
+                # Extract the letter part
+                letter_part = match.group(1)
+                alternatives.append(letter_part)
+        
+        # For debugging
+        if len(alternatives) > 0:
+            print(f"[DEBUG] Field '{field_name}' has alternatives: {alternatives}")
+            
+        # Add alternatives to a global dictionary for later lookup
+        for alt in alternatives:
+            field_alternatives[alt] = cleaned_name
+    
+    return cleaned_name
+
+# Global dictionary to store field name alternatives
+field_alternatives = {}
+
 def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None, o1=False, application_id=None):
     print("\n=== STARTING FILL_AND_CHECK_PDF ===")
     if not supabase:
         print("[ERROR] Supabase client not available")
         return 0, {}
+    
+    # Create a cleaned version of the response_dict with normalized field names
+    cleaned_response_dict = {}
+    for key, value in response_dict.items():
+        cleaned_key = clean_field_name(key)
+        cleaned_response_dict[cleaned_key] = value
+        if cleaned_key != key:
+            print(f"[INFO] Cleaned field name: {key} -> {cleaned_key}")
     
     try:
         # Print response dictionary contents
@@ -579,8 +678,48 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                     field_stats["total_fields"] += 1
                     
                     # Fill the field if we have a response
-                    if original_name and original_name in response_dict:
-                        field_value = response_dict[original_name]
+                    original_cleaned_name = None
+                    try:
+                        original_cleaned_name = clean_field_name(original_name) if original_name else None
+                    except Exception as clean_error:
+                        print(f"[ERROR] Error cleaning field name '{original_name}': {str(clean_error)}")
+                        original_cleaned_name = original_name
+                        
+                    # Check all possible ways to find the field in the response dict
+                    field_found = False
+                    field_value = None
+                    
+                    # First try with direct lookup in cleaned_response_dict
+                    if original_cleaned_name in cleaned_response_dict:
+                        field_value = cleaned_response_dict[original_cleaned_name]
+                        field_found = True
+                        print(f"[DEBUG] Found field {original_name} using cleaned name: {original_cleaned_name}")
+                    # Then try with original name
+                    elif original_name in cleaned_response_dict:
+                        field_value = cleaned_response_dict[original_name]
+                        field_found = True
+                        print(f"[DEBUG] Found field {original_name} using original name")
+                    # Then try alternatives if available
+                    elif original_cleaned_name and '/' in original_cleaned_name:
+                        # Try each part of the field name
+                        parts = original_cleaned_name.split('/')
+                        for part in parts:
+                            if part in cleaned_response_dict:
+                                field_value = cleaned_response_dict[part]
+                                field_found = True
+                                print(f"[DEBUG] Found field {original_name} using part: {part}")
+                                break
+                        
+                        # If still not found, check field_alternatives
+                        if not field_found:
+                            for alt, full_name in field_alternatives.items():
+                                if alt in cleaned_response_dict:
+                                    field_value = cleaned_response_dict[alt]
+                                    field_found = True
+                                    print(f"[DEBUG] Found field {original_name} using alternative: {alt}")
+                                    break
+                    
+                    if field_found and field_value is not None:
                         value_str = str(field_value).lower() if field_value else ""
                         print(f"[DEBUG] Filling field {original_name} with value: {value_str}")
                         
@@ -588,19 +727,79 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                             # Update the annotation with the field value
                             if field_type == '/Tx':  # Text field
                                 print(f"[FORM FILL] Text field '{original_name}' filled with: '{value_str}'")
-                                annotation.update(pdfrw.objects.pdfstring.PdfString.encode(value_str))
+                                # Create a proper PdfDict for update instead of directly using encode
+                                try:
+                                    annotation.update(PdfDict(V=value_str))
+                                except Exception as tf_error:
+                                    print(f"[ERROR] Specific error updating text field '{original_name}': {str(tf_error)}")
+                                    # Fallback to simpler approach if needed
+                                    try:
+                                        annotation['/V'] = value_str
+                                        print(f"[FORM FILL] Used direct assignment for field '{original_name}'")
+                                    except Exception as fallback_error:
+                                        print(f"[ERROR] Fallback also failed for field '{original_name}': {str(fallback_error)}")
+                                        continue
                             elif field_type == '/Btn':  # Button/Checkbox
                                 if value_str.lower() in ['yes', 'true', '1']:
                                     print(f"[FORM FILL] Checkbox '{original_name}' set to: 'Yes'")
-                                    annotation.update(pdfrw.objects.pdfname.BasePdfName('/Yes'))
+                                    try:
+                                        annotation.update(PdfDict(V=PdfName('Yes'), AS=PdfName('Yes')))
+                                    except Exception as btn_error:
+                                        print(f"[ERROR] Specific error updating checkbox '{original_name}' to Yes: {str(btn_error)}")
+                                        # Try fallback
+                                        try:
+                                            annotation['/V'] = PdfName('Yes')
+                                            annotation['/AS'] = PdfName('Yes')
+                                            print(f"[FORM FILL] Used direct assignment for checkbox '{original_name}'")
+                                        except Exception as fallback_error:
+                                            print(f"[ERROR] Fallback also failed for checkbox '{original_name}': {str(fallback_error)}")
+                                            continue
                                 elif value_str.lower() in ['no', 'false', '0']:
                                     print(f"[FORM FILL] Checkbox '{original_name}' set to: 'No'")
-                                    annotation.update(pdfrw.objects.pdfname.BasePdfName('/Off'))
+                                    try:
+                                        annotation.update(PdfDict(V=PdfName('Off'), AS=PdfName('Off')))
+                                    except Exception as btn_error:
+                                        print(f"[ERROR] Specific error updating checkbox '{original_name}' to No: {str(btn_error)}")
+                                        # Try fallback
+                                        try:
+                                            annotation['/V'] = PdfName('Off')
+                                            annotation['/AS'] = PdfName('Off')
+                                            print(f"[FORM FILL] Used direct assignment for checkbox '{original_name}'")
+                                        except Exception as fallback_error:
+                                            print(f"[ERROR] Fallback also failed for checkbox '{original_name}': {str(fallback_error)}")
+                                            continue
                                 else:
                                     print(f"[FORM FILL] Checkbox '{original_name}' value '{value_str}' not recognized, setting to 'Off'")
-                                    annotation.update(pdfrw.objects.pdfname.BasePdfName('/Off'))
+                                    try:
+                                        annotation.update(PdfDict(V=PdfName('Off'), AS=PdfName('Off')))
+                                    except Exception as btn_error:
+                                        print(f"[ERROR] Specific error updating checkbox '{original_name}' to Off: {str(btn_error)}")
+                                        # Try fallback
+                                        try:
+                                            annotation['/V'] = PdfName('Off')
+                                            annotation['/AS'] = PdfName('Off')
+                                            print(f"[FORM FILL] Used direct assignment for checkbox '{original_name}'")
+                                        except Exception as fallback_error:
+                                            print(f"[ERROR] Fallback also failed for checkbox '{original_name}': {str(fallback_error)}")
+                                            continue
+                            # Add handling for dropdown fields if needed
+                            elif field_type == '/Ch':  # Dropdown/Combobox
+                                print(f"[FORM FILL] Dropdown field '{original_name}' filled with: '{value_str}'")
+                                try:
+                                    annotation.update(PdfDict(V=value_str))
+                                except Exception as ch_error:
+                                    print(f"[ERROR] Specific error updating dropdown '{original_name}': {str(ch_error)}")
+                                    # Try fallback
+                                    try:
+                                        annotation['/V'] = value_str
+                                        print(f"[FORM FILL] Used direct assignment for dropdown '{original_name}'")
+                                    except Exception as fallback_error:
+                                        print(f"[ERROR] Fallback also failed for dropdown '{original_name}': {str(fallback_error)}")
+                                        continue
                         except Exception as e:
                             print(f"[ERROR] Error updating field {original_name}: {str(e)}")
+                            # Print more details for debugging
+                            print(f"[ERROR] Field type: {field_type}, Value type: {type(value_str).__name__}")
                             continue
                         
                         # Update field stats based on value
@@ -758,6 +957,14 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
     """
     logger.info(f"Starting PDF form filling for {doc_type} document (User ID: {user_id})")
     
+    # Log information about the extracted text
+    text_length = len(extracted_text) if extracted_text else 0
+    logger.info(f"Extracted text length: {text_length} characters")
+    if text_length > 0:
+        logger.info(f"Extracted text preview: {extracted_text[:200]}...")
+    else:
+        logger.warning("No extracted text provided to run function")
+    
     # Get the base directory using the script's location
     base_dir = "data/"
     
@@ -787,8 +994,14 @@ def run(extracted_text, doc_type=None, user_id=None, supabase=None):
         form_handler = get_form_handler(doc_type)
         if form_handler:
             # Process the document
+            logger.info(f"Calling form handler for {doc_type} with extracted text length: {text_length}")
             response_dict = form_handler(extracted_text, document_context, base_dir)
-            logger.info(f"Response dict for {doc_type}: {response_dict}")
+            logger.info(f"Form handler returned response dict with {len(response_dict)} fields")
+            
+            # Log a sample of the response dictionary for debugging
+            sample_keys = list(response_dict.keys())[:5] if response_dict else []
+            sample_values = {k: response_dict[k] for k in sample_keys} if sample_keys else {}
+            logger.info(f"Sample of response dict: {sample_values}")
             
             # Update global variable to make it accessible for fallback
             globals()['full_response_dict'] = response_dict
@@ -905,7 +1118,14 @@ def calculate_field_statistics(response_dict):
         "N_A_ss": 0,
         "N_A_pm": 0,
         "total_fields": len(response_dict),
-        "percent_filled": 0
+        "percent_filled": 0,
+        "na_extraordinary": 0,
+        "na_recognition": 0,
+        "na_publications": 0,
+        "na_leadership": 0,
+        "na_contributions": 0,
+        "na_salary": 0,
+        "na_success": 0
     }
     
     # Count different value types
@@ -1661,6 +1881,20 @@ class handler(BaseHTTPRequestHandler):
             if all_extracted_text:
                 combined_text = "\n\n".join(all_extracted_text)
                 
+                # Add detailed logging about the combined text
+                logger.info(f"Combined text length: {len(combined_text)} characters")
+                logger.info(f"Combined text preview: {combined_text[:200]}...")
+                logger.info(f"Number of document texts combined: {len(all_extracted_text)}")
+                
+                # Count document types in the combined text
+                doc_type_counts = {}
+                for text in all_extracted_text:
+                    if "BEGIN" in text and "DOCUMENT" in text:
+                        doc_type = text.split("BEGIN ")[1].split(" DOCUMENT")[0]
+                        doc_type_counts[doc_type] = doc_type_counts.get(doc_type, 0) + 1
+                
+                logger.info(f"Document types in combined text: {doc_type_counts}")
+                
                 # Update status for RAG processing
                 if supabase and user_id:
                     try:
@@ -2033,7 +2267,7 @@ def get_form_handler(doc_type):
 def handle_o1_form(extracted_text, document_context, base_dir):
     """Process O-1 form text"""
     logger.info("Processing O-1 form")
-    return write_rag_responses(extra_info="You're analyzing an O-1 visa form.", user_id=None)
+    return write_rag_responses(extra_info="You're analyzing an O-1 visa form.", user_id=None, extracted_text=extracted_text)
 
 def handle_resume(extracted_text, document_context, base_dir):
     """Process resume text"""
@@ -2068,11 +2302,37 @@ def handle_memberships(extracted_text, document_context, base_dir):
 def handle_combined(extracted_text, document_context, base_dir):
     """Process combined documents"""
     logger.info("Processing combined documents")
-    # Get the response dictionary from write_rag_responses
-    response_dict = write_rag_responses(extra_info="You're analyzing multiple combined documents.", user_id=None)
+    logger.info(f"Received extracted_text with length: {len(extracted_text) if extracted_text else 0} chars")
+    
+    # Pass the extracted text directly to write_rag_responses
+    response_dict = write_rag_responses(
+        extra_info="You're analyzing multiple combined documents including user uploads. Use the USER DOCUMENT information to fill out form fields.",
+        user_id=None,
+        extracted_text=extracted_text  # Pass the extracted text to write_rag_responses
+    )
     
     # Make this available globally for fallback use
     globals()['full_response_dict'] = response_dict
+    
+    # Log some stats about the response
+    if response_dict:
+        filled_fields = {}
+        na_fields = {}
+        for k, v in response_dict.items():
+            if v and v.lower() not in ["n/a", "", "off", "/off"] and not any(f"n/a_{code}" in str(v).lower() for code in ["per", "r", "rl", "ar", "p", "ss", "pm"]):
+                filled_fields[k] = v
+            elif v and "n/a" in str(v).lower():
+                na_fields[k] = v
+                
+        logger.info(f"Response dict contains {len(response_dict)} keys, {len(filled_fields)} filled fields, {len(na_fields)} N/A fields")
+        
+        # Log a sample of the filled fields for debugging
+        sample_filled = dict(list(filled_fields.items())[:5]) if filled_fields else {}
+        if sample_filled:
+            logger.info(f"SAMPLE FILLED FIELDS: {sample_filled}")
+            logger.info("These fields were successfully filled from user document data")
+    else:
+        logger.warning("Response dict is empty or None")
     
     # Return the response dictionary
     return response_dict
