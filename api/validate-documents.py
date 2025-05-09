@@ -772,6 +772,8 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                             continue
                         
                         # Update field stats based on value
+                        value_str = value_str.lower()
+                        
                         if "n/a_per" in value_str:
                             print(f"[FORM FILL] Field '{original_name}' marked as requiring personal info")
                             field_stats["N_A_per"] += 1

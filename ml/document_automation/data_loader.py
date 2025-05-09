@@ -145,8 +145,8 @@ class SyntheticDataLoader:
         
         logger.info(f"Loaded {self.stats['total_examples']} examples in total")
         logger.info(f"Train: {self.stats['by_split']['train']}, "
-                   f"Validation: {self.stats['by_split']['val']}, "
-                   f"Test: {self.stats['by_split']['test']}")
+                    f"Validation: {self.stats['by_split']['val']}, "
+                    f"Test: {self.stats['by_split']['test']}")
         
         return self.stats
     
