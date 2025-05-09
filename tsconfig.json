@@ -11,6 +11,7 @@
     "noEmit": true,
     "incremental": true,
     "module": "esnext",
+    "target": "es2015",
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
@@ -27,7 +28,8 @@
         "name": "next"
       }
     ],
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "downlevelIteration": true
   },
   "include": [
     "next-env.d.ts",

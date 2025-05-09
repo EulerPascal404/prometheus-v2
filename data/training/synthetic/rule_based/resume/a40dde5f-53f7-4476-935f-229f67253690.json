@@ -1,0 +1,62 @@
+{
+  "doc_type": "resume",
+  "personal_info": {
+    "first_name": "Jamie",
+    "last_name": "Brown",
+    "email": "jamie.brown@gmail.com",
+    "phone": "(821)-787-9361",
+    "city": "Portland",
+    "state": "OR",
+    "country": "Canada"
+  },
+  "education": [
+    {
+      "university": "Stanford University",
+      "degree": "JD",
+      "field": "Computer Science",
+      "start_date": "2017-01",
+      "end_date": "2023-06",
+      "gpa": 3.98
+    },
+    {
+      "university": "UC Berkeley",
+      "degree": "PhD",
+      "field": "Machine Learning",
+      "start_date": "2017-06",
+      "end_date": "2023-01",
+      "gpa": 3.14
+    }
+  ],
+  "experience": [
+    {
+      "company": "Apple",
+      "title": "Principal Engineer",
+      "start_date": "2022-11",
+      "end_date": "Present",
+      "description": "Developed APIs for ML model deployment and integration with front-end applications. Optimized system performance achieving 40% improvement in processing time."
+    },
+    {
+      "company": "Microsoft",
+      "title": "Technical Lead",
+      "start_date": "2022-05",
+      "end_date": "2025-04",
+      "description": "Led a team of engineers to develop machine learning models for production."
+    }
+  ],
+  "skills": [
+    "Project Management",
+    "Adaptability",
+    "Data Visualization",
+    "TypeScript",
+    "Java",
+    "Docker",
+    "Creativity",
+    "Research",
+    "Reinforcement Learning",
+    "REST APIs"
+  ],
+  "complexity": "medium",
+  "doc_id": "a40dde5f-53f7-4476-935f-229f67253690",
+  "generated_date": "2025-05-09T00:39:47.830788",
+  "generator_version": "0.1"
+}

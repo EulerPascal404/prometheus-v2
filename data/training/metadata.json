@@ -1,0 +1,60 @@
+{
+  "dataset_name": "O-1 Visa Application Dataset",
+  "created_date": null,
+  "document_types": [
+    "resume",
+    "recommendations",
+    "awards",
+    "publications",
+    "salary",
+    "memberships",
+    "o1",
+    "i129"
+  ],
+  "counts": {
+    "raw": {
+      "resume": 0,
+      "recommendations": 0,
+      "awards": 0,
+      "publications": 0,
+      "salary": 0,
+      "memberships": 0,
+      "o1": 0,
+      "i129": 0
+    },
+    "processed": {
+      "resume": 0,
+      "recommendations": 0,
+      "awards": 0,
+      "publications": 0,
+      "salary": 0,
+      "memberships": 0,
+      "o1": 0,
+      "i129": 0
+    },
+    "synthetic": {
+      "resume": 2,
+      "recommendations": 0,
+      "awards": 0,
+      "publications": 0,
+      "salary": 0,
+      "memberships": 0,
+      "o1": 0,
+      "i129": 0
+    }
+  },
+  "version": "0.1",
+  "description": "Dataset for training RL-based agentic swarms for O-1 visa applications",
+  "generation_history": [
+    {
+      "timestamp": "2025-05-09T00:39:47.831943",
+      "generator_types": [
+        "rule_based"
+      ],
+      "counts": {
+        "resume": 2
+      },
+      "complexity": "medium"
+    }
+  ]
+}

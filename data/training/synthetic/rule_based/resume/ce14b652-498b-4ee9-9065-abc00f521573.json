@@ -1,0 +1,62 @@
+{
+  "doc_type": "resume",
+  "personal_info": {
+    "first_name": "Riley",
+    "last_name": "Rodriguez",
+    "email": "riley.rodriguez@outlook.com",
+    "phone": "(780)-946-8132",
+    "city": "Denver",
+    "state": "CO",
+    "country": "Brazil"
+  },
+  "education": [
+    {
+      "university": "Harvard University",
+      "degree": "MS",
+      "field": "Human-Computer Interaction",
+      "start_date": "2020-05",
+      "end_date": "2023-04",
+      "gpa": 3.1
+    },
+    {
+      "university": "Stanford University",
+      "degree": "JD",
+      "field": "Machine Learning",
+      "start_date": "2019-01",
+      "end_date": "2024-03",
+      "gpa": 3.01
+    }
+  ],
+  "experience": [
+    {
+      "company": "Uber",
+      "title": "Data Scientist",
+      "start_date": "2019-12",
+      "end_date": "Present",
+      "description": "Conducted research on cutting-edge AI techniques and translated to practical applications. Designed and implemented scalable data processing pipelines for big data analytics. Mentored junior engineers and conducted technical interviews for new hires."
+    },
+    {
+      "company": "Uber",
+      "title": "Software Engineer",
+      "start_date": "2020-10",
+      "end_date": "2024-11",
+      "description": "Contributed to open-source projects and published research papers on ML algorithms. Built end-to-end ML pipelines from data ingestion to model deployment. Designed and implemented scalable data processing pipelines for big data analytics."
+    }
+  ],
+  "skills": [
+    "SQL",
+    "Project Management",
+    "Node.js",
+    "REST APIs",
+    "Deep Learning",
+    "React",
+    "Data Analysis",
+    "Java",
+    "TypeScript",
+    "Docker"
+  ],
+  "complexity": "medium",
+  "doc_id": "ce14b652-498b-4ee9-9065-abc00f521573",
+  "generated_date": "2025-05-09T00:39:47.830313",
+  "generator_version": "0.1"
+}

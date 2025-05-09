@@ -1378,3 +1378,10 @@ export const BackgroundEffects: FC = () => {
     </div>
   );
 };
+
+export const LoadingSpinner = ({ size = 6, color = "blue-500" }: { size?: number; color?: string }) => {
+  const sizeClass = `h-${size} w-${size}`;
+  return (
+    <div className={`animate-spin rounded-full ${sizeClass} border-2 border-gray-200 border-t-${color}`}></div>
+  );
+}
