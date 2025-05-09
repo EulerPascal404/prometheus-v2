@@ -531,16 +531,14 @@ def write_rag_responses(extra_info="", pages=None, user_id=None, supabase=None, 
     
     return response_dict
 
-# Note to Ryan: 
-# there's a line towards the end: PdfWriter().write(output_pdf, template)
-# I think based off the documentation, template is a clone of output_pdf
-# which when we call it is true since we pass in the same pdf for both
-# so I think based off of the annotations, we need to update the output_pdf by adding it?
-# this is the part I'm less clear on, not sure how to generate the output_pdf using the annotations
 def clean_field_name(field_name):
     """Cleans problematic characters from field names."""
     if not field_name:
         return field_name
+    
+    # Remove parentheses from beginning and end if present
+    if field_name.startswith('(') and field_name.endswith(')'):
+        field_name = field_name[1:-1]
         
     # Replace any backslashes in field names with forward slashes
     cleaned_name = field_name.replace('\\', '/')
@@ -548,41 +546,14 @@ def clean_field_name(field_name):
     # Remove any special escape sequences
     cleaned_name = re.sub(r'\\(\d+)', '', cleaned_name)
     
-    # Handle complex field names with multiple parts (e.g., "Line1b/137DateofSignature/1331/135")
-    # Sometimes we need to try variations
-    if '/' in cleaned_name:
-        # Store the original for reference
-        original_cleaned = cleaned_name
-        
-        # Create alternative versions for lookup
-        parts = cleaned_name.split('/')
-        alternatives = []
-        
-        # First part only
-        if len(parts) > 0:
-            alternatives.append(parts[0])
-            
-        # First and second parts
-        if len(parts) > 1:
-            alternatives.append(f"{parts[0]}/{parts[1]}")
-            
-        # Main part without numbers if it contains letters followed by numbers
-        for part in parts:
-            match = re.match(r'([a-zA-Z]+)(\d+)', part)
-            if match:
-                # Extract the letter part
-                letter_part = match.group(1)
-                alternatives.append(letter_part)
-        
-        # For debugging
-        if len(alternatives) > 0:
-            print(f"[DEBUG] Field '{field_name}' has alternatives: {alternatives}")
-            
-        # Add alternatives to a global dictionary for later lookup
-        for alt in alternatives:
-            field_alternatives[alt] = cleaned_name
-    
     return cleaned_name
+
+# Note to Ryan: 
+# there's a line towards the end: PdfWriter().write(output_pdf, template)
+# I think based off the documentation, template is a clone of output_pdf
+# which when we call it is true since we pass in the same pdf for both
+# so I think based off of the annotations, we need to update the output_pdf by adding it?
+# this is the part I'm less clear on, not sure how to generate the output_pdf using the annotations
 
 # Global dictionary to store field name alternatives
 field_alternatives = {}
@@ -685,6 +656,9 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                         print(f"[ERROR] Error cleaning field name '{original_name}': {str(clean_error)}")
                         original_cleaned_name = original_name
                         
+                    # Add this debugging line to see what's being looked up
+                    print(f"[DEBUG] Looking up field '{original_name}' cleaned to '{original_cleaned_name}'")
+                    
                     # Check all possible ways to find the field in the response dict
                     field_found = False
                     field_value = None
@@ -699,28 +673,23 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                         field_value = cleaned_response_dict[original_name]
                         field_found = True
                         print(f"[DEBUG] Found field {original_name} using original name")
-                    # Then try alternatives if available
-                    elif original_cleaned_name and '/' in original_cleaned_name:
-                        # Try each part of the field name
-                        parts = original_cleaned_name.split('/')
-                        for part in parts:
-                            if part in cleaned_response_dict:
-                                field_value = cleaned_response_dict[part]
-                                field_found = True
-                                print(f"[DEBUG] Found field {original_name} using part: {part}")
-                                break
-                        
-                        # If still not found, check field_alternatives
-                        if not field_found:
-                            for alt, full_name in field_alternatives.items():
-                                if alt in cleaned_response_dict:
-                                    field_value = cleaned_response_dict[alt]
-                                    field_found = True
-                                    print(f"[DEBUG] Found field {original_name} using alternative: {alt}")
-                                    break
+                    # Try with parentheses removed if present
+                    elif original_name.startswith('(') and original_name.endswith(')'):
+                        no_parens = original_name[1:-1]
+                        if no_parens in cleaned_response_dict:
+                            field_value = cleaned_response_dict[no_parens]
+                            field_found = True
+                            print(f"[DEBUG] Found field {original_name} after removing parentheses: {no_parens}")
+                    # Try with parentheses added if not present
+                    elif not (original_name.startswith('(') and original_name.endswith(')')):
+                        with_parens = f"({original_name})"
+                        if with_parens in cleaned_response_dict:
+                            field_value = cleaned_response_dict[with_parens]
+                            field_found = True
+                            print(f"[DEBUG] Found field {original_name} after adding parentheses: {with_parens}")
                     
                     if field_found and field_value is not None:
-                        value_str = str(field_value).lower() if field_value else ""
+                        value_str = field_value if field_value else ""
                         print(f"[DEBUG] Filling field {original_name} with value: {value_str}")
                         
                         try:
@@ -740,7 +709,7 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                                         print(f"[ERROR] Fallback also failed for field '{original_name}': {str(fallback_error)}")
                                         continue
                             elif field_type == '/Btn':  # Button/Checkbox
-                                if value_str.lower() in ['yes', 'true', '1']:
+                                if value_str.lower() in ['y', '/y','yes', 'true', '1']:
                                     print(f"[FORM FILL] Checkbox '{original_name}' set to: 'Yes'")
                                     try:
                                         annotation.update(PdfDict(V=PdfName('Yes'), AS=PdfName('Yes')))
@@ -754,7 +723,7 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                                         except Exception as fallback_error:
                                             print(f"[ERROR] Fallback also failed for checkbox '{original_name}': {str(fallback_error)}")
                                             continue
-                                elif value_str.lower() in ['no', 'false', '0']:
+                                elif value_str.lower() in ['n', '/n', 'off', '/off','no', 'false', '0']:
                                     print(f"[FORM FILL] Checkbox '{original_name}' set to: 'No'")
                                     try:
                                         annotation.update(PdfDict(V=PdfName('Off'), AS=PdfName('Off')))

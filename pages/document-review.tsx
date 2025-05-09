@@ -2183,7 +2183,7 @@ export default function DocumentReview() {
               
               <div className="p-4 border-t border-slate-700/50">
                 <div className="flex flex-col items-center">
-                  <p className="text-slate-300 mb-4">We're stilling working on displaying a preview of your O-1 Application. Below is a placeholder for the preview.</p>
+                  <p className="text-slate-300 mb-4">We're still working on displaying a preview of your O-1 Application. Below is a placeholder for the preview.</p>
                   
                   <div className="w-full bg-white rounded-lg overflow-hidden shadow-xl">
                   <iframe
