@@ -262,6 +262,57 @@ export default function ApplicationPortfolio() {
         // Continue with application deletion
       }
       
+      // Clean up related tables first to avoid foreign key constraints issues
+      console.log('Cleaning up related tables before application deletion');
+      
+      // 1. Clean up application_metadata if it exists
+      try {
+        const { error: metadataError } = await supabase
+          .from('application_metadata')
+          .delete()
+          .eq('application_id', deleteModal.applicationId);
+          
+        if (metadataError) {
+          console.error('Error deleting application_metadata:', metadataError);
+          // Continue with deletion process
+        }
+      } catch (e) {
+        console.error('Error during metadata cleanup:', e);
+        // Continue with deletion process
+      }
+      
+      // 2. Clean up user_documents
+      try {
+        const { error: userDocsError } = await supabase
+          .from('user_documents')
+          .delete()
+          .eq('application_id', deleteModal.applicationId);
+          
+        if (userDocsError) {
+          console.error('Error deleting user_documents:', userDocsError);
+          // Continue with deletion process
+        }
+      } catch (e) {
+        console.error('Error during user_documents cleanup:', e);
+        // Continue with deletion process
+      }
+      
+      // 3. Clean up application_documents
+      try {
+        const { error: appDocsError } = await supabase
+          .from('application_documents')
+          .delete()
+          .eq('application_id', deleteModal.applicationId);
+          
+        if (appDocsError) {
+          console.error('Error deleting application_documents:', appDocsError);
+          // Continue with deletion process
+        }
+      } catch (e) {
+        console.error('Error during application_documents cleanup:', e);
+        // Continue with deletion process
+      }
+      
       // Now delete the application from the database
       const { error } = await supabase
         .from('applications')
