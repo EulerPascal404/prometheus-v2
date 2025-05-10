@@ -3,13 +3,23 @@ import os
 import sys
 import json
 import logging
-import tempfile
 import re
-import PyPDF2
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any, Union
 from io import BytesIO
+
+# Add the parent directory to the path to import from api
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import functions from validate-documents.py
+from api.validate_documents import (
+    process_pdf_content,
+    get_supabase,
+    parse_summary,
+    merge_dicts,
+    calculate_field_statistics
+)
 
 # Configure logging
 logging.basicConfig(
@@ -47,6 +57,9 @@ class DataExtractor:
         # Create subdirectories for each document type
         for doc_type in DOCUMENT_TYPES:
             os.makedirs(os.path.join(output_dir, doc_type), exist_ok=True)
+        
+        # Initialize Supabase client (if available)
+        self.supabase = get_supabase()
             
     def extract_text_from_pdf(self, file_content: bytes) -> Tuple[str, int]:
         """Extract text from a PDF file.
@@ -57,45 +70,16 @@ class DataExtractor:
         Returns:
             Tuple of (extracted text, number of pages)
         """
-        # Save the PDF content to a temporary file
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
-            tmp_file.write(file_content)
-            tmp_path = tmp_file.name
-
-        try:
-            # Extract text using PyPDF2
-            text_content = []
-            with open(tmp_path, 'rb') as file:
-                pdf_reader = PyPDF2.PdfReader(file)
-                total_pages = len(pdf_reader.pages)
-                
-                for page_num, page in enumerate(pdf_reader.pages):
-                    try:
-                        text = page.extract_text()
-                        # Ensure text is a string and not empty
-                        if isinstance(text, str) and text.strip():
-                            text_content.append(text)
-                        elif isinstance(text, list):
-                            # If text is a list, join it with spaces
-                            text = ' '.join(str(item) for item in text if item)
-                            if text.strip():
-                                text_content.append(text)
-                    except Exception as e:
-                        logger.error(f"Error extracting text from page {page_num + 1}: {str(e)}")
-                        continue
-
-            # Clean up temporary file
-            os.unlink(tmp_path)
-
-            # Join all text content and ensure it's a string
-            full_text = "\n".join(text_content) if text_content else ""
+        # Use the PDF processing function from validate-documents.py
+        result = process_pdf_content(file_content, "generic", None, None)
+        
+        # Extract the needed information from the result
+        if result and "extracted_text" in result:
+            full_text = result["extracted_text"]
+            total_pages = result.get("pages", 0)
             return full_text, total_pages
-            
-        except Exception as e:
-            logger.error(f"Error during text extraction: {str(e)}")
-            # Clean up temporary file if an exception occurred
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
+        else:
+            logger.error("Error extracting text from PDF")
             return "", 0
     
     def extract_fields_from_text(self, text: str, doc_type: str) -> Dict[str, Any]:
@@ -114,19 +98,38 @@ class DataExtractor:
             "full_text": text
         }
         
-        # Detect language
-        extracted_fields["language"] = self._detect_language(text)
-        
-        if doc_type == "resume":
-            # Extract common resume fields
-            extracted_fields.update(self._extract_resume_fields(text))
-        elif doc_type == "recommendations":
-            # Extract recommendation fields
-            extracted_fields.update(self._extract_recommendation_fields(text))
-        elif doc_type in ["i129", "o1"]:
-            # Extract form fields - these will be mostly empty for now
-            # Later RL agents will learn to fill these
-            extracted_fields.update(self._extract_form_fields(text, doc_type))
+        try:
+            # Use OpenAI processing from validate-documents.py for a more comprehensive analysis
+            result = process_pdf_content(text.encode('utf-8'), doc_type, None, None)
+            
+            if result and "strengths" in result:
+                # Include the summary analysis in the extracted fields
+                extracted_fields["strengths"] = result["strengths"]
+                extracted_fields["weaknesses"] = result["weaknesses"]
+                extracted_fields["recommendations"] = result["recommendations"]
+                extracted_fields["summary"] = result.get("summary", "")
+            
+                # Extract language from the summary
+                extracted_fields["language"] = self._detect_language(text)
+                
+                # Add specific extraction based on document type
+                if doc_type == "resume":
+                    extracted_fields.update(self._extract_resume_fields(text))
+                elif doc_type == "recommendations":
+                    extracted_fields.update(self._extract_recommendation_fields(text))
+                elif doc_type in ["i129", "o1"]:
+                    extracted_fields.update(self._extract_form_fields(text, doc_type))
+        except Exception as e:
+            logger.error(f"Error extracting fields from text: {str(e)}")
+            # Fall back to basic extraction if OpenAI processing fails
+            extracted_fields["language"] = self._detect_language(text)
+            
+            if doc_type == "resume":
+                extracted_fields.update(self._extract_resume_fields(text))
+            elif doc_type == "recommendations":
+                extracted_fields.update(self._extract_recommendation_fields(text))
+            elif doc_type in ["i129", "o1"]:
+                extracted_fields.update(self._extract_form_fields(text, doc_type))
         
         return extracted_fields
     
@@ -175,9 +178,6 @@ class DataExtractor:
         if phone_match:
             fields["phone"] = phone_match.group(0)
         
-        # For more complex fields like education and experience, we would need more sophisticated extraction
-        # or use LLMs for assistance. This is a simplified version.
-        
         # Simple skill extraction (look for skill sections)
         skills_section = re.search(r'(?i)skills?[\s\n:]+(.*?)(?:\n\n|\Z)', text, re.DOTALL)
         if skills_section:
@@ -222,8 +222,6 @@ class DataExtractor:
     def _extract_form_fields(self, text: str, doc_type: str) -> Dict[str, Any]:
         """Extract form fields from I-129 or O-1 forms.
         
-        This is mostly placeholder as these will be populated by the RL agents later.
-        
         Args:
             text: The form text
             doc_type: Form type
@@ -231,9 +229,32 @@ class DataExtractor:
         Returns:
             Dictionary of form fields
         """
-        # For now, just identify if this is an O-1 form
+        # Check if this is an O-1 form
         is_o1 = "O-1" in text or "extraordinary ability" in text.lower()
         
+        # For O-1 forms, try to use the write_rag_responses function from validate-documents.py
+        try:
+            # Import write_rag_responses from validate-documents.py if not already imported
+            from api.validate_documents import write_rag_responses
+            
+            # Use write_rag_responses to get form field values
+            response_dict = write_rag_responses(
+                extra_info="You're analyzing a form document.",
+                extracted_text=text
+            )
+            
+            # If we got a response, return it
+            if response_dict:
+                return {
+                    "form_type": "O-1" if is_o1 else doc_type.upper(),
+                    "form_fields": response_dict,
+                    "raw_text": text,
+                    "form_content": self._extract_simple_form_content(text)
+                }
+        except Exception as e:
+            logger.error(f"Error using write_rag_responses: {str(e)}")
+        
+        # Fallback to simple extraction
         return {
             "form_type": "O-1" if is_o1 else doc_type.upper(),
             "raw_text": text,
@@ -249,104 +270,102 @@ class DataExtractor:
         Returns:
             Dictionary of extracted content
         """
-        # Create a basic extraction of key information for future RL training
-        form_content = {
-            "personal_info": {},
-            "employer_info": {},
-            "petition_info": {}
-        }
+        form_content = {}
         
-        # Extract basic name information if present
-        name_match = re.search(r'(?i)name\s*:\s*([A-Za-z\s]+)', text)
+        # Try to extract name fields
+        name_match = re.search(r'(?i)name:?\s*([A-Za-z\s\-\']{2,50})', text)
         if name_match:
-            form_content["personal_info"]["name"] = name_match.group(1).strip()
+            form_content["name"] = name_match.group(1).strip()
         
-        # Extract basic employer information if present
-        employer_match = re.search(r'(?i)employer\s*:\s*([A-Za-z0-9\s,\.]+)', text)
-        if employer_match:
-            form_content["employer_info"]["employer_name"] = employer_match.group(1).strip()
+        # Try to extract dates
+        date_match = re.search(r'(?i)date:?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})', text)
+        if date_match:
+            form_content["date"] = date_match.group(1).strip()
         
-        # Extract dates if present
-        date_matches = re.findall(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', text)
-        if date_matches:
-            form_content["dates"] = date_matches
+        # Try to extract IDs
+        id_match = re.search(r'(?i)(?:id|identification|case) number:?\s*([A-Z0-9\-]{4,20})', text)
+        if id_match:
+            form_content["id_number"] = id_match.group(1).strip()
         
         return form_content
     
     def process_document(self, file_content: bytes, doc_type: str, metadata: Dict = None) -> Dict[str, Any]:
-        """Process a document and extract its data.
+        """Process a document and extract structured data.
         
         Args:
-            file_content: The document content as bytes
-            doc_type: Type of document (resume, recommendations, etc.)
+            file_content: Document file content in bytes
+            doc_type: Type of document
             metadata: Additional metadata about the document
             
         Returns:
-            Dictionary of extracted information
+            Dictionary of extracted data and metadata
         """
-        # Extract text from the document
-        text, page_count = self.extract_text_from_pdf(file_content)
+        result = {
+            "doc_id": str(uuid.uuid4()),
+            "doc_type": doc_type,
+            "processing_date": datetime.now().isoformat(),
+            "metadata": metadata or {}
+        }
         
-        # If extraction failed, return error
-        if not text:
-            return {
-                "error": "Failed to extract text from document",
-                "doc_type": doc_type,
-                "page_count": 0,
-                "metadata": metadata or {}
-            }
-        
-        # Extract fields from the text
-        extracted_data = self.extract_fields_from_text(text, doc_type)
-        
-        # Add metadata and page count
-        extracted_data["page_count"] = page_count
-        if metadata:
-            extracted_data["metadata"] = metadata
+        try:
+            # Use the process_pdf_content function directly from validate-documents.py
+            processed_result = process_pdf_content(file_content, doc_type, None, self.supabase)
             
-        # Generate a unique ID for this document
-        doc_id = str(uuid.uuid4())
-        extracted_data["doc_id"] = doc_id
+            if processed_result and "extracted_text" in processed_result:
+                # Store the results from process_pdf_content
+                result.update({
+                    "summary": processed_result.get("summary", ""),
+                    "pages": processed_result.get("pages", 0),
+                    "processed": processed_result.get("processed", False),
+                    "text_preview": processed_result.get("text_preview", ""),
+                    "strengths": processed_result.get("strengths", []),
+                    "weaknesses": processed_result.get("weaknesses", []),
+                    "recommendations": processed_result.get("recommendations", [])
+                })
+                
+                # Extract text using our helper method (which now uses validate-documents.py)
+                full_text = processed_result["extracted_text"]
+                
+                # Extract fields from the text
+                fields = self.extract_fields_from_text(full_text, doc_type)
+                result.update(fields)
+                
+                # Save the processed data to a file
+                output_file = os.path.join(self.output_dir, doc_type, f"{result['doc_id']}.json")
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    json.dump(result, f, indent=2, ensure_ascii=False)
+                
+                logger.info(f"Saved processed data to: {output_file}")
+            else:
+                result["error"] = "Failed to extract text from document"
+        except Exception as e:
+            logger.error(f"Error processing document: {str(e)}")
+            result["error"] = str(e)
         
-        # Save to file if output directory exists
-        output_path = os.path.join(self.output_dir, doc_type, f"{doc_id}.json")
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(extracted_data, f, indent=2, ensure_ascii=False)
-            
-        logger.info(f"Processed {doc_type} document with {page_count} pages. Saved to {output_path}")
-        
-        return extracted_data
+        return result
     
     def process_batch(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Process a batch of documents.
         
         Args:
-            documents: List of document dictionaries, each containing:
-                - file_content: bytes
-                - doc_type: str
-                - metadata: Dict (optional)
+            documents: List of dictionaries with keys:
+                - file_content: Document file content in bytes
+                - doc_type: Type of document
+                - metadata: (Optional) Additional metadata
                 
         Returns:
             List of processing results
         """
         results = []
         
-        for doc in documents:
-            file_content = doc.get("file_content")
-            doc_type = doc.get("doc_type")
-            metadata = doc.get("metadata", {})
+        for doc_data in documents:
+            file_content = doc_data["file_content"]
+            doc_type = doc_data["doc_type"]
+            metadata = doc_data.get("metadata", {})
             
-            if not file_content or not doc_type:
-                results.append({
-                    "error": "Missing required fields (file_content or doc_type)",
-                    "doc_type": doc_type,
-                    "metadata": metadata
-                })
-                continue
-                
             result = self.process_document(file_content, doc_type, metadata)
             results.append(result)
-            
+        
         return results
 
 # If running directly, show usage example

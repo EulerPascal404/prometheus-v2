@@ -11,6 +11,24 @@ The ML pipeline consists of several components:
 3. **Agentic Swarms**: Coordinate multiple specialized agents to fill forms optimally
 4. **Advanced Agent Architecture**: Enhanced agent swarm with improved collaboration and form quality evaluation
 
+## Integration with validate-documents.py
+
+The ML pipeline now leverages functionality from the `/api/validate-documents.py` module for improved performance and consistency:
+
+- **Enhanced Data Extraction**: Uses the advanced PDF processing functions from validate-documents.py to extract text and structures
+- **LLM-powered Analysis**: Leverages OpenAI API integration for more accurate document analysis
+- **Improved Form Field Handling**: Uses the standardized form field handling for O-1 and I-129 forms
+- **Form Generation**: Uses the write_rag_responses functionality to generate more realistic form data
+- **Consistent Field Statistics**: Shares the field statistics calculation logic for better analytics
+
+The integration provides several benefits:
+- Eliminates code duplication between ML and API components
+- Ensures consistent behavior across the application
+- Leverages production-tested functionality
+- Provides access to Supabase storage and OpenAI analysis when available
+
+When the validate-documents.py functionality is not available, the ML pipeline gracefully falls back to its original implementation.
+
 ## Getting Started
 
 ### Prerequisites
@@ -44,12 +62,12 @@ python -m ml.generate_synthetic_data --num-samples 20 --complexity medium
 ```
 ml/
 ├── __init__.py                    # Package initialization
-├── data_extraction.py             # Extract structured data from PDFs
+├── data_extraction.py             # Extract structured data from PDFs (now uses validate-documents.py)
 ├── setup_data_dirs.py             # Set up data directories
-├── collect_and_process.py         # Main data processing pipeline
+├── collect_and_process.py         # Main data processing pipeline (now uses validate-documents.py)
 ├── synthetic_data_generator.py    # Base class for synthetic data generation
 ├── rule_based_generator.py        # Rule-based synthetic data generator
-├── rl_based_generator.py          # RL-based synthetic data generator
+├── rl_based_generator.py          # RL-based synthetic data generator (now uses validate-documents.py)
 ├── advanced_agent_swarm.py        # Enhanced agent swarm implementation
 ├── advanced_rl_generator.py       # Advanced RL-based generator
 ├── generate_synthetic_data.py     # Script to generate synthetic data
@@ -63,8 +81,8 @@ ml/
 The data processing pipeline consists of the following steps:
 
 1. **Set up directory structure**: Create directories for raw, processed, and synthetic data
-2. **Extract text from PDFs**: Using PyPDF2 to extract text content
-3. **Extract structured data**: Use regex and heuristics to identify fields
+2. **Extract text from PDFs**: Now uses the process_pdf_content function from validate-documents.py
+3. **Extract structured data**: Leverages OpenAI API integration when available
 4. **Store processed data**: Save as JSON files for further processing
 
 ## Synthetic Data Generation
@@ -72,7 +90,7 @@ The data processing pipeline consists of the following steps:
 The synthetic data generation pipeline creates realistic data for O-1 visa applications using three approaches:
 
 1. **Rule-based Generation**: Uses predefined rules and templates to generate structured data
-2. **RL-based Generation**: Uses reinforcement learning with simple agent swarms
+2. **RL-based Generation**: Uses reinforcement learning with simple agent swarms, enhanced with validate-documents.py
 3. **Advanced RL-based Generation**: Uses enhanced agent swarms with specialized capabilities
 
 You can generate data using any approach:
@@ -140,6 +158,7 @@ python -m ml.test_advanced_generators
 2. **Multi-Agent Reinforcement Learning**: Implement true MARL algorithms for agent training
 3. **Cross-form Learning**: Enable knowledge transfer between different form types
 4. **Human-in-the-Loop Refinement**: Add capabilities for human feedback to improve agent behavior
+5. **Further Integration**: Complete integration with the production API stack
 
 ## Usage Examples
 
@@ -181,4 +200,23 @@ while not done:
 filled_form = env.field_values
 evaluation = agent_swarm.evaluate_filled_form(filled_form)
 print(f"Form quality score: {evaluation['quality_score']:.2f}")
+```
+
+### Using validate-documents.py Integration
+
+```python
+from ml.data_extraction import DataExtractor
+from ml.rl_based_generator import RLBasedGenerator
+
+# Extract data from a document using enhanced extraction
+extractor = DataExtractor()
+with open("sample_resume.pdf", "rb") as f:
+    file_content = f.read()
+result = extractor.process_document(file_content, "resume")
+print(f"Extracted {len(result.keys())} fields from resume")
+
+# Generate O-1 form using validate-documents.py integration
+generator = RLBasedGenerator()
+form_data = generator._generate_o1_form("complex")
+print(f"Generated O-1 form with {len(form_data['form_fields'])} fields")
 ``` 
