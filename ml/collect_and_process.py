@@ -39,6 +39,19 @@ sys.path.append(str(ROOT_DIR))
 from ml.setup_data_dirs import main as setup_directories
 from ml.data_extraction import DataExtractor
 
+# Import functions from validate-documents.py
+try:
+    from api.validate_documents import (
+        process_pdf_content,
+        get_supabase,
+        parse_summary,
+        calculate_field_statistics
+    )
+    logger.info("Successfully imported functions from validate-documents.py")
+except ImportError as e:
+    logger.warning(f"Could not import functions from validate-documents.py: {e}")
+    logger.warning("Will fall back to local implementation")
+
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Data collection and processing pipeline for O-1 visa applications")
@@ -128,8 +141,20 @@ def process_raw_files(files_by_type, processed_dir):
     """
     processed_dir = Path(processed_dir)
     
-    # Initialize DataExtractor
+    # Initialize DataExtractor (now leverages validate-documents.py functionality)
     extractor = DataExtractor(output_dir=str(processed_dir))
+    
+    # Get Supabase client (optional, for enhanced processing)
+    supabase = None
+    try:
+        from api.validate_documents import get_supabase
+        supabase = get_supabase()
+        if supabase:
+            logger.info("Successfully connected to Supabase")
+        else:
+            logger.info("Supabase client not available - some features will be limited")
+    except ImportError:
+        logger.info("Supabase functionality not available - will use local processing only")
     
     # Initialize statistics
     stats = {
@@ -160,13 +185,14 @@ def process_raw_files(files_by_type, processed_dir):
                 with open(file_path, 'rb') as f:
                     file_content = f.read()
                 
-                # Process file
+                # Process file with metadata
                 metadata = {
                     "original_filename": file_path.name,
                     "original_path": str(file_path),
                     "processing_date": datetime.now().isoformat()
                 }
                 
+                # Use our enhanced process_document method that leverages validate-documents.py
                 result = extractor.process_document(file_content, doc_type, metadata)
                 
                 if "error" in result:
@@ -179,6 +205,27 @@ def process_raw_files(files_by_type, processed_dir):
                     processed_files.append(result["doc_id"])
                     stats["by_type"][doc_type]["processed"] += 1
                     stats["processed_files"] += 1
+                    
+                    # Calculate field statistics if applicable (for form documents)
+                    if doc_type in ["o1", "i129"] and "form_fields" in result:
+                        try:
+                            # Use calculate_field_statistics from validate-documents.py
+                            field_stats = calculate_field_statistics(result.get("form_fields", {}))
+                            
+                            # Add field stats to the result file
+                            result_file = os.path.join(processed_dir, doc_type, f"{result['doc_id']}.json")
+                            if os.path.exists(result_file):
+                                with open(result_file, 'r', encoding='utf-8') as f:
+                                    result_data = json.load(f)
+                                
+                                result_data["field_stats"] = field_stats
+                                
+                                with open(result_file, 'w', encoding='utf-8') as f:
+                                    json.dump(result_data, f, indent=2, ensure_ascii=False)
+                                
+                                logger.info(f"Added field statistics to: {result_file}")
+                        except Exception as stats_error:
+                            logger.error(f"Error calculating field statistics: {stats_error}")
             
             except Exception as e:
                 logger.error(f"Error processing file: {file_path}")
@@ -253,11 +300,11 @@ def main():
     files_by_type = collect_raw_files(args.raw_dir, args.document_types)
     
     if not files_by_type:
-        logger.warning("No files found for processing.")
+        logger.warning("No files found to process. Exiting.")
         return
     
     # Process raw files
-    logger.info(f"Processing raw files to: {args.processed_dir}")
+    logger.info(f"Processing files and saving to: {args.processed_dir}")
     processed_files_by_type = process_raw_files(files_by_type, args.processed_dir)
     
     # Update metadata
