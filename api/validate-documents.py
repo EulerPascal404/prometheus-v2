@@ -558,7 +558,14 @@ def clean_field_name(field_name):
 # Global dictionary to store field name alternatives
 field_alternatives = {}
 
-def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user_id=None, supabase=None, o1=False, application_id=None):
+# Global variable for filled form URL
+filled_form_url = None
+
+def fill_and_check_pdf(input_pdf, output_pdf, response_dict=None, doc_type=None, user_id=None, supabase=None, application_id=None):
+    global filled_form_url
+    if response_dict is None:
+        response_dict = {}
+    
     print("\n=== STARTING FILL_AND_CHECK_PDF ===")
     if not supabase:
         print("[ERROR] Supabase client not available")
@@ -689,86 +696,88 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
                             print(f"[DEBUG] Found field {original_name} after adding parentheses: {with_parens}")
                     
                     if field_found and field_value is not None:
-                        value_str = field_value if field_value else ""
+                        value_str = str(field_value) if field_value else ""
                         print(f"[DEBUG] Filling field {original_name} with value: {value_str}")
                         
                         try:
                             # Update the annotation with the field value
                             if field_type == '/Tx':  # Text field
                                 print(f"[FORM FILL] Text field '{original_name}' filled with: '{value_str}'")
-                                # Create a proper PdfDict for update instead of directly using encode
                                 try:
-                                    annotation.update(PdfDict(V=value_str))
+                                    # Create a proper PdfDict for the value
+                                    value_dict = PdfDict(V=value_str)
+                                    annotation.update(value_dict)
+                                    # Ensure the field is marked as filled
+                                    annotation['/Ff'] = 0  # Remove read-only flag
+                                    print(f"[FORM FILL] Successfully updated text field '{original_name}'")
                                 except Exception as tf_error:
-                                    print(f"[ERROR] Specific error updating text field '{original_name}': {str(tf_error)}")
-                                    # Fallback to simpler approach if needed
-                                    try:
-                                        annotation['/V'] = value_str
-                                        print(f"[FORM FILL] Used direct assignment for field '{original_name}'")
-                                    except Exception as fallback_error:
-                                        print(f"[ERROR] Fallback also failed for field '{original_name}': {str(fallback_error)}")
-                                        continue
+                                    print(f"[ERROR] Error updating text field '{original_name}': {str(tf_error)}")
+                                    continue
                             elif field_type == '/Btn':  # Button/Checkbox
                                 if value_str.lower() in ['y', '/y','yes', 'true', '1']:
                                     print(f"[FORM FILL] Checkbox '{original_name}' set to: 'Yes'")
                                     try:
-                                        annotation.update(PdfDict(V=PdfName('Yes'), AS=PdfName('Yes')))
+                                        # Create proper PdfDict for checkbox
+                                        value_dict = PdfDict(
+                                            V=PdfName('Yes'),
+                                            AS=PdfName('Yes'),
+                                            Ff=0  # Remove read-only flag
+                                        )
+                                        annotation.update(value_dict)
+                                        # Ensure the appearance state is set
+                                        annotation['/AS'] = PdfName('Yes')
+                                        print(f"[FORM FILL] Successfully updated checkbox '{original_name}' to Yes")
                                     except Exception as btn_error:
-                                        print(f"[ERROR] Specific error updating checkbox '{original_name}' to Yes: {str(btn_error)}")
-                                        # Try fallback
-                                        try:
-                                            annotation['/V'] = PdfName('Yes')
-                                            annotation['/AS'] = PdfName('Yes')
-                                            print(f"[FORM FILL] Used direct assignment for checkbox '{original_name}'")
-                                        except Exception as fallback_error:
-                                            print(f"[ERROR] Fallback also failed for checkbox '{original_name}': {str(fallback_error)}")
-                                            continue
+                                        print(f"[ERROR] Error updating checkbox '{original_name}' to Yes: {str(btn_error)}")
+                                        continue
                                 elif value_str.lower() in ['n', '/n', 'off', '/off','no', 'false', '0']:
                                     print(f"[FORM FILL] Checkbox '{original_name}' set to: 'No'")
                                     try:
-                                        annotation.update(PdfDict(V=PdfName('Off'), AS=PdfName('Off')))
+                                        # Create proper PdfDict for checkbox
+                                        value_dict = PdfDict(
+                                            V=PdfName('Off'),
+                                            AS=PdfName('Off'),
+                                            Ff=0  # Remove read-only flag
+                                        )
+                                        annotation.update(value_dict)
+                                        # Ensure the appearance state is set
+                                        annotation['/AS'] = PdfName('Off')
+                                        print(f"[FORM FILL] Successfully updated checkbox '{original_name}' to No")
                                     except Exception as btn_error:
-                                        print(f"[ERROR] Specific error updating checkbox '{original_name}' to No: {str(btn_error)}")
-                                        # Try fallback
-                                        try:
-                                            annotation['/V'] = PdfName('Off')
-                                            annotation['/AS'] = PdfName('Off')
-                                            print(f"[FORM FILL] Used direct assignment for checkbox '{original_name}'")
-                                        except Exception as fallback_error:
-                                            print(f"[ERROR] Fallback also failed for checkbox '{original_name}': {str(fallback_error)}")
-                                            continue
+                                        print(f"[ERROR] Error updating checkbox '{original_name}' to No: {str(btn_error)}")
+                                        continue
                                 else:
                                     print(f"[FORM FILL] Checkbox '{original_name}' value '{value_str}' not recognized, setting to 'Off'")
                                     try:
-                                        annotation.update(PdfDict(V=PdfName('Off'), AS=PdfName('Off')))
+                                        # Create proper PdfDict for checkbox
+                                        value_dict = PdfDict(
+                                            V=PdfName('Off'),
+                                            AS=PdfName('Off'),
+                                            Ff=0  # Remove read-only flag
+                                        )
+                                        annotation.update(value_dict)
+                                        # Ensure the appearance state is set
+                                        annotation['/AS'] = PdfName('Off')
+                                        print(f"[FORM FILL] Successfully updated checkbox '{original_name}' to Off")
                                     except Exception as btn_error:
-                                        print(f"[ERROR] Specific error updating checkbox '{original_name}' to Off: {str(btn_error)}")
-                                        # Try fallback
-                                        try:
-                                            annotation['/V'] = PdfName('Off')
-                                            annotation['/AS'] = PdfName('Off')
-                                            print(f"[FORM FILL] Used direct assignment for checkbox '{original_name}'")
-                                        except Exception as fallback_error:
-                                            print(f"[ERROR] Fallback also failed for checkbox '{original_name}': {str(fallback_error)}")
-                                            continue
+                                        print(f"[ERROR] Error updating checkbox '{original_name}' to Off: {str(btn_error)}")
+                                        continue
                             # Add handling for dropdown fields if needed
                             elif field_type == '/Ch':  # Dropdown/Combobox
                                 print(f"[FORM FILL] Dropdown field '{original_name}' filled with: '{value_str}'")
                                 try:
-                                    annotation.update(PdfDict(V=value_str))
+                                    # Create proper PdfDict for dropdown
+                                    value_dict = PdfDict(
+                                        V=value_str,
+                                        Ff=0  # Remove read-only flag
+                                    )
+                                    annotation.update(value_dict)
+                                    print(f"[FORM FILL] Successfully updated dropdown '{original_name}'")
                                 except Exception as ch_error:
-                                    print(f"[ERROR] Specific error updating dropdown '{original_name}': {str(ch_error)}")
-                                    # Try fallback
-                                    try:
-                                        annotation['/V'] = value_str
-                                        print(f"[FORM FILL] Used direct assignment for dropdown '{original_name}'")
-                                    except Exception as fallback_error:
-                                        print(f"[ERROR] Fallback also failed for dropdown '{original_name}': {str(fallback_error)}")
-                                        continue
+                                    print(f"[ERROR] Error updating dropdown '{original_name}': {str(ch_error)}")
+                                    continue
                         except Exception as e:
                             print(f"[ERROR] Error updating field {original_name}: {str(e)}")
-                            # Print more details for debugging
-                            print(f"[ERROR] Field type: {field_type}, Value type: {type(value_str).__name__}")
                             continue
                         
                         # Update field stats based on value
@@ -837,8 +846,21 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         
         # Upload the filled PDF to Supabase
         print("[DEBUG] Uploading filled PDF to Supabase")
-        storage_path = f"{user_id}/applications/{application_id}/filled_form.pdf" if application_id else f"{user_id}/filled_form.pdf"
+        # Construct storage path based on whether application_id is provided
+        if application_id:
+            storage_path = f"{user_id}/applications/{application_id}/filled_form.pdf"
+        else:
+            storage_path = f"{user_id}/filled_form.pdf"
+            
         try:
+            # First try to remove any existing file
+            try:
+                supabase.storage.from_('documents').remove([storage_path])
+                print(f"[DEBUG] Removed existing file at {storage_path}")
+            except Exception as remove_error:
+                print(f"[DEBUG] No existing file to remove at {storage_path}")
+            
+            # Now upload the new file
             upload_result = supabase.storage.from_('documents').upload(
                 storage_path,
                 output_buffer.getvalue(),
@@ -873,9 +895,7 @@ def fill_and_check_pdf(input_pdf, output_pdf, response_dict, doc_type=None, user
         
     except Exception as e:
         print(f"[ERROR] Error in fill_and_check_pdf: {str(e)}")
-        import traceback
-        print(f"[ERROR] Traceback: {traceback.format_exc()}")
-        return 0, {}
+        return 0, field_stats
 
 def update_fill_progress(current, total, doc_type, user_id, supabase):
     """Updates the progress status in the database"""
@@ -1357,6 +1377,15 @@ def extract_page_28(input_pdf_path, output_pdf_path, user_id=None, application_i
         max_retries = 3
         for attempt in range(max_retries):
             try:
+                # First try to remove any existing file at this path
+                try:
+                    supabase.storage.from_('documents').remove([upload_path])
+                    print(f"[DEBUG] Removed existing file at {upload_path}")
+                except Exception as remove_error:
+                    # Ignore errors if file doesn't exist
+                    print(f"[DEBUG] No existing file to remove at {upload_path}")
+                
+                # Now upload the new file
                 upload_result = supabase.storage.from_('documents').upload(
                     upload_path,
                     output_buffer.getvalue(),
@@ -1968,12 +1997,12 @@ class handler(BaseHTTPRequestHandler):
                         )
                         
                         if success and preview_url:
-                            i129_preview_path = preview_url
-                            print(f"[DEBUG] Preview path set to: {i129_preview_path}")
+                            i129_preview_path = filled_form_url
+                            print(f"[DEBUG] Preview path set to: {filled_form_url}")
                             
                             # Update user_documents table with the preview path
                             update_data = {
-                                "preview_path": i129_preview_path,
+                                "preview_path": filled_form_url,
                                 "preview_message": preview_message
                             }
                             
@@ -1988,7 +2017,7 @@ class handler(BaseHTTPRequestHandler):
                                 try:
                                     # Update applications table with preview information
                                     app_update_data = {
-                                        "preview_path": i129_preview_path,
+                                        "preview_path": filled_form_url,
                                         "preview_message": preview_message
                                     }
                                     print(f"[DEBUG] Updating applications table with: {app_update_data}")
@@ -2044,8 +2073,9 @@ class handler(BaseHTTPRequestHandler):
                         "document_summaries": document_summaries,
                         "field_stats": consolidated_field_stats,
                         "application_id": application_id,
-                        "preview_path": i129_preview_path,
-                        "preview_message": preview_message
+                        "preview_path": filled_form_url,
+                        "preview_message": preview_message,
+                        "filled_form_url": filled_form_url
                     })
                 except Exception as e:
                     logger.error(f"Error updating database: {str(e)}")
@@ -2056,8 +2086,9 @@ class handler(BaseHTTPRequestHandler):
                         "can_proceed": True,
                         "document_summaries": document_summaries,
                         "field_stats": consolidated_field_stats,
-                        "preview_path": i129_preview_path,
-                        "preview_message": preview_message
+                        "preview_path": filled_form_url,
+                        "preview_message": preview_message,
+                        "filled_form_url": filled_form_url
                     })
             elif supabase: 
                 # No application ID provided
@@ -2074,8 +2105,9 @@ class handler(BaseHTTPRequestHandler):
                     "can_proceed": True,
                     "document_summaries": document_summaries,
                     "field_stats": consolidated_field_stats,
-                    "preview_path": i129_preview_path,
-                    "preview_message": preview_message
+                    "preview_path": filled_form_url,
+                    "preview_message": preview_message,
+                    "filled_form_url": filled_form_url
                 })
             
         except Exception as e:

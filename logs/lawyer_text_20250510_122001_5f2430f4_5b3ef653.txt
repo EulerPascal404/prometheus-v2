@@ -1,0 +1,112 @@
+============================================================
+LAWYER MATCHING REQUEST METADATA
+============================================================
+Timestamp: 2025-05-10T12:20:01.610947
+Request ID: 5b3ef653
+User ID: 5f2430f4
+Client IP: 127.0.0.1
+Client Hostname: DESKTOP-9BPBDO7
+
+REQUEST HEADERS:
+  Host: 127.0.0.1:8000
+  Connection: close
+  Content-Length: 11881
+  Sec-Ch-Ua-Platform: "Windows"
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6IlAyRnNtdXhwRmI2YXBMUWgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2tlaHJsaGV5bnhwYnRxenhkanV5LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI1ZjI0MzBmNC00NGQ2LTQ4NTItYmEwNy1mNTUwYmYyNmRiMDEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQ2ODk5NzUwLCJpYXQiOjE3NDY4OTYxNTAsImVtYWlsIjoicnlhbmJhcnJldHRvNzBAZ21haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCIsImdvb2dsZSJdfSwidXNlcl9tZXRhZGF0YSI6eyJhdmF0YXJfdXJsIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTFJUdDV2c1hwVmI4WkpEcEZRcnFXZWdyeFhCVS14VTNWYlFRcEI5REtyZ0dyUGh3PXM5Ni1jIiwiZW1haWwiOiJyeWFuYmFycmV0dG83MEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZnVsbF9uYW1lIjoiUnlhbiBCYXJyZXR0byIsImlzcyI6Imh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbSIsIm5hbWUiOiJSeWFuIEJhcnJldHRvIiwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTFJUdDV2c1hwVmI4WkpEcEZRcnFXZWdyeFhCVS14VTNWYlFRcEI5REtyZ0dyUGh3PXM5Ni1jIiwicHJvdmlkZXJfaWQiOiIxMDc2MjMxMzcyNzAwMzM4NDI2MDEiLCJzdWIiOiIxMDc2MjMxMzcyNzAwMzM4NDI2MDEifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJvYXV0aCIsInRpbWVzdGFtcCI6MTc0Njg5MjYzOH1dLCJzZXNzaW9uX2lkIjoiOTU3ZmE4MTctYmVhMC00ZmMwLTkzMDQtMDI2MmMzODNmZmNkIiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.iGvY7zbjT-1mOpL9qKW3Jv6b5QAupWil4ftBtBpcz8U
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36
+  Sec-Ch-Ua: "Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"
+  Content-Type: application/json
+  Sec-Ch-Ua-Mobile: ?0
+  Accept: */*
+  Origin: http://localhost:3000
+  Sec-Fetch-Site: same-origin
+  Sec-Fetch-Mode: cors
+  Sec-Fetch-Dest: empty
+  Referer: http://localhost:3000/lawyer-search
+  Accept-Encoding: gzip, deflate, br, zstd
+  Accept-Language: en-US,en;q=0.9
+  X-Real-Ip: ::1
+  X-Vercel-Deployment-Url: localhost:3000
+  X-Vercel-Forwarded-For: ::1
+  X-Vercel-Id: dev1::0h0do-1746897601597-077a29a56363
+  X-Forwarded-For: ::1
+  X-Forwarded-Port: 3000
+  X-Forwarded-Proto: http
+  X-Forwarded-Host: [::1]:53228
+============================================================
+
+
+========================================
+   DOCUMENT SUMMARIES (UPLOADED DOCUMENTS)   
+========================================
+
+
+--- RESUME DOCUMENT ---
+
+STRENGTHS:
+  • You have a strong quantitative background with a Master’s in Data Science from Columbia University and a proven track record of delivering measurable business impact (e.g., reducing churn by 18%, boosting active users by 30%, cutting ETL lag by 40%).
+  • You have held senior, leadership-level roles (Senior Data Analyst at a New York tech firm) that show you in a critical and managerial capacity on high-impact projects.
+  • You demonstrate expertise across in-demand tools and languages (Python, SQL, R, Tableau, Power BI, Snowflake) and advanced methodologies (A/B testing, cohort analysis, ML modeling) that underscore “extraordinary ability” in your field.
+  • Your portfolio of certifications (Microsoft Certified Data Analyst, Google Data Analytics Professional, Scrum Product Owner) signals recognized credentials and ongoing professional development.
+  • You have led end-to-end machine learning and analytics projects (e.g., XGBoost CLTV model; sales forecasting tool) that show original contributions and innovation in the data analytics space.
+
+WEAKNESSES:
+  • You have no record of peer-reviewed publications, conference presentations, or widely cited papers to establish you as an authority or thought leader in data science.
+  • You lack industry awards, patents, or formal recognition (e.g., “Top 40 Under 40,” best-in-industry honors) that would demonstrate sustained acclaim at a national or international level.
+  • You have no documented invitations to judge others’ work, serve on expert panels, or contribute to policy or standards bodies in analytics or data science.
+  • You have limited evidence of media coverage, press mentions, or case studies in trade journals or mainstream outlets showcasing your work to a broader audience.
+  • Your resume does not indicate membership in exclusive associations (e.g., IEEE, ACM SIGKDD) or leadership roles in professional organizations that could corroborate your standing among peers.
+
+RECOMMENDATIONS:
+  • Publish and present at recognized industry conferences (e.g., Strata Data Conference, KDD, PyCon) to demonstrate peer recognition and thought-leadership.
+  • Pursue authorship of peer-reviewed articles or white papers in top journals or trade publications (e.g., Journal of Big Data, Harvard Business Review) to document original contributions and scholarly impact.
+  • Apply for or promote external awards and competitions (e.g., Data Science Awards, Kaggle Grandmaster status) to secure third-party validation of excellence.
+  • Seek patents or formally document innovative methods/workflows that you’ve developed, then include patent filings or letters from your employer describing the novelty and impact.
+  • Obtain strong recommendation letters from recognized experts or leaders in data science—ideally academics or senior executives at major tech firms—highlighting your critical role and exceptional ability.
+  • Join and take leadership roles in professional societies (e.g., ACM, IEEE, Data Science Association) to show recognized membership and service to your field.
+  • Secure media coverage or case studies in reputable outlets (e.g., TechCrunch, Forbes, Analytics Magazine) that profile your key projects and innovations.
+
+SUMMARY:
+Strengths:  
+You have a strong quantitative background with a Master’s in Data Science from Columbia University and a proven track record of delivering measurable business impact (e.g., reducing churn by 18%, boosting active users by 30%, cutting ETL lag by 40%).[SEP]  
+You have held senior, leadership-level roles (Senior Data Analyst at a New York tech firm) that show you in a critical and managerial capacity on high-impact projects.[SEP]  
+You demonstrate expertise across in-demand tools and languages (Python, SQL, R, Tableau, Power BI, Snowflake) and advanced methodologies (A/B testing, cohort analysis, ML modeling) that underscore “extraordinary ability” in your field.[SEP]  
+Your portfolio of certifications (Microsoft Certified Data Analyst, Google Data Analytics Professional, Scrum Product Owner) signals recognized credentials and ongoing professional development.[SEP]  
+You have led end-to-end machine learning and analytics projects (e.g., XGBoost CLTV model; sales forecasting tool) that show original contributions and innovation in the data analytics space.  
+
+Weaknesses:  
+You have no record of peer-reviewed publications, conference presentations, or widely cited papers to establish you as an authority or thought leader in data science.[SEP]  
+You lack industry awards, patents, or formal recognition (e.g., “Top 40 Under 40,” best-in-industry honors) that would demonstrate sustained acclaim at a national or international level.[SEP]  
+You have no documented invitations to judge others’ work, serve on expert panels, or contribute to policy or standards bodies in analytics or data science.[SEP]  
+You have limited evidence of media coverage, press mentions, or case studies in trade journals or mainstream outlets showcasing your work to a broader audience.[SEP]  
+Your resume does not indicate membership in exclusive associations (e.g., IEEE, ACM SIGKDD) or leadership roles in professional organizations that could corroborate your standing among peers.  
+
+Recommendations:  
+Publish and present at recognized industry conferences (e.g., Strata Data Conference, KDD, PyCon) to demonstrate peer recognition and thought-leadership.[SEP]  
+Pursue authorship of peer-reviewed articles or white papers in top journals or trade publications (e.g., Journal of Big Data, Harvard Business Review) to document original contributions and scholarly impact.[SEP]  
+Apply for or promote external awards and competitions (e.g., Data Science Awards, Kaggle Grandmaster status) to secure third-party validation of excellence.[SEP]  
+Seek patents or formally document innovative methods/workflows that you’ve developed, then include patent filings or letters from your employer describing the novelty and impact.[SEP]  
+Obtain strong recommendation letters from recognized experts or leaders in data science—ideally academics or senior executives at major tech firms—highlighting your critical role and exceptional ability.[SEP]  
+Join and take leadership roles in professional societies (e.g., ACM, IEEE, Data Science Association) to show recognized membership and service to your field.[SEP]  
+Secure media coverage or case studies in reputable outlets (e.g., TechCrunch, Forbes, Analytics Magazine) that profile your key projects and innovations.
+
+========================================
+   UPLOADED DOCUMENTS STATUS   
+========================================
+
+  • resume: UPLOADED
+  • publications: NOT UPLOADED
+  • awards: NOT UPLOADED
+  • recommendation: NOT UPLOADED
+  • press: NOT UPLOADED
+  • salary: NOT UPLOADED
+  • judging: NOT UPLOADED
+  • membership: NOT UPLOADED
+  • contributions: NOT UPLOADED
+
+========================================
+   USER INFORMATION   
+========================================
+
+User ID: 5f2430f4-44d6-4852-ba07-f550bf26db01
+Address: 2191 Inverray Rd, Inverness, IL 60067, USA

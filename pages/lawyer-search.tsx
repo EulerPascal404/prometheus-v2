@@ -440,113 +440,45 @@ export default function LawyerSearch() {
           // Using a timeout to ensure Google Maps API is fully loaded
           setTimeout(() => {
             try {
-              // Check if the modern API is available
-              if (window.google?.maps?.places?.PlaceAutocompleteElement) {
-                try {
-                  console.log("Using modern PlaceAutocompleteElement API");
-                  
-                  // Try/catch for each step to isolate exactly where errors happen
-                  let autocompleteElement;
-                  try {
-                    // Create the PlaceAutocompleteElement with minimal properties
-                    autocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
-                      inputElement: addressInputRef.current,
-                    });
-                    console.log("PlaceAutocompleteElement created successfully");
-                  } catch (createError) {
-                    console.error('Error creating PlaceAutocompleteElement:', createError);
-                    fallbackToLegacy();
-                    return;
-                  }
-
-                  // Apply properties one by one with try/catch for each
-                  try {
-                    autocompleteElement.type = "address";
-                    console.log("Type set successfully");
-                  } catch (typeError) {
-                    console.error('Error setting type:', typeError);
-                  }
-                  
-                  try {
-                    autocompleteElement.countries = ["us"];
-                    console.log("Countries set successfully");
-                  } catch (countriesError) {
-                    console.error('Error setting countries:', countriesError);
-                    // Try fallback to old API property if available
-                    try {
-                      autocompleteElement.componentRestrictions = { country: "us" };
-                      console.log("Used legacy componentRestrictions instead");
-                    } catch (restrictionsError) {
-                      console.error('Error setting componentRestrictions:', restrictionsError);
-                    }
-                  }
-                  
-                  try {
-                    autocompleteElement.fields = ["formatted_address", "address_components", "geometry", "name"];
-                    console.log("Fields set successfully");
-                  } catch (fieldsError) {
-                    console.error('Error setting fields:', fieldsError);
-                  }
-                  
-                  // Add to DOM
-                  try {
-                    if (autocompleteContainerRef.current) {
-                      autocompleteContainerRef.current.appendChild(autocompleteElement);
-                      console.log("Element added to DOM successfully");
-                    }
-                  } catch (domError) {
-                    console.error('Error adding element to DOM:', domError);
-                    fallbackToLegacy();
-                    return;
-                  }
-                  
-                  // Add event listener for place selection
-                  try {
-                    autocompleteElement.addEventListener('place_changed', () => {
-                      try {
-                        const place = autocompleteElement.getPlace();
-                        if (place && place.formatted_address) {
-                          console.log("Selected place:", place);
-                          setAddress(place.formatted_address);
-                          
-                          // Auto-focus the additional comments field after selecting an address
-                          const commentsField = document.getElementById('additionalComments');
-                          if (commentsField) {
-                            setTimeout(() => {
-                              commentsField.focus();
-                            }, 100);
-                          }
-                        }
-                      } catch (placeError) {
-                        console.error('Error in place_changed event:', placeError);
-                      }
-                    });
-                    console.log("Event listener added successfully");
-                  } catch (eventError) {
-                    console.error('Error adding event listener:', eventError);
-                  }
-                  
-                  // Store reference to the element
-                  autocompleteRef.current = autocompleteElement;
-                  console.log("Google Places PlaceAutocompleteElement initialized");
-                } catch (elementError) {
-                  console.error('Error with PlaceAutocompleteElement:', elementError);
-                  fallbackToLegacy();
+              // Initialize the legacy Autocomplete API
+              const autocomplete = new window.google.maps.places.Autocomplete(
+                addressInputRef.current,
+                {
+                  types: ['address'],
+                  fields: ['formatted_address', 'geometry'],
+                  componentRestrictions: { country: 'us' }
                 }
-              } else {
-                console.warn("PlaceAutocompleteElement API not available, using legacy API");
-                fallbackToLegacy();
-              }
-            } catch (outerError) {
-              console.error('Outer try/catch error:', outerError);
-              fallbackToLegacy();
+              );
+
+              // Store reference
+              autocompleteRef.current = autocomplete;
+
+              // Set up the event listener
+              autocomplete.addListener('place_changed', () => {
+                const place = autocomplete.getPlace();
+                if (place && place.formatted_address) {
+                  console.log("Selected place:", place);
+                  setAddress(place.formatted_address);
+                  
+                  // Auto-focus the additional comments field after selecting an address
+                  const commentsField = document.getElementById('additionalComments');
+                  if (commentsField) {
+                    setTimeout(() => {
+                      commentsField.focus();
+                    }, 100);
+                  }
+                }
+              });
+
+              console.log("Google Places Autocomplete initialized successfully");
+            } catch (error) {
+              console.error('Error initializing Google Places Autocomplete:', error);
             }
           }, 300);
         } catch (initError) {
           console.error('Error in autocomplete initialization:', initError);
-          fallbackToLegacy();
         }
-      }, 500); // Add a delay to ensure API is fully loaded
+      }, 500);
 
       return () => {
         clearTimeout(initTimer);
@@ -554,7 +486,7 @@ export default function LawyerSearch() {
     } catch (error) {
       console.error("Error initializing Google Places:", error);
     }
-  }, [googleMapsReady, fallbackToLegacy]);
+  }, [googleMapsReady]);
 
   // Calculate distance between addresses
   const calculateDistance = useCallback(async () => {
@@ -676,32 +608,50 @@ export default function LawyerSearch() {
       const storedSummaries = localStorage.getItem('documentSummaries');
       const documentSummaries = storedSummaries ? JSON.parse(storedSummaries) : {};
       
-      // Get uploaded documents from Supabase
-      const { data: userDocs, error: userDocsError } = await supabase
-        .from('user_documents')
+      // Get the most recent application for the user
+      const { data: application, error: applicationError } = await supabase
+        .from('applications')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
         
-      if (userDocsError) {
-        console.error('Error fetching user documents:', userDocsError.message);
-        setLoading(false);
-        setViewState(ViewState.RESULTS);
-        return;
+      if (applicationError) {
+        console.error('Error fetching application:', applicationError);
+        throw new Error('Error fetching application data');
       }
       
       // Create uploaded_documents object
-      const uploaded_documents = {
-        resume: userDocs?.resume || false,
-        publications: userDocs?.publications || false,
-        awards: userDocs?.awards || false,
-        recommendation: userDocs?.recommendation || false,
-        press: userDocs?.press || false,
-        salary: userDocs?.salary || false,
-        judging: userDocs?.judging || false,
-        membership: userDocs?.membership || false,
-        contributions: userDocs?.contributions || false
-      };
+      let uploaded_documents;
+      
+      if (!application) {
+        // Use default values if no application found
+        uploaded_documents = {
+          resume: false,
+          publications: false,
+          awards: false,
+          recommendation: false,
+          press: false,
+          salary: false,
+          judging: false,
+          membership: false,
+          contributions: false
+        };
+      } else {
+        // Use application document data
+        uploaded_documents = {
+          resume: application.document_count > 0,
+          publications: application.document_summaries?.publications?.processed || false,
+          awards: application.document_summaries?.awards?.processed || false,
+          recommendation: application.document_summaries?.recommendation?.processed || false,
+          press: application.document_summaries?.press?.processed || false,
+          salary: application.document_summaries?.salary?.processed || false,
+          judging: application.document_summaries?.judging?.processed || false,
+          membership: application.document_summaries?.membership?.processed || false,
+          contributions: application.document_summaries?.contributions?.processed || false
+        };
+      }
       
       // Use local API route to avoid CORS issues
       const apiUrl = '/api/match-lawyer';
@@ -841,6 +791,7 @@ export default function LawyerSearch() {
     }
     
     setIsSearching(true);
+    setViewState(ViewState.LOADING);
     
     try {
       // Get current user
@@ -853,29 +804,50 @@ export default function LawyerSearch() {
       const storedSummaries = localStorage.getItem('documentSummaries');
       const documentSummaries = storedSummaries ? JSON.parse(storedSummaries) : {};
       
-      // Get uploaded documents from Supabase
-      const { data: userDocs, error: userDocsError } = await supabase
-        .from('user_documents')
+      // Get the most recent application for the user
+      const { data: application, error: applicationError } = await supabase
+        .from('applications')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
         
-      if (userDocsError) {
-        throw new Error('Error fetching user documents: ' + userDocsError.message);
+      if (applicationError) {
+        console.error('Error fetching application:', applicationError);
+        throw new Error('Error fetching application data');
       }
       
       // Create uploaded_documents object
-      const uploaded_documents = {
-        resume: userDocs?.resume || false,
-        publications: userDocs?.publications || false,
-        awards: userDocs?.awards || false,
-        recommendation: userDocs?.recommendation || false,
-        press: userDocs?.press || false,
-        salary: userDocs?.salary || false,
-        judging: userDocs?.judging || false,
-        membership: userDocs?.membership || false,
-        contributions: userDocs?.contributions || false
-      };
+      let uploaded_documents;
+      
+      if (!application) {
+        // Use default values if no application found
+        uploaded_documents = {
+          resume: false,
+          publications: false,
+          awards: false,
+          recommendation: false,
+          press: false,
+          salary: false,
+          judging: false,
+          membership: false,
+          contributions: false
+        };
+      } else {
+        // Use application document data
+        uploaded_documents = {
+          resume: application.document_count > 0,
+          publications: application.document_summaries?.publications?.processed || false,
+          awards: application.document_summaries?.awards?.processed || false,
+          recommendation: application.document_summaries?.recommendation?.processed || false,
+          press: application.document_summaries?.press?.processed || false,
+          salary: application.document_summaries?.salary?.processed || false,
+          judging: application.document_summaries?.judging?.processed || false,
+          membership: application.document_summaries?.membership?.processed || false,
+          contributions: application.document_summaries?.contributions?.processed || false
+        };
+      }
       
       // API endpoint for lawyer matching
       const apiUrl = '/api/match-lawyer';
@@ -908,9 +880,6 @@ export default function LawyerSearch() {
       const matchedLawyerData = await response.json();
       console.log("API response from form submission:", matchedLawyerData);
       
-      // Add debugging for field_stats
-      console.log("Field Stats from form submission API:", matchedLawyerData.field_stats);
-      
       // Save form data for future use
       localStorage.setItem('lawyerFormData', JSON.stringify({
         address: address,
@@ -920,12 +889,14 @@ export default function LawyerSearch() {
       // Store the matched lawyer data in localStorage
       localStorage.setItem('lawyerMatch', JSON.stringify(matchedLawyerData));
       
-      // Set matched lawyer data
+      // Set matched lawyer data and update view state
       setMatchedLawyer(matchedLawyerData);
       setUserAddress(address);
+      setViewState(ViewState.RESULTS);
     } catch (error) {
       console.error('Error matching lawyer:', error);
       alert('Error finding a matching lawyer. Please try again.');
+      setViewState(ViewState.ADDRESS_ENTRY);
     } finally {
       setIsSearching(false);
     }
@@ -956,24 +927,7 @@ export default function LawyerSearch() {
           Let's find the perfect immigration attorney for your extraordinary ability visa. First, please enter your location.
         </p>
         
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          if (address.trim()) {
-            setUserAddress(address.trim());
-            setViewState(ViewState.LOADING);
-            
-            // Save address in localStorage for future use
-            localStorage.setItem('lawyerFormData', JSON.stringify({
-              address: address.trim(),
-              additional_comments: additionalComments
-            }));
-            
-            // Proceed to load lawyer data
-            loadData();
-          } else {
-            alert('Please enter your address');
-          }
-        }} className="w-full max-w-md space-y-4">
+        <form onSubmit={handleLawyerSearch} className="w-full max-w-md space-y-4">
           <div className="form-group">
             <label htmlFor="address" className="block text-sm font-medium text-slate-300 mb-1">Your Address</label>
             <div className="relative">
@@ -1024,7 +978,7 @@ export default function LawyerSearch() {
           <button
             type="submit"
             className="gradient-button px-6 py-2.5 text-base w-full flex items-center justify-center"
-            disabled={!googleMapsReady}
+            disabled={isSearching || !googleMapsReady}
           >
             {!googleMapsReady ? (
               <>
@@ -1034,12 +988,20 @@ export default function LawyerSearch() {
                 </svg>
                 Loading Maps...
               </>
+            ) : isSearching ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Finding Your Match...
+              </>
             ) : (
               <>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
-                Find My O-1 Visa Expert
+                Find My Immigration Lawyer
               </>
             )}
           </button>
@@ -1254,11 +1216,6 @@ export default function LawyerSearch() {
                         </div>
                       </div>
                     </div>
-                  )}
-                  
-                  {/* Add Field Stats Display */}
-                  {matchedLawyer.field_stats && (
-                    <FieldStatsDisplay fieldStats={matchedLawyer.field_stats} />
                   )}
                   
                   <div className="mt-6 text-center w-full">

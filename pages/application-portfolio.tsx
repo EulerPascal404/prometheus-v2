@@ -507,14 +507,35 @@ export default function ApplicationPortfolio() {
               {applications.map(app => renderApplicationCard(app))}
               
               {applications.length === 0 && (
-                <div className="md:col-span-2 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/30 p-6 flex flex-col items-center justify-center">
-                  <svg className="w-16 h-16 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <h3 className="text-xl font-medium text-white mb-2">No Applications Found</h3>
-                  <p className="text-slate-400 max-w-md text-center mb-2">
-                    Create your first application using the button above.
+                <div className="md:col-span-2 lg:col-span-3 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/30 p-8 flex flex-col items-center justify-center text-center">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500/20 to-purple-500/20 flex items-center justify-center border border-primary-500/30 mb-6">
+                    <svg className="w-10 h-10 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-semibold text-white mb-3">No Applications Found</h3>
+                  <p className="text-slate-400 max-w-md mb-6">
+                    Get started by creating your first O-1 visa application. We'll guide you through the process of collecting and organizing your documents.
                   </p>
+                  <button
+                    onClick={createNewApplication}
+                    disabled={isCreatingApplication}
+                    className={`bg-gradient-to-r from-primary-500/20 to-purple-500/20 hover:from-primary-500/30 hover:to-purple-500/30 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center border border-primary-500/30 hover:border-primary-500/50 ${isCreatingApplication ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  >
+                    {isCreatingApplication ? (
+                      <>
+                        <div className="w-4 h-4 rounded-full border-2 border-primary-300 border-t-transparent animate-spin mr-2"></div>
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Create New Application
+                      </>
+                    )}
+                  </button>
                 </div>
               )}
             </div>

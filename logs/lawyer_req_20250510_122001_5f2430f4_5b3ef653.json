@@ -1,0 +1,89 @@
+// ============================================================
+// LAWYER MATCHING REQUEST METADATA
+// ============================================================
+// Timestamp: 2025-05-10T12:20:01.610947
+// Request ID: 5b3ef653
+// User ID: 5f2430f4
+// Client IP: 127.0.0.1
+// Client Hostname: DESKTOP-9BPBDO7
+// 
+REQUEST HEADERS:
+//   Host: 127.0.0.1:8000
+//   Connection: close
+//   Content-Length: 11881
+//   Sec-Ch-Ua-Platform: "Windows"
+//   Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6IlAyRnNtdXhwRmI2YXBMUWgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2tlaHJsaGV5bnhwYnRxenhkanV5LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI1ZjI0MzBmNC00NGQ2LTQ4NTItYmEwNy1mNTUwYmYyNmRiMDEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQ2ODk5NzUwLCJpYXQiOjE3NDY4OTYxNTAsImVtYWlsIjoicnlhbmJhcnJldHRvNzBAZ21haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCIsImdvb2dsZSJdfSwidXNlcl9tZXRhZGF0YSI6eyJhdmF0YXJfdXJsIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTFJUdDV2c1hwVmI4WkpEcEZRcnFXZWdyeFhCVS14VTNWYlFRcEI5REtyZ0dyUGh3PXM5Ni1jIiwiZW1haWwiOiJyeWFuYmFycmV0dG83MEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZnVsbF9uYW1lIjoiUnlhbiBCYXJyZXR0byIsImlzcyI6Imh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbSIsIm5hbWUiOiJSeWFuIEJhcnJldHRvIiwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTFJUdDV2c1hwVmI4WkpEcEZRcnFXZWdyeFhCVS14VTNWYlFRcEI5REtyZ0dyUGh3PXM5Ni1jIiwicHJvdmlkZXJfaWQiOiIxMDc2MjMxMzcyNzAwMzM4NDI2MDEiLCJzdWIiOiIxMDc2MjMxMzcyNzAwMzM4NDI2MDEifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJvYXV0aCIsInRpbWVzdGFtcCI6MTc0Njg5MjYzOH1dLCJzZXNzaW9uX2lkIjoiOTU3ZmE4MTctYmVhMC00ZmMwLTkzMDQtMDI2MmMzODNmZmNkIiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.iGvY7zbjT-1mOpL9qKW3Jv6b5QAupWil4ftBtBpcz8U
+//   User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36
+//   Sec-Ch-Ua: "Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"
+//   Content-Type: application/json
+//   Sec-Ch-Ua-Mobile: ?0
+//   Accept: */*
+//   Origin: http://localhost:3000
+//   Sec-Fetch-Site: same-origin
+//   Sec-Fetch-Mode: cors
+//   Sec-Fetch-Dest: empty
+//   Referer: http://localhost:3000/lawyer-search
+//   Accept-Encoding: gzip, deflate, br, zstd
+//   Accept-Language: en-US,en;q=0.9
+//   X-Real-Ip: ::1
+//   X-Vercel-Deployment-Url: localhost:3000
+//   X-Vercel-Forwarded-For: ::1
+//   X-Vercel-Id: dev1::0h0do-1746897601597-077a29a56363
+//   X-Forwarded-For: ::1
+//   X-Forwarded-Port: 3000
+//   X-Forwarded-Proto: http
+//   X-Forwarded-Host: [::1]:53228
+// ============================================================
+
+
+{
+  "user_id": "5f2430f4-44d6-4852-ba07-f550bf26db01",
+  "uploaded_documents": {
+    "resume": true,
+    "publications": false,
+    "awards": false,
+    "recommendation": false,
+    "press": false,
+    "salary": false,
+    "judging": false,
+    "membership": false,
+    "contributions": false
+  },
+  "document_summaries": {
+    "resume": {
+      "extracted_text": "Bob\n \nSmith\n \n \n\ud83d\udccd\n \nNew\n \nYork,\n \nNY\n \n|\n \n\ud83d\udcde\n \n(555)\n \n123-4567\n \n|\n \n\ud83d\udce7\n \nbobsmith@email.com\n \n|\n \n\ud83c\udf10\n \nlinkedin.com/in/bobsmith\n \n \nProfessional\n \nSummary\n \nAnalytical\n \nand\n \nresults-driven\n \nprofessional\n \nwith\n \n7+\n \nyears\n \nof\n \nexperience\n \nin\n \ndata\n \nanalytics,\n \nproduct\n \ndevelopment,\n \nand\n \nproject\n \nmanagement.\n \nProven\n \nability\n \nto\n \nlead\n \ncross-functional\n \nteams,\n \nstreamline\n \noperations,\n \nand\n \ndeliver\n \nimpactful\n \nsolutions\n \nusing\n \ndata-driven\n \ninsights.\n \nSkilled\n \nin\n \nPython,\n \nSQL,\n \nand\n \nagile\n \nmethodologies\n \nwith\n \na\n \npassion\n \nfor\n \nsolving\n \ncomplex\n \nbusiness\n \nproblems.\n \n \nProfessional\n \nExperience\n \nSenior\n \nData\n \nAnalyst\n \n \nZentraTech\n \nSolutions\n \n\u2013\n \nNew\n \nYork,\n \nNY\n \n \nMarch\n \n2020\n \n\u2013\n \nPresent\n \n\u25cf\n \nLed\n \nend-to-end\n \nanalytics\n \nprojects\n \nto\n \nimprove\n \ncustomer\n \nretention,\n \nreducing\n \nchurn\n \nby\n \n18%\n \nover\n \n12\n \nmonths.\n \n \n\u25cf\n \nBuilt\n \ninteractive\n \ndashboards\n \nusing\n \nTableau\n \nand\n \nPower\n \nBI\n \nto\n \ntrack\n \nKPIs\n \nacross\n \ndepartments.\n \n \n\u25cf\n \nConducted\n \ncohort\n \nanalyses\n \nand\n \nA/B\n \ntests\n \nthat\n \ninformed\n \nproduct\n \nroadmaps\n \nand\n \nmarketing\n \nstrategies.\n \n \n\u25cf\n \nCollaborated\n \nwith\n \nengineers\n \nto\n \noptimize\n \ndata\n \npipelines\n \nand\n \nreduce\n \nETL\n \nlag\n \nby\n \n40%.\n \n \nProduct\n \nAnalyst\n \n \nNexora\n \nInc.\n \n\u2013\n \nSan\n \nFrancisco,\n \nCA\n \n \nJuly\n \n2016\n \n\u2013\n \nFeb\n \n2020\n \n\u25cf\n \nTranslated\n \nproduct\n \nperformance\n \ndata\n \ninto\n \nactionable\n \ninsights,\n \ncontributing\n \nto\n \na\n \n30%\n \nincrease\n \nin\n \nactive\n \nusers.\n \n \n\u25cf\n \nCreated\n \nSQL-based\n \nreporting\n \nsystems\n \nthat\n \nreduced\n \nmanual\n \nwork\n \nby\n \nover\n \n10\n \nhours\n \nper\n \nweek.\n \n \n\u25cf\n \nWorked\n \nwith\n \nUX\n \nteams\n \nto\n \nimplement\n \ndata-driven\n \ndesign\n \nimprovements.\n \n \n\u25cf\n \nSupported\n \nproduct\n \nlaunch\n \ninitiatives\n \nthrough\n \ndetailed\n \ncompetitive\n \nand\n \nmarket\n \nanalysis.\n \n \n \nEducation\n \nMaster\n \nof\n \nScience\n \nin\n \nData\n \nScience\n \n \nColumbia\n \nUniversity\n \n\u2013\n \nNew\n \nYork,\n \nNY\n \n \nGraduated:\n \n2016\n \nBachelor\n \nof\n \nBusiness\n \nAdministration\n \n \nUniversity\n \nof\n \nMichigan\n \n\u2013\n \nAnn\n \nArbor,\n \nMI\n \n \nGraduated:\n \n2014\n \n \nTechnical\n \nSkills\n \n\u25cf\n \nLanguages:\n \nPython,\n \nSQL,\n \nR\n \n \n\u25cf\n \nTools:\n \nTableau,\n \nPower\n \nBI,\n \nExcel,\n \nGit,\n \nJIRA\n \n \n\u25cf\n \nLibraries:\n \nPandas,\n \nNumPy,\n \nscikit-learn,\n \nMatplotlib\n \n \n\u25cf\n \nDatabases:\n \nPostgreSQL,\n \nMySQL,\n \nSnowflake\n \n \n \nCertifications\n \n\u25cf\n \nCertified\n \nData\n \nAnalyst\n \n\u2013\n \nMicrosoft\n \n \n\u25cf\n \nGoogle\n \nData\n \nAnalytics\n \nProfessional\n \nCertificate\n \n \n\u25cf\n \nScrum\n \nProduct\n \nOwner\n \nCertified\n \n(SPOC)\n \n \n \nProjects\n \nCustomer\n \nLifetime\n \nValue\n \nPrediction\n \n \nBuilt\n \na\n \nmachine\n \nlearning\n \nmodel\n \nusing\n \nXGBoost\n \nto\n \npredict\n \nCLTV\n \nwith\n \n85%\n \naccuracy,\n \nenabling\n \nbetter\n \nmarketing\n \nsegmentation.\n \nSales\n \nForecasting\n \nDashboard\n \n \nDeveloped\n \nan\n \nend-to-end\n \nsales\n \nforecasting\n \ntool\n \nthat\n \nhelped\n \nthe\n \nfinance\n \nteam\n \nimprove\n \nquarterly\n \nrevenue\n \npredictions\n \nby\n \n25%.\n \n ",
+      "openai_available": true,
+      "pages": 2,
+      "processed": true,
+      "recommendations": [
+        "Publish and present at recognized industry conferences (e.g., Strata Data Conference, KDD, PyCon) to demonstrate peer recognition and thought-leadership.",
+        "Pursue authorship of peer-reviewed articles or white papers in top journals or trade publications (e.g., Journal of Big Data, Harvard Business Review) to document original contributions and scholarly impact.",
+        "Apply for or promote external awards and competitions (e.g., Data Science Awards, Kaggle Grandmaster status) to secure third-party validation of excellence.",
+        "Seek patents or formally document innovative methods/workflows that you\u2019ve developed, then include patent filings or letters from your employer describing the novelty and impact.",
+        "Obtain strong recommendation letters from recognized experts or leaders in data science\u2014ideally academics or senior executives at major tech firms\u2014highlighting your critical role and exceptional ability.",
+        "Join and take leadership roles in professional societies (e.g., ACM, IEEE, Data Science Association) to show recognized membership and service to your field.",
+        "Secure media coverage or case studies in reputable outlets (e.g., TechCrunch, Forbes, Analytics Magazine) that profile your key projects and innovations."
+      ],
+      "strengths": [
+        "You have a strong quantitative background with a Master\u2019s in Data Science from Columbia University and a proven track record of delivering measurable business impact (e.g., reducing churn by 18%, boosting active users by 30%, cutting ETL lag by 40%).",
+        "You have held senior, leadership-level roles (Senior Data Analyst at a New York tech firm) that show you in a critical and managerial capacity on high-impact projects.",
+        "You demonstrate expertise across in-demand tools and languages (Python, SQL, R, Tableau, Power BI, Snowflake) and advanced methodologies (A/B testing, cohort analysis, ML modeling) that underscore \u201cextraordinary ability\u201d in your field.",
+        "Your portfolio of certifications (Microsoft Certified Data Analyst, Google Data Analytics Professional, Scrum Product Owner) signals recognized credentials and ongoing professional development.",
+        "You have led end-to-end machine learning and analytics projects (e.g., XGBoost CLTV model; sales forecasting tool) that show original contributions and innovation in the data analytics space."
+      ],
+      "summary": "Strengths:  \nYou have a strong quantitative background with a Master\u2019s in Data Science from Columbia University and a proven track record of delivering measurable business impact (e.g., reducing churn by 18%, boosting active users by 30%, cutting ETL lag by 40%).[SEP]  \nYou have held senior, leadership-level roles (Senior Data Analyst at a New York tech firm) that show you in a critical and managerial capacity on high-impact projects.[SEP]  \nYou demonstrate expertise across in-demand tools and languages (Python, SQL, R, Tableau, Power BI, Snowflake) and advanced methodologies (A/B testing, cohort analysis, ML modeling) that underscore \u201cextraordinary ability\u201d in your field.[SEP]  \nYour portfolio of certifications (Microsoft Certified Data Analyst, Google Data Analytics Professional, Scrum Product Owner) signals recognized credentials and ongoing professional development.[SEP]  \nYou have led end-to-end machine learning and analytics projects (e.g., XGBoost CLTV model; sales forecasting tool) that show original contributions and innovation in the data analytics space.  \n\nWeaknesses:  \nYou have no record of peer-reviewed publications, conference presentations, or widely cited papers to establish you as an authority or thought leader in data science.[SEP]  \nYou lack industry awards, patents, or formal recognition (e.g., \u201cTop 40 Under 40,\u201d best-in-industry honors) that would demonstrate sustained acclaim at a national or international level.[SEP]  \nYou have no documented invitations to judge others\u2019 work, serve on expert panels, or contribute to policy or standards bodies in analytics or data science.[SEP]  \nYou have limited evidence of media coverage, press mentions, or case studies in trade journals or mainstream outlets showcasing your work to a broader audience.[SEP]  \nYour resume does not indicate membership in exclusive associations (e.g., IEEE, ACM SIGKDD) or leadership roles in professional organizations that could corroborate your standing among peers.  \n\nRecommendations:  \nPublish and present at recognized industry conferences (e.g., Strata Data Conference, KDD, PyCon) to demonstrate peer recognition and thought-leadership.[SEP]  \nPursue authorship of peer-reviewed articles or white papers in top journals or trade publications (e.g., Journal of Big Data, Harvard Business Review) to document original contributions and scholarly impact.[SEP]  \nApply for or promote external awards and competitions (e.g., Data Science Awards, Kaggle Grandmaster status) to secure third-party validation of excellence.[SEP]  \nSeek patents or formally document innovative methods/workflows that you\u2019ve developed, then include patent filings or letters from your employer describing the novelty and impact.[SEP]  \nObtain strong recommendation letters from recognized experts or leaders in data science\u2014ideally academics or senior executives at major tech firms\u2014highlighting your critical role and exceptional ability.[SEP]  \nJoin and take leadership roles in professional societies (e.g., ACM, IEEE, Data Science Association) to show recognized membership and service to your field.[SEP]  \nSecure media coverage or case studies in reputable outlets (e.g., TechCrunch, Forbes, Analytics Magazine) that profile your key projects and innovations.",
+      "text_preview": "Bob\n \nSmith\n \n \n\ud83d\udccd\n \nNew\n \nYork,\n \nNY\n \n|\n \n\ud83d\udcde\n \n(555)\n \n123-4567\n \n|\n \n\ud83d\udce7\n \nbobsmith@email.com\n \n|\n \n\ud83c\udf10\n \nlinkedin.com/in/bobsmith\n \n \nProfessional\n \nSummary\n \nAnalytical\n \nand\n \nresults-driven\n \nprofessional\n \nwith\n \n7+\n \nyears\n \nof\n \nexperience\n \nin\n \ndata\n \nanalytics,\n \nproduct\n \ndevelopment,\n \nand\n \nproject\n \nmanagement.\n \nProven\n \nability\n \nto\n \nlead\n \ncross-functional\n \nteams,\n \nstreamline\n \noperations,\n \nand\n \ndeliver\n \nimpactful\n \nsolutions\n \nusing\n \ndata-driven\n \ninsights.\n \nSkilled\n \nin\n \nPython,\n \nSQL,\n \nand\n \nagile\n \nmethodologies\n \nwith\n \na\n \npassion\n \nfor\n \nsolving\n \ncomplex\n \nbusiness\n \nproblems.\n \n \nProfessional\n \nExperience\n \nSenior\n \nData\n \nAnalyst\n \n \nZentraTech\n \nSolutions\n \n\u2013\n \nNew\n \nYork,\n \nNY\n \n \nMarch\n \n2020\n \n\u2013\n \nPresent\n \n\u25cf\n \nLed\n \nend-to-end\n \nanalytics\n \nprojects\n \nto\n \nimprove\n \ncustomer\n \nretention,\n \nreducing\n \nchurn\n \nby\n \n18%\n \nover\n \n12\n \nmonths.\n \n \n\u25cf\n \nBuilt\n \ninteractive\n \ndashboards\n \nusing\n \nTableau\n \nand\n \nPower\n \nBI\n \nto\n \ntrack\n \nKPIs\n \nacross\n \nd",
+      "weaknesses": [
+        "You have no record of peer-reviewed publications, conference presentations, or widely cited papers to establish you as an authority or thought leader in data science.",
+        "You lack industry awards, patents, or formal recognition (e.g., \u201cTop 40 Under 40,\u201d best-in-industry honors) that would demonstrate sustained acclaim at a national or international level.",
+        "You have no documented invitations to judge others\u2019 work, serve on expert panels, or contribute to policy or standards bodies in analytics or data science.",
+        "You have limited evidence of media coverage, press mentions, or case studies in trade journals or mainstream outlets showcasing your work to a broader audience.",
+        "Your resume does not indicate membership in exclusive associations (e.g., IEEE, ACM SIGKDD) or leadership roles in professional organizations that could corroborate your standing among peers."
+      ]
+    }
+  },
+  "additional_info": {
+    "address": "2191 Inverray Rd, Inverness, IL 60067, USA",
+    "additional_comments": ""
+  }
+}

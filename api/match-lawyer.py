@@ -305,9 +305,32 @@ class handler(BaseHTTPRequestHandler):
                 search_query = "O-1 visa lawyer for extraordinary ability"
             
             # Truncate if too long (OpenAI limits)
-            if len(search_query) > 8000:
+            if len(search_query) > 4000:  # Reduced from 8000 to 4000 to stay well within limits
                 print(f"Query too long ({len(search_query)} chars), truncating")
-                search_query = search_query[:8000]
+                # Keep only the most important parts
+                parts = search_query.split('\n')
+                important_parts = []
+                current_length = 0
+                
+                # Priority order for keeping parts
+                priority_keywords = ['strengths', 'summary', 'document type']
+                
+                # First add parts with priority keywords
+                for part in parts:
+                    if any(keyword in part.lower() for keyword in priority_keywords):
+                        if current_length + len(part) + 1 <= 4000:
+                            important_parts.append(part)
+                            current_length += len(part) + 1
+                
+                # Then add other parts if we have space
+                for part in parts:
+                    if part not in important_parts:
+                        if current_length + len(part) + 1 <= 4000:
+                            important_parts.append(part)
+                            current_length += len(part) + 1
+                
+                search_query = '\n'.join(important_parts)
+                print(f"Truncated query length: {len(search_query)} chars")
             
             # Search the vector store with the processed query
             results = client.vector_stores.search(
